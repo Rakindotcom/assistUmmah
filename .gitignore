@@ -8,9 +8,19 @@ build/
 
 # Firebase and platform secrets
 android/app/google-services.json
+android/app/google-services.*.json
 ios/Runner/GoogleService-Info.plist
+ios/Runner/GoogleService-Info.*.plist
 macos/Runner/GoogleService-Info.plist
 lib/firebase_options.local.dart
+
+# Release signing credentials
+android/key.properties
+*.jks
+*.keystore
+
+# Firebase CLI logs
+firebase-debug.log
 
 # IDEs
 .idea/

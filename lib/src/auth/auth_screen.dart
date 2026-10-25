@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -48,8 +49,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Icon(Icons.mosque,
-                            size: 52, color: Color(0xFF0F766E)),
+                        const Icon(
+                          Icons.mosque,
+                          size: 52,
+                          color: Color(0xFF0F766E),
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           _signup ? 'অ্যাকাউন্ট তৈরি করুন' : 'স্বাগতম',
@@ -57,9 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
+                              ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -67,10 +69,10 @@ class _AuthScreenState extends State<AuthScreen> {
                               ? 'Ummah Assist ব্যবহার করতে সব তথ্য পূরণ করুন'
                               : 'চালিয়ে যেতে সাইন ইন করুন',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.grey.shade700,
-                                  ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.grey.shade700),
                         ),
                         const SizedBox(height: 24),
                         if (_signup) ...[
@@ -119,7 +121,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               onPressed: () => setState(
-                                  () => _hidePassword = !_hidePassword),
+                                () => _hidePassword = !_hidePassword,
+                              ),
                               icon: Icon(
                                 _hidePassword
                                     ? Icons.visibility_outlined
@@ -159,13 +162,16 @@ class _AuthScreenState extends State<AuthScreen> {
                           icon: _loading
                               ? const SizedBox.square(
                                   dimension: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Icon(
-                                  _signup ? Icons.person_add_alt : Icons.login),
-                          label:
-                              Text(_signup ? 'অ্যাকাউন্ট তৈরি করুন' : 'লগইন'),
+                                  _signup ? Icons.person_add_alt : Icons.login,
+                                ),
+                          label: Text(
+                            _signup ? 'অ্যাকাউন্ট তৈরি করুন' : 'লগইন',
+                          ),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
@@ -214,20 +220,14 @@ class _AuthScreenState extends State<AuthScreen> {
       final password = _passwordController.text;
 
       if (_signup) {
-        final credential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email, password: password);
         final name = _nameController.text.trim();
         await credential.user?.updateDisplayName(name);
         await _saveUserDocument(credential.user, displayName: name);
       } else {
-        final credential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        final credential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: email, password: password);
         await _saveUserDocument(credential.user);
       }
     } on FirebaseAuthException catch (error) {
@@ -244,6 +244,14 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _loading = true);
     try {
+      if (kIsWeb) {
+        final result = await FirebaseAuth.instance.signInWithPopup(
+          GoogleAuthProvider(),
+        );
+        await _saveUserDocument(result.user);
+        return;
+      }
+
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
         return;
@@ -254,8 +262,9 @@ class _AuthScreenState extends State<AuthScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final result =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final result = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
       await _saveUserDocument(result.user);
     } on FirebaseAuthException catch (error) {
       _showError(_authMessage(error));

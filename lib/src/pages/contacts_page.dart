@@ -14,13 +14,11 @@ class ContactsPage extends StatefulWidget {
 }
 
 class _ContactsPageState extends State<ContactsPage> {
-  final Map<String, List<ContactItem>> _contacts = {
-    'message': [],
-    'call': [],
-  };
+  final Map<String, List<ContactItem>> _contacts = {'message': [], 'call': []};
 
   String _activeSection = 'message';
   bool _loading = true;
+  Future<void> _writeQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -83,9 +81,7 @@ class _ContactsPageState extends State<ContactsPage> {
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ),
                         Chip(label: Text('${contacts.length}')),
@@ -170,6 +166,8 @@ class _ContactsPageState extends State<ContactsPage> {
     );
     controller.dispose();
 
+    if (!mounted) return;
+
     final name = result?.trim() ?? '';
     if (name.isEmpty) {
       return;
@@ -182,27 +180,44 @@ class _ContactsPageState extends State<ContactsPage> {
       createdAt: now.toIso8601String(),
     );
 
-    setState(() {
-      _contacts[_activeSection] = [...?_contacts[_activeSection], contact];
+    final section = _activeSection;
+    await _runChange((contacts) {
+      if (!contacts[section]!.any((item) => item.id == contact.id)) {
+        contacts[section]!.add(contact);
+      }
     });
-    await _save();
   }
 
   Future<void> _deleteContact(String id) async {
-    setState(() {
-      _contacts[_activeSection] = (_contacts[_activeSection] ?? [])
-          .where((item) => item.id != id)
-          .toList();
+    final section = _activeSection;
+    await _runChange((contacts) {
+      contacts[section] =
+          contacts[section]!.where((item) => item.id != id).toList();
     });
-    await _save();
   }
 
-  Future<void> _save() async {
-    try {
-      await widget.repository.saveContacts(_contacts);
-    } catch (_) {
-      _showMessage('যোগাযোগ সিঙ্ক করতে সমস্যা হয়েছে');
+  Future<void> _runChange(
+    void Function(Map<String, List<ContactItem>> contacts) apply,
+  ) {
+    if (!widget.repository.canSync) {
+      setState(() => apply(_contacts));
+      return Future<void>.value();
     }
+
+    final operation = _writeQueue.then((_) async {
+      final data = await widget.repository.changeContacts(apply);
+      if (mounted && data != null) {
+        final contacts = asStringMap(data['contacts']);
+        setState(() {
+          _contacts['message'] = _parseContacts(contacts['message']);
+          _contacts['call'] = _parseContacts(contacts['call']);
+        });
+      }
+    });
+    _writeQueue = operation.catchError((Object _) {
+      _showMessage('যোগাযোগ সিঙ্ক করতে সমস্যা হয়েছে');
+    });
+    return _writeQueue;
   }
 
   List<ContactItem> _parseContacts(Object? raw) {

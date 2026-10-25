@@ -6,9 +6,10 @@ import '../models.dart';
 import '../widgets/page_frame.dart';
 
 class GrowthPage extends StatefulWidget {
-  const GrowthPage({super.key, required this.repository});
+  const GrowthPage({super.key, required this.repository, required this.day});
 
   final AppRepository repository;
+  final DateTime day;
 
   @override
   State<GrowthPage> createState() => _GrowthPageState();
@@ -19,6 +20,7 @@ class _GrowthPageState extends State<GrowthPage> {
   Map<String, bool> _iman = defaultChecklistMap(imanChecklist);
   Map<String, bool> _life = defaultChecklistMap(lifeChecklists['student']!);
   bool _loading = true;
+  Future<void> _writeQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -62,12 +64,14 @@ class _GrowthPageState extends State<GrowthPage> {
                 Row(
                   children: [
                     Expanded(
-                        child: _ScoreColumn(label: 'ইমান', score: imanScore)),
+                      child: _ScoreColumn(label: 'ইমান', score: imanScore),
+                    ),
                     Expanded(
-                        child: _ScoreColumn(label: 'লাইফ', score: lifeScore)),
+                      child: _ScoreColumn(label: 'লাইফ', score: lifeScore),
+                    ),
                     Expanded(
-                        child:
-                            _ScoreColumn(label: 'ওভারঅল', score: overallScore)),
+                      child: _ScoreColumn(label: 'ওভারঅল', score: overallScore),
+                    ),
                   ],
                 ),
               ],
@@ -99,7 +103,8 @@ class _GrowthPageState extends State<GrowthPage> {
 
             if (!wide) {
               return Column(
-                  children: [cards[0], const SizedBox(height: 16), cards[1]]);
+                children: [cards[0], const SizedBox(height: 16), cards[1]],
+              );
             }
 
             return Row(
@@ -124,7 +129,7 @@ class _GrowthPageState extends State<GrowthPage> {
         _life = defaultChecklistMap(lifeChecklists[_userType]!);
       }
 
-      final data = await widget.repository.loadGrowth(dateKey());
+      final data = await widget.repository.loadGrowth(dateKey(widget.day));
       final growthData = asStringMap(data?['growthData']);
       final dailyUserType = data?['userType'] as String?;
 
@@ -138,7 +143,8 @@ class _GrowthPageState extends State<GrowthPage> {
       };
       _life = {
         ...defaultChecklistMap(
-            lifeChecklists[_userType] ?? lifeChecklists['student']!),
+          lifeChecklists[_userType] ?? lifeChecklists['student']!,
+        ),
         ...parseBoolMap(growthData['life']),
       };
     } catch (_) {
@@ -176,16 +182,19 @@ class _GrowthPageState extends State<GrowthPage> {
   }
 
   Future<void> _save() async {
-    try {
-      await widget.repository.saveGrowth(
-        date: dateKey(),
-        userType: _userType,
-        iman: _iman,
-        life: _life,
-      );
-    } catch (_) {
+    final userType = _userType;
+    final iman = Map<String, bool>.of(_iman);
+    final life = Map<String, bool>.of(_life);
+    final operation = _writeQueue.then((_) => widget.repository.saveGrowth(
+        date: dateKey(widget.day),
+        userType: userType,
+        iman: iman,
+        life: life,
+      ));
+    _writeQueue = operation.catchError((Object _) {
       _showMessage('গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে');
-    }
+    });
+    await _writeQueue;
   }
 
   void _showMessage(String message) {
@@ -246,9 +255,10 @@ class _ChecklistCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
                 ScoreBadge(score: score),

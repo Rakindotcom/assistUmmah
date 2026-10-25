@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app_repository.dart';
 import '../date_helpers.dart';
 import '../models.dart';
+import '../reminder_service.dart';
 import '../widgets/page_frame.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -29,8 +30,8 @@ class _SettingsPageState extends State<SettingsPage> {
     'userType': 'student',
   };
   Map<String, bool> _notifications = {
-    'prayer': true,
-    'tasks': true,
+    'prayer': false,
+    'tasks': false,
     'growth': false,
   };
   bool _loading = true;
@@ -73,19 +74,29 @@ class _SettingsPageState extends State<SettingsPage> {
               _SettingsTile(
                 icon: Icons.person_outline,
                 title: 'প্রোফাইল',
-                subtitle: [displayName, email]
-                    .where((value) => value.isNotEmpty)
-                    .join(' • '),
+                subtitle: [
+                  displayName,
+                  email,
+                ].where((value) => value.isNotEmpty).join(' • '),
                 onTap: _editProfileName,
               ),
               const Divider(height: 1),
-              SwitchListTile(
-                value: _notifications['prayer'] == true,
-                onChanged: _toggleNotifications,
-                secondary: const Icon(Icons.notifications_outlined),
-                title: const Text('নোটিফিকেশন'),
-                subtitle: const Text('নামাজ, কাজ ও গ্রোথ রিমাইন্ডার'),
-              ),
+              if (ReminderService.supported)
+                SwitchListTile(
+                  value: _notifications.values.any((enabled) => enabled),
+                  onChanged: _toggleNotifications,
+                  secondary: const Icon(Icons.notifications_outlined),
+                  title: const Text('দৈনিক রিমাইন্ডার'),
+                  subtitle: const Text(
+                    'কাজ সকাল ৮টা, নামাজের হিসাব রাত ৮টা, গ্রোথ রাত ৯টা',
+                  ),
+                )
+              else
+                const ListTile(
+                  leading: Icon(Icons.notifications_off_outlined),
+                  title: Text('দৈনিক রিমাইন্ডার'),
+                  subtitle: Text('Android ও iOS অ্যাপে উপলব্ধ'),
+                ),
             ],
           ),
         ),
@@ -119,7 +130,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () {
                   final now = dateOnly();
                   _showReport(
-                      'মাসিক রিপোর্ট', DateTime(now.year, now.month), now);
+                    'মাসিক রিপোর্ট',
+                    DateTime(now.year, now.month),
+                    now,
+                  );
                 },
               ),
             ],
@@ -133,7 +147,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.credit_card_outlined,
                 title: 'বিলিং',
                 subtitle: 'ফ্রি ভার্সন - আপাতত বিলিং প্রয়োজন নেই',
-                onTap: () {},
+                onTap: null,
               ),
               if (widget.firebaseReady) ...[
                 const Divider(height: 1),
@@ -170,11 +184,16 @@ class _SettingsPageState extends State<SettingsPage> {
         'userType': profile['userType'] ?? 'student',
       };
 
-      if (notifications.isNotEmpty) {
-        _notifications = {
-          ..._notifications,
-          ...notifications,
-        };
+      if (data?['remindersConfigured'] == true && notifications.isNotEmpty) {
+        _notifications = {..._notifications, ...notifications};
+      }
+
+      if (ReminderService.supported) {
+        try {
+          await ReminderService.instance.sync(_notifications);
+        } catch (_) {
+          _showMessage('রিমাইন্ডার চালু করা যায়নি');
+        }
       }
     } catch (_) {
       _showMessage('সেটিংস লোড করতে সমস্যা হয়েছে');
@@ -187,7 +206,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _editProfileName() async {
     final controller = TextEditingController(
-        text: '${_profile['name'] ?? widget.user?.displayName ?? ''}');
+      text: '${_profile['name'] ?? widget.user?.displayName ?? ''}',
+    );
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -222,28 +242,33 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _profile = {..._profile, 'name': name});
     try {
       await widget.user?.updateDisplayName(name);
-      await _save();
+      await widget.repository.saveProfile(_profile);
     } catch (_) {
       _showMessage('প্রোফাইল আপডেট করতে সমস্যা হয়েছে');
     }
   }
 
   Future<void> _toggleNotifications(bool enabled) async {
-    setState(() {
-      _notifications = {
-        'prayer': enabled,
-        'tasks': enabled,
-        'growth': enabled,
-      };
-    });
-    await _save();
-  }
-
-  Future<void> _save() async {
-    await widget.repository.saveSettings(
-      profile: _profile,
-      notifications: _notifications,
-    );
+    final next = {'prayer': enabled, 'tasks': enabled, 'growth': enabled};
+    try {
+      final granted = await ReminderService.instance.sync(
+        next,
+        requestPermission: enabled,
+      );
+      if (!granted) {
+        _showMessage('রিমাইন্ডার চালু করতে নোটিফিকেশন অনুমতি দিন');
+        return;
+      }
+      await widget.repository.saveNotificationSettings(next);
+      if (mounted) setState(() => _notifications = next);
+    } catch (_) {
+      try {
+        await ReminderService.instance.sync(_notifications);
+      } catch (_) {
+        // Keep the saved preference unchanged even if the device is unavailable.
+      }
+      _showMessage('রিমাইন্ডার আপডেট করা যায়নি');
+    }
   }
 
   Future<void> _showReport(String title, DateTime start, DateTime end) async {
@@ -263,10 +288,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
               }
 
+              if (snapshot.hasError) {
+                return const Text('রিপোর্ট লোড করা যায়নি। আবার চেষ্টা করুন।');
+              }
+
               final summary = snapshot.data ?? ReportSummary.empty;
               if (!widget.repository.canSync) {
                 return const Text(
-                    'রিপোর্ট দেখতে Firebase কনফিগার করে সাইন ইন করুন।');
+                  'রিপোর্ট দেখতে Firebase কনফিগার করে সাইন ইন করুন।',
+                );
               }
 
               return Column(
@@ -277,19 +307,28 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 14),
                   _ReportRow(label: 'ট্র্যাকড দিন', value: '${summary.days}'),
                   _ReportRow(
-                      label: 'নামাজ লগড দিন',
-                      value: '${summary.prayerLoggedDays}'),
+                    label: 'নামাজ লগড দিন',
+                    value: '${summary.prayerLoggedDays}',
+                  ),
                   _ReportRow(
-                      label: 'পড়া হয়েছে', value: '${summary.totalPrayed}'),
+                    label: 'পড়া হয়েছে',
+                    value: '${summary.totalPrayed}',
+                  ),
                   _ReportRow(label: 'জামাত', value: '${summary.totalJamaat}'),
                   _ReportRow(label: 'মিসড', value: '${summary.totalMissed}'),
                   const Divider(),
                   _ReportRow(
-                      label: 'ইমান গড়', value: '${summary.averageIman}%'),
+                    label: 'ইমান গড়',
+                    value: '${summary.averageIman}%',
+                  ),
                   _ReportRow(
-                      label: 'লাইফ গড়', value: '${summary.averageLife}%'),
+                    label: 'লাইফ গড়',
+                    value: '${summary.averageLife}%',
+                  ),
                   _ReportRow(
-                      label: 'ওভারঅল গড়', value: '${summary.averageOverall}%'),
+                    label: 'ওভারঅল গড়',
+                    value: '${summary.averageOverall}%',
+                  ),
                 ],
               );
             },
@@ -327,6 +366,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (confirm == true) {
+      try {
+        await ReminderService.instance.cancelAll();
+      } catch (_) {
+        _showMessage('রিমাইন্ডার বন্ধ করা যায়নি');
+        return;
+      }
       await FirebaseAuth.instance.signOut();
     }
   }
@@ -352,7 +397,7 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool destructive;
 
   @override
@@ -372,7 +417,7 @@ class _SettingsTile extends StatelessWidget {
         ),
       ),
       subtitle: subtitle.isEmpty ? null : Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: onTap == null ? null : const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
@@ -391,10 +436,7 @@ class _ReportRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
       ),
     );

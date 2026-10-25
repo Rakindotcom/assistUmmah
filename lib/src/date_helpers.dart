@@ -10,14 +10,17 @@ DateTime dateOnly([DateTime? value]) {
   return DateTime(date.year, date.month, date.day);
 }
 
-DateTime yesterday() => dateOnly().subtract(const Duration(days: 1));
+DateTime yesterday() {
+  final today = dateOnly();
+  return DateTime(today.year, today.month, today.day - 1);
+}
 
 Iterable<DateTime> datesBetween(DateTime start, DateTime end) sync* {
   var cursor = dateOnly(start);
   final last = dateOnly(end);
   while (!cursor.isAfter(last)) {
     yield cursor;
-    cursor = cursor.add(const Duration(days: 1));
+    cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
   }
 }
 

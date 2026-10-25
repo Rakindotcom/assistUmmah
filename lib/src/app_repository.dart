@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'date_helpers.dart';
+import 'daily_logic.dart';
 import 'models.dart';
 
 class AppRepository {
@@ -58,27 +59,67 @@ class AppRepository {
     }, SetOptions(merge: true));
   }
 
-  Future<Map<String, dynamic>?> loadTasks() async {
+  Future<Map<String, dynamic>?> loadTasksForDate(String date) async {
     if (!canSync) {
       return null;
     }
-    final snap = await _tasksRef.get();
-    return snap.data();
+    return _changeTasks(date: date);
   }
 
-  Future<void> saveTasks({
-    required Map<String, List<TaskItem>> todayTasks,
-    required Map<String, List<TaskItem>> missedTasks,
+  Future<Map<String, dynamic>?> changeTasks({
+    required String date,
+    required void Function(
+      Map<String, List<TaskItem>> today,
+      Map<String, List<TaskItem>> missed,
+    ) apply,
   }) async {
     if (!canSync) {
-      return;
+      return null;
     }
+    return _changeTasks(date: date, apply: apply);
+  }
 
-    await _tasksRef.set({
-      'todayTasks': _taskBucketsToMap(todayTasks),
-      'missedTasks': _taskBucketsToMap(missedTasks),
-      'dateUpdated': dateKey(),
-      'lastUpdated': FieldValue.serverTimestamp(),
+  Future<Map<String, dynamic>> _changeTasks({
+    required String date,
+    void Function(
+      Map<String, List<TaskItem>> today,
+      Map<String, List<TaskItem>> missed,
+    )? apply,
+  }) {
+    return _db.runTransaction((transaction) async {
+      if (date != dateKey()) {
+        throw StateError('The task day changed before this update.');
+      }
+      final snap = await transaction.get(_tasksRef);
+      if (date != dateKey()) {
+        throw StateError('The task day changed before this update.');
+      }
+      final data = snap.data() ?? <String, dynamic>{};
+      final today = _taskBucketsFromMap(data['todayTasks']);
+      final missed = _taskBucketsFromMap(data['missedTasks']);
+      final moved = rollOverTaskBuckets(
+        today,
+        missed,
+        date,
+        previousDate: data['dateUpdated'] as String?,
+      );
+      apply?.call(today, missed);
+
+      final result = <String, dynamic>{
+        'todayTasks': _taskBucketsToMap(today),
+        'missedTasks': _taskBucketsToMap(missed),
+        'dateUpdated': date,
+      };
+      if (date != dateKey()) {
+        throw StateError('The task day changed before this update.');
+      }
+      if (moved || apply != null) {
+        transaction.set(_tasksRef, {
+          ...result,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+      return result;
     });
   }
 
@@ -105,8 +146,10 @@ class AppRepository {
     }, SetOptions(merge: true));
   }
 
-  Future<void> completeQaza(
-      {required String date, required String prayerKey}) async {
+  Future<void> completeQaza({
+    required String date,
+    required String prayerKey,
+  }) async {
     if (!canSync) {
       return;
     }
@@ -143,20 +186,19 @@ class AppRepository {
       return;
     }
 
-    await _growthRef(date).set({
-      'growthData': {
-        'iman': iman,
-        'life': life,
-      },
+    final batch = _db.batch();
+    batch.set(_growthRef(date), {
+      'growthData': {'iman': iman, 'life': life},
       'userType': userType,
       'date': date,
       'lastUpdated': FieldValue.serverTimestamp(),
     });
 
-    await _preferencesRef.set({
+    batch.set(_preferencesRef, {
       'userType': userType,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    await batch.commit();
   }
 
   Future<Map<String, dynamic>?> loadContacts() async {
@@ -167,17 +209,27 @@ class AppRepository {
     return snap.data();
   }
 
-  Future<void> saveContacts(Map<String, List<ContactItem>> contacts) async {
+  Future<Map<String, dynamic>?> changeContacts(
+    void Function(Map<String, List<ContactItem>> contacts) apply,
+  ) async {
     if (!canSync) {
-      return;
+      return null;
     }
-
-    await _contactsRef.set({
-      'contacts': contacts.map(
-        (key, value) =>
-            MapEntry(key, value.map((item) => item.toMap()).toList()),
-      ),
-      'lastUpdated': FieldValue.serverTimestamp(),
+    return _db.runTransaction((transaction) async {
+      final snap = await transaction.get(_contactsRef);
+      final contacts = _contactsFromMap(snap.data()?['contacts']);
+      apply(contacts);
+      final result = <String, dynamic>{
+        'contacts': contacts.map(
+          (key, value) =>
+              MapEntry(key, value.map((item) => item.toMap()).toList()),
+        ),
+      };
+      transaction.set(_contactsRef, {
+        ...result,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+      return result;
     });
   }
 
@@ -189,17 +241,25 @@ class AppRepository {
     return snap.data();
   }
 
-  Future<void> saveSettings({
-    required Map<String, Object?> profile,
-    required Map<String, bool> notifications,
-  }) async {
+  Future<void> saveProfile(Map<String, Object?> profile) async {
     if (!canSync) {
       return;
     }
 
     await _settingsRef.set({
       'profile': profile,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> saveNotificationSettings(Map<String, bool> notifications) async {
+    if (!canSync) {
+      return;
+    }
+
+    await _settingsRef.set({
       'notifications': notifications,
+      'remindersConfigured': true,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
@@ -217,6 +277,7 @@ class AppRepository {
     var totalPrayed = 0;
     var totalJamaat = 0;
     var totalMissed = 0;
+    final today = dateOnly();
     final imanScores = <int>[];
     final lifeScores = <int>[];
     final overallScores = <int>[];
@@ -230,13 +291,14 @@ class AppRepository {
       final prayers = asStringMap(prayerDoc?['prayers']);
       if (prayers.isNotEmpty) {
         prayerLoggedDays++;
-        final statuses =
-            prayerKeys.map((key) => PrayerStatus.fromMap(prayers[key]));
+        final statuses = prayerKeys.map(
+          (key) => PrayerStatus.fromMap(prayers[key]),
+        );
         final prayed = statuses.where((status) => status.prayed).length;
         final jamaat = statuses.where((status) => status.jamaat).length;
         totalPrayed += prayed;
         totalJamaat += jamaat;
-        totalMissed += 5 - prayed;
+        totalMissed += missedPrayerCountForDay(date, today, prayed);
       }
 
       final growthSnap = await _growthRef(key).get();
@@ -275,6 +337,32 @@ class AppRepository {
       'goodToDo':
           buckets['goodToDo']?.map((task) => task.toMap()).toList() ?? [],
     };
+  }
+
+  Map<String, List<TaskItem>> _taskBucketsFromMap(Object? raw) {
+    final map = asStringMap(raw);
+    List<TaskItem> parse(Object? value) {
+      if (value is! Iterable) return [];
+      return value
+          .map(TaskItem.fromMap)
+          .where((task) => task.text.isNotEmpty)
+          .toList();
+    }
+
+    return {'mustDo': parse(map['mustDo']), 'goodToDo': parse(map['goodToDo'])};
+  }
+
+  Map<String, List<ContactItem>> _contactsFromMap(Object? raw) {
+    final map = asStringMap(raw);
+    List<ContactItem> parse(Object? value) {
+      if (value is! Iterable) return [];
+      return value
+          .map(ContactItem.fromMap)
+          .where((item) => item.name.isNotEmpty)
+          .toList();
+    }
+
+    return {'message': parse(map['message']), 'call': parse(map['call'])};
   }
 
   int _average(List<int> values) {

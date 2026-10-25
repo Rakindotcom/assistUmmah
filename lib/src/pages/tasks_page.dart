@@ -6,9 +6,10 @@ import '../models.dart';
 import '../widgets/page_frame.dart';
 
 class TasksPage extends StatefulWidget {
-  const TasksPage({super.key, required this.repository});
+  const TasksPage({super.key, required this.repository, required this.day});
 
   final AppRepository repository;
+  final DateTime day;
 
   @override
   State<TasksPage> createState() => _TasksPageState();
@@ -27,6 +28,7 @@ class _TasksPageState extends State<TasksPage> {
   bool _loading = true;
   String _activeList = 'mustDo';
   String _activeTab = 'today';
+  Future<void> _writeQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -70,9 +72,7 @@ class _TasksPageState extends State<TasksPage> {
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ),
                         Chip(label: Text('${tasks.length}')),
@@ -123,14 +123,12 @@ class _TasksPageState extends State<TasksPage> {
 
   Future<void> _load() async {
     try {
-      final data = await widget.repository.loadTasks();
+      final data = await widget.repository.loadTasksForDate(
+        dateKey(widget.day),
+      );
       if (data != null) {
         _replaceBuckets(_todayTasks, _parseTaskBuckets(data['todayTasks']));
         _replaceBuckets(_missedTasks, _parseTaskBuckets(data['missedTasks']));
-        final moved = _moveOldTasksToMissed();
-        if (moved) {
-          await _save();
-        }
       }
     } catch (_) {
       _showMessage('কাজ লোড করতে সমস্যা হয়েছে');
@@ -174,6 +172,8 @@ class _TasksPageState extends State<TasksPage> {
     );
     controller.dispose();
 
+    if (!mounted) return;
+
     final text = result?.trim() ?? '';
     if (text.isEmpty) {
       return;
@@ -185,71 +185,69 @@ class _TasksPageState extends State<TasksPage> {
       text: text,
       completed: false,
       createdAt: now.toIso8601String(),
-      dateCreated: dateKey(now),
+      dateCreated: dateKey(widget.day),
     );
 
-    setState(() {
-      _todayTasks[_activeList] = [...?_todayTasks[_activeList], task];
+    final section = _activeList;
+    await _runChange((today, missed) {
+      if (!today[section]!.any((item) => item.id == task.id)) {
+        today[section]!.add(task);
+      }
     });
-    await _save();
   }
 
   Future<void> _toggleTask(String id) async {
-    final bucket = _activeTab == 'today' ? _todayTasks : _missedTasks;
-    final tasks = bucket[_activeList] ?? [];
-    bucket[_activeList] = tasks
-        .map((task) =>
-            task.id == id ? task.copyWith(completed: !task.completed) : task)
-        .toList();
-    setState(() {});
-    await _save();
+    final tab = _activeTab;
+    final section = _activeList;
+    await _runChange((today, missed) {
+      final bucket = tab == 'today' ? today : missed;
+      bucket[section] = bucket[section]!
+          .map(
+            (task) => task.id == id
+                ? task.copyWith(completed: !task.completed)
+                : task,
+          )
+          .toList();
+    });
   }
 
   Future<void> _deleteTask(String id) async {
-    final bucket = _activeTab == 'today' ? _todayTasks : _missedTasks;
-    bucket[_activeList] =
-        (bucket[_activeList] ?? []).where((task) => task.id != id).toList();
-    setState(() {});
-    await _save();
+    final tab = _activeTab;
+    final section = _activeList;
+    await _runChange((today, missed) {
+      final bucket = tab == 'today' ? today : missed;
+      bucket[section] =
+          bucket[section]!.where((task) => task.id != id).toList();
+    });
   }
 
-  Future<void> _save() async {
-    try {
-      await widget.repository.saveTasks(
-        todayTasks: _todayTasks,
-        missedTasks: _missedTasks,
+  Future<void> _runChange(
+    void Function(
+      Map<String, List<TaskItem>> today,
+      Map<String, List<TaskItem>> missed,
+    ) apply,
+  ) {
+    if (!widget.repository.canSync) {
+      setState(() => apply(_todayTasks, _missedTasks));
+      return Future<void>.value();
+    }
+
+    final operation = _writeQueue.then((_) async {
+      final data = await widget.repository.changeTasks(
+        date: dateKey(widget.day),
+        apply: apply,
       );
-    } catch (_) {
-      _showMessage('সিঙ্ক করতে সমস্যা হয়েছে');
-    }
-  }
-
-  bool _moveOldTasksToMissed() {
-    var moved = false;
-    final today = dateKey();
-
-    for (final section in ['mustDo', 'goodToDo']) {
-      final retained = <TaskItem>[];
-      final missed = [...?_missedTasks[section]];
-
-      for (final task in _todayTasks[section] ?? <TaskItem>[]) {
-        final createdToday =
-            task.dateCreated.isEmpty || task.dateCreated == today;
-        if (createdToday) {
-          retained.add(task);
-        } else if (!task.completed) {
-          missed.add(task);
-          moved = true;
-        } else {
-          moved = true;
-        }
+      if (mounted && data != null) {
+        setState(() {
+          _replaceBuckets(_todayTasks, _parseTaskBuckets(data['todayTasks']));
+          _replaceBuckets(_missedTasks, _parseTaskBuckets(data['missedTasks']));
+        });
       }
-
-      _todayTasks[section] = retained;
-      _missedTasks[section] = missed;
-    }
-
-    return moved;
+    });
+    _writeQueue = operation.catchError((Object _) {
+      _showMessage('সিঙ্ক করতে সমস্যা হয়েছে');
+    });
+    return _writeQueue;
   }
 
   Map<String, List<TaskItem>> _parseTaskBuckets(Object? raw) {
@@ -352,8 +350,10 @@ class _TaskTile extends StatelessWidget {
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(18),
         child: ListTile(
-          leading:
-              Checkbox(value: task.completed, onChanged: (_) => onToggle()),
+          leading: Checkbox(
+            value: task.completed,
+            onChanged: (_) => onToggle(),
+          ),
           title: Text(
             task.text,
             style: TextStyle(
