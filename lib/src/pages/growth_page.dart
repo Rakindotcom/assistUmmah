@@ -2,14 +2,32 @@ import 'package:flutter/material.dart';
 
 import '../app_repository.dart';
 import '../date_helpers.dart';
+import '../growth_progress.dart';
 import '../models.dart';
 import '../widgets/page_frame.dart';
+import 'growth_checklist_editor.dart';
 
 class GrowthPage extends StatefulWidget {
-  const GrowthPage({super.key, required this.repository, required this.day});
+  const GrowthPage({
+    super.key,
+    required this.repository,
+    required this.day,
+    this.historical = false,
+    this.refreshToken = 0,
+    this.onSaved,
+    this.onSaveError,
+    this.onOpenQuran,
+    this.onOpenDhikr,
+  });
 
   final AppRepository repository;
   final DateTime day;
+  final bool historical;
+  final int refreshToken;
+  final VoidCallback? onSaved;
+  final ValueChanged<String>? onSaveError;
+  final VoidCallback? onOpenQuran;
+  final VoidCallback? onOpenDhikr;
 
   @override
   State<GrowthPage> createState() => _GrowthPageState();
@@ -19,7 +37,15 @@ class _GrowthPageState extends State<GrowthPage> {
   String _userType = 'student';
   Map<String, bool> _iman = defaultChecklistMap(imanChecklist);
   Map<String, bool> _life = defaultChecklistMap(lifeChecklists['student']!);
+  GrowthChecklistConfig _config = GrowthChecklistConfig.defaults();
+  List<ChecklistItem> _imanItems = imanChecklist;
+  List<ChecklistItem> _lifeItems = lifeChecklists['student']!;
+  Map<String, dynamic>? _prayerDocument;
+  bool _prayerLinked = false;
   bool _loading = true;
+  bool _loadFailed = false;
+  bool _savingConfig = false;
+  int _loadId = 0;
   Future<void> _writeQueue = Future<void>.value();
 
   @override
@@ -29,19 +55,47 @@ class _GrowthPageState extends State<GrowthPage> {
   }
 
   @override
+  void didUpdateWidget(covariant GrowthPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken ||
+        oldWidget.repository.uid != widget.repository.uid ||
+        dateKey(oldWidget.day) != dateKey(widget.day)) {
+      _load();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_loadFailed) {
+      return Center(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('গ্রোথের তথ্য লোড করা যায়নি'),
+                TextButton(onPressed: _load, child: const Text('রিট্রাই')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
-    final lifeItems = lifeChecklists[_userType] ?? lifeChecklists['student']!;
-    final imanScore = checklistScore(_iman, imanChecklist);
-    final lifeScore = checklistScore(_life, lifeItems);
+    final visibleIman = linkedImanValues(_iman, _prayerLinked, _prayerDocument);
+    final imanScore = checklistScore(visibleIman, _imanItems);
+    final lifeScore = checklistScore(_life, _lifeItems);
     final overallScore = ((imanScore + lifeScore) / 2).round();
 
     return PageFrame(
       title: 'গ্রোথ চেকলিস্ট',
-      subtitle: 'ইমান ও দৈনন্দিন জীবনের ছোট আমলগুলো প্রতিদিন হিসাব করুন',
+      subtitle: widget.historical
+          ? '${compactDateLabel(widget.day)} দিনের হিসাব সংশোধন করুন'
+          : 'ইমান ও দৈনন্দিন জীবনের ছোট আমলগুলো প্রতিদিন হিসাব করুন',
       children: [
         Card(
           child: Padding(
@@ -56,7 +110,8 @@ class _GrowthPageState extends State<GrowthPage> {
                     return ChoiceChip(
                       label: Text(entry.value),
                       selected: _userType == entry.key,
-                      onSelected: (_) => _setUserType(entry.key),
+                      onSelected:
+                          _savingConfig ? null : (_) => _setUserType(entry.key),
                     );
                   }).toList(),
                 ),
@@ -79,6 +134,18 @@ class _GrowthPageState extends State<GrowthPage> {
           ),
         ),
         const SizedBox(height: 16),
+        if (_imanItems.any((item) => item.key == 'prayer')) ...[
+          Card(
+            child: SwitchListTile(
+              title: const Text('নামাজের হিসাবের সাথে যুক্ত'),
+              subtitle: const Text(
+                  'পাঁচ ওয়াক্ত পড়া বা কাযা সম্পন্ন হলে চেকলিস্টে ধরা হবে'),
+              value: _prayerLinked,
+              onChanged: _savingConfig ? null : _setPrayerLinked,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth > 720;
@@ -86,18 +153,28 @@ class _GrowthPageState extends State<GrowthPage> {
               _ChecklistCard(
                 title: 'ইমান চেকলিস্ট',
                 score: imanScore,
-                items: imanChecklist,
-                values: _iman,
-                color: const Color(0xFFECFDF5),
-                onChanged: (key, value) => _toggle('iman', key, value),
+                items: _imanItems,
+                values: visibleIman,
+                onChanged: _savingConfig
+                    ? null
+                    : (key, value) => _toggle('iman', key, value),
+                onEdit: widget.historical || _savingConfig
+                    ? null
+                    : () => _editChecklist('iman'),
+                linkedPrayer: _prayerLinked,
               ),
               _ChecklistCard(
                 title: 'লাইফ চেকলিস্ট',
                 score: lifeScore,
-                items: lifeItems,
+                items: _lifeItems,
                 values: _life,
-                color: const Color(0xFFEFF6FF),
-                onChanged: (key, value) => _toggle('life', key, value),
+                onChanged: _savingConfig
+                    ? null
+                    : (key, value) => _toggle('life', key, value),
+                onEdit: widget.historical || _savingConfig
+                    ? null
+                    : () => _editChecklist('life'),
+                linkedPrayer: false,
               ),
             ];
 
@@ -117,60 +194,119 @@ class _GrowthPageState extends State<GrowthPage> {
             );
           },
         ),
+        if (!widget.historical &&
+            (widget.onOpenQuran != null || widget.onOpenDhikr != null)) ...[
+          const SizedBox(height: 28),
+          Text('আরও আমল', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          if (widget.onOpenQuran != null)
+            Card(
+                child: ListTile(
+                    leading: const Icon(Icons.menu_book_outlined),
+                    title: const Text('কুরআন রিডিং লক্ষ্য'),
+                    subtitle: const Text('প্রতিদিনের পড়া ও অগ্রগতি দেখুন'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: widget.onOpenQuran)),
+          const SizedBox(height: 12),
+          if (widget.onOpenDhikr != null)
+            Card(
+                child: ListTile(
+                    leading: const Icon(Icons.touch_app_outlined),
+                    title: const Text('যিকিরের লক্ষ্য'),
+                    subtitle: const Text('দৈনিক গণনা ও অগ্রগতি দেখুন'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: widget.onOpenDhikr)),
+        ],
       ],
     );
   }
 
   Future<void> _load() async {
+    final requestId = ++_loadId;
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadFailed = false;
+      });
+    }
     try {
+      await _writeQueue;
+      final config = await widget.repository.loadGrowthChecklistConfig();
       final preferredType = await widget.repository.loadUserType();
-      if (preferredType != null && userTypeLabels.containsKey(preferredType)) {
-        _userType = preferredType;
-        _life = defaultChecklistMap(lifeChecklists[_userType]!);
-      }
-
       final data = await widget.repository.loadGrowth(dateKey(widget.day));
+      final prayerDocument =
+          await widget.repository.loadPrayerDocument(dateKey(widget.day));
+      if (!mounted || requestId != _loadId) return;
+
+      var userType =
+          preferredType != null && userTypeLabels.containsKey(preferredType)
+              ? preferredType
+              : 'student';
       final growthData = asStringMap(data?['growthData']);
       final dailyUserType = data?['userType'] as String?;
-
       if (dailyUserType != null && userTypeLabels.containsKey(dailyUserType)) {
-        _userType = dailyUserType;
+        userType = dailyUserType;
       }
-
-      _iman = {
-        ...defaultChecklistMap(imanChecklist),
-        ...parseBoolMap(growthData['iman']),
-      };
-      _life = {
-        ...defaultChecklistMap(
-          lifeChecklists[_userType] ?? lifeChecklists['student']!,
-        ),
-        ...parseBoolMap(growthData['life']),
-      };
+      final prayerLinked = data == null && !widget.historical
+          ? true
+          : data?['prayerLinked'] == true;
+      late final List<ChecklistItem> imanItems;
+      late final List<ChecklistItem> lifeItems;
+      if (widget.historical && data != null) {
+        final snapshot = GrowthChecklistSnapshot.fromDocument(data);
+        imanItems = snapshot.iman;
+        lifeItems = snapshot.life;
+      } else {
+        imanItems = config.iman;
+        lifeItems = config.lifeFor(userType);
+      }
+      setState(() {
+        _config = config;
+        _userType = userType;
+        _prayerDocument = prayerDocument;
+        _prayerLinked = prayerLinked;
+        _imanItems = imanItems;
+        _lifeItems = lifeItems;
+        _iman = {
+          ...defaultChecklistMap(imanItems),
+          ...parseBoolMap(growthData['iman']),
+        };
+        _life = {
+          ...defaultChecklistMap(lifeItems),
+          ...parseBoolMap(growthData['life']),
+        };
+        _loading = false;
+      });
     } catch (_) {
-      _showMessage('গ্রোথ ডেটা লোড করতে সমস্যা হয়েছে');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (!mounted || requestId != _loadId) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
     }
   }
 
   Future<void> _setUserType(String userType) async {
+    if (_savingConfig) return;
     setState(() {
       final previousLife = _life;
-      final nextItems = lifeChecklists[userType] ?? lifeChecklists['student']!;
+      final nextItems = _config.lifeFor(userType);
       final nextLife = defaultChecklistMap(nextItems);
       for (final key in nextLife.keys) {
         nextLife[key] = previousLife[key] ?? false;
       }
       _userType = userType;
+      _lifeItems = nextItems;
       _life = nextLife;
     });
     await _save();
   }
 
   Future<void> _toggle(String category, String key, bool value) async {
+    if (_savingConfig ||
+        (category == 'iman' && key == 'prayer' && _prayerLinked)) {
+      return;
+    }
     setState(() {
       if (category == 'iman') {
         _iman[key] = value;
@@ -181,20 +317,118 @@ class _GrowthPageState extends State<GrowthPage> {
     await _save();
   }
 
-  Future<void> _save() async {
+  Future<bool> _save() async {
     final userType = _userType;
-    final iman = Map<String, bool>.of(_iman);
+    final iman = linkedImanValues(
+        Map<String, bool>.of(_iman), _prayerLinked, _prayerDocument);
     final life = Map<String, bool>.of(_life);
+    final snapshot =
+        GrowthChecklistSnapshot(iman: _imanItems, life: _lifeItems);
     final operation = _writeQueue.then((_) => widget.repository.saveGrowth(
-        date: dateKey(widget.day),
-        userType: userType,
-        iman: iman,
-        life: life,
-      ));
-    _writeQueue = operation.catchError((Object _) {
-      _showMessage('গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে');
+          date: dateKey(widget.day),
+          userType: userType,
+          iman: iman,
+          life: life,
+          checklistSnapshot: snapshot,
+          prayerLinked: _prayerLinked,
+          updatePreferredType: !widget.historical,
+        ));
+    _writeQueue = operation.catchError((Object _) {});
+    try {
+      await operation;
+      widget.onSaved?.call();
+      return true;
+    } catch (_) {
+      const message = 'গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে';
+      if (widget.onSaveError case final onSaveError?) {
+        onSaveError(message);
+      } else {
+        _showMessage(message);
+      }
+      return false;
+    }
+  }
+
+  Future<void> _setPrayerLinked(bool next) async {
+    if (_savingConfig || next == _prayerLinked) return;
+    final previous = _prayerLinked;
+    setState(() {
+      _savingConfig = true;
+      _prayerLinked = next;
     });
-    await _writeQueue;
+    final saved = await _save();
+    if (!mounted) return;
+    setState(() {
+      if (!saved) _prayerLinked = previous;
+      _savingConfig = false;
+    });
+  }
+
+  Future<void> _editChecklist(String category) async {
+    if (_savingConfig) return;
+    final items = category == 'iman' ? _imanItems : _lifeItems;
+    final updated = await Navigator.of(context).push<List<ChecklistItem>>(
+      MaterialPageRoute(
+        builder: (_) => GrowthChecklistEditor(
+          title: category == 'iman' ? 'ইমান চেকলিস্ট' : 'লাইফ চেকলিস্ট',
+          initialItems: items,
+          defaultItems: category == 'iman'
+              ? imanChecklist
+              : lifeChecklists[_userType] ?? lifeChecklists['student']!,
+        ),
+      ),
+    );
+    if (!mounted || updated == null || _sameItems(items, updated)) return;
+
+    final nextConfig = _config.withItems(category, _userType, updated);
+    final nextImanItems = category == 'iman' ? updated : _imanItems;
+    final nextLifeItems = category == 'life' ? updated : _lifeItems;
+    final nextIman = {
+      for (final item in nextImanItems) item.key: _iman[item.key] ?? false,
+    };
+    final savedIman =
+        linkedImanValues(nextIman, _prayerLinked, _prayerDocument);
+    final nextLife = {
+      for (final item in nextLifeItems) item.key: _life[item.key] ?? false,
+    };
+    setState(() => _savingConfig = true);
+    final operation = _writeQueue.then((_) => widget.repository.saveGrowth(
+          date: dateKey(widget.day),
+          userType: _userType,
+          iman: savedIman,
+          life: nextLife,
+          prayerLinked: _prayerLinked,
+          checklistSnapshot: GrowthChecklistSnapshot(
+            iman: nextImanItems,
+            life: nextLifeItems,
+          ),
+          checklistConfig: nextConfig,
+        ));
+    _writeQueue = operation.catchError((Object _) {});
+    try {
+      await operation;
+      if (!mounted) return;
+      setState(() {
+        _config = nextConfig;
+        _imanItems = nextImanItems;
+        _lifeItems = nextLifeItems;
+        _iman = nextIman;
+        _life = nextLife;
+      });
+      widget.onSaved?.call();
+    } catch (_) {
+      _showMessage('চেকলিস্ট সংরক্ষণ করা যায়নি');
+    } finally {
+      if (mounted) setState(() => _savingConfig = false);
+    }
+  }
+
+  bool _sameItems(List<ChecklistItem> a, List<ChecklistItem> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].key != b[i].key || a[i].label != b[i].label) return false;
+    }
+    return true;
   }
 
   void _showMessage(String message) {
@@ -230,21 +464,22 @@ class _ChecklistCard extends StatelessWidget {
     required this.score,
     required this.items,
     required this.values,
-    required this.color,
     required this.onChanged,
+    required this.onEdit,
+    required this.linkedPrayer,
   });
 
   final String title;
   final int score;
   final List<ChecklistItem> items;
   final Map<String, bool> values;
-  final Color color;
-  final void Function(String key, bool value) onChanged;
+  final void Function(String key, bool value)? onChanged;
+  final VoidCallback? onEdit;
+  final bool linkedPrayer;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -258,18 +493,31 @@ class _ChecklistCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 ScoreBadge(score: score),
+                if (onEdit != null)
+                  IconButton(
+                    tooltip: '$title সম্পাদনা',
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
             ...items.map(
               (item) => CheckboxListTile(
                 value: values[item.key] == true,
-                onChanged: (value) => onChanged(item.key, value ?? false),
-                title: Text(item.label),
+                onChanged:
+                    onChanged == null || (linkedPrayer && item.key == 'prayer')
+                        ? null
+                        : (value) => onChanged!(item.key, value ?? false),
+                title: Text(item.label,
+                    style: Theme.of(context).textTheme.bodyLarge),
+                subtitle: linkedPrayer && item.key == 'prayer'
+                    ? const Text('নামাজ ট্র্যাকিং থেকে আপডেট হয়')
+                    : null,
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),

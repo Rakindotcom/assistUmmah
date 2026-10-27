@@ -1,5 +1,6 @@
 # Launch Screen Assets
 
-You can customize the launch screen with your own desired assets by replacing the image files in this directory.
+These assets are generated from `assets/brand/source.png` for রবের পথে.
+Run `python3 tool/generate_brand_assets.py` from the repository root to regenerate.
 
-You can also do it by opening your Flutter project's Xcode project with `open ios/Runner.xcworkspace`, selecting `Runner/Assets.xcassets` in the Project Navigator and dropping in the desired images.
+The launch storyboard uses a 128-point square image on the brand background.

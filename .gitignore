@@ -30,3 +30,20 @@ firebase-debug.log
 # OS files
 .DS_Store
 Thumbs.db
+
+# Functions dependencies, emulator output and private signing exports
+test/firebase/node_modules/
+*-debug.log
+.firebaserc.local
+.firebase/
+__pycache__/
+*.p12
+
+# Local Android SDK/runtime tooling
+.local/
+
+# Kotlin incremental build state
+android/.kotlin/
+
+# Generated Play upload packets
+dist/

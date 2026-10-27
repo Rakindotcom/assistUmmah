@@ -1,18 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'firebase_options.dart';
-import 'src/app.dart';
+import 'src/app_bootstrap.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final firebaseReady = DefaultFirebaseOptions.isConfigured;
-  if (firebaseReady) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
-
-  runApp(UmmahAssistApp(firebaseReady: firebaseReady));
+  runApp(const AppBootstrap());
 }

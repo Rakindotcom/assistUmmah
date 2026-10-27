@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -70,4 +71,16 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Fail before packaging if a release key has not been provisioned.
+val verifyReleaseSigning by tasks.registering {
+    doLast {
+        if (!hasReleaseSigning) {
+            throw GradleException("Release signing is missing. Run python3 tool/setup_android_signing.py or provision android/key.properties securely.")
+        }
+    }
+}
+tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+    dependsOn(verifyReleaseSigning)
 }

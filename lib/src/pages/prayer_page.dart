@@ -1,31 +1,81 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../app_repository.dart';
+import '../display_formatters.dart';
+import '../app_theme.dart';
 import '../date_helpers.dart';
-import '../daily_logic.dart';
 import '../models.dart';
+import '../prayer_alerts.dart';
+import '../prayer_times_service.dart';
+import '../reminder_service.dart';
 import '../widgets/page_frame.dart';
+import '../widgets/load_failure_state.dart';
+import 'prayer_alert_card.dart';
+import 'prayer_time_settings_sheet.dart';
+import 'qaza_page.dart';
 
 class PrayerPage extends StatefulWidget {
-  const PrayerPage({super.key, required this.repository, required this.day});
+  const PrayerPage({
+    super.key,
+    required this.repository,
+    required this.day,
+    this.historical = false,
+    this.onSaved,
+    this.onSaveError,
+  });
 
   final AppRepository repository;
   final DateTime day;
+  final bool historical;
+  final VoidCallback? onSaved;
+  final ValueChanged<String>? onSaveError;
 
   @override
   State<PrayerPage> createState() => _PrayerPageState();
 }
 
-class _PrayerPageState extends State<PrayerPage> {
+class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   Map<String, PrayerStatus> _prayers = defaultPrayerMap();
-  Map<String, bool> _qaza = {for (final key in prayerKeys) key: false};
+  Map<String, PrayerStatus> _confirmedPrayers = defaultPrayerMap();
   bool _loading = true;
+  bool _loadFailed = false;
+  bool _openingQaza = false;
+  PrayerTimeConfig? _timeConfig;
+  PrayerSchedule? _schedule;
+  Timer? _scheduleTimer;
+  PrayerAlertSettings _alertSettings = PrayerAlertSettings();
+  bool _alertBusy = false;
+  bool _alertsLoaded = false;
+  bool _alertPermissionGranted = true;
+  bool _alertExact = true;
+  int _scheduledAlertCount = 0;
   Future<void> _writeQueue = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scheduleTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!widget.historical &&
+        state == AppLifecycleState.resumed &&
+        _timeConfig != null) {
+      setState(() => _updateSchedule(_timeConfig!));
+      unawaited(_refreshPrayerAlerts());
+    }
   }
 
   @override
@@ -33,32 +83,60 @@ class _PrayerPageState extends State<PrayerPage> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_loadFailed) {
+      return LoadFailureState(
+          title: 'নামাজের হিসাব লোড করা যায়নি', onRetry: _load);
+    }
 
-    final prayed = _prayers.values.where((status) => status.prayed).length;
-    final jamaat = _prayers.values.where((status) => status.jamaat).length;
-    final missed = 5 - prayed;
-    final pendingQaza = _qaza.entries.where((entry) => entry.value).toList();
+    final summary = PrayerSummary.fromStatuses(_prayers.values);
 
     return PageFrame(
-      title: 'নামাজ ট্র্যাকিং',
-      subtitle: 'আজকের পাঁচ ওয়াক্ত নামাজ ও জামাতে পড়া ট্র্যাক করুন',
+      title: widget.historical ? 'নামাজের হিসাব' : 'নামাজ ট্র্যাকিং',
+      subtitle: widget.historical
+          ? '${compactDateLabel(widget.day)} দিনের হিসাব সংশোধন করুন'
+          : 'আজকের পাঁচ ওয়াক্ত নামাজ ও জামাতে পড়া ট্র্যাক করুন',
       children: [
+        if (!widget.historical) ...[
+          _PrayerTimesCard(
+            config: _timeConfig,
+            schedule: _schedule,
+            onConfigure: _configurePrayerTimes,
+          ),
+        ],
+        const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Row(
               children: [
                 _StatTile(
-                  label: 'পড়া হয়েছে',
-                  value: prayed,
-                  color: Colors.green,
+                  label: 'পড়া',
+                  value: summary.prayed,
+                  color: AppColors.success,
                 ),
-                _StatTile(label: 'জামাত', value: jamaat, color: Colors.blue),
-                _StatTile(label: 'বাকি', value: missed, color: Colors.red),
+                _StatTile(
+                    label: 'মিস',
+                    value: summary.missed,
+                    color: AppColors.danger),
+                _StatTile(
+                    label: 'কাযা',
+                    value: summary.madeUp,
+                    color: AppColors.information),
+                _StatTile(
+                  label: 'হিসাব নেই',
+                  value: summary.unlogged,
+                  color: AppColors.muted,
+                ),
               ],
             ),
           ),
         ),
+        if (summary.jamaat > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+                '${banglaNumber(summary.jamaat)} ওয়াক্ত জামাতে পড়া হয়েছে'),
+          ),
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -67,7 +145,7 @@ class _PrayerPageState extends State<PrayerPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'আজকের নামাজ',
+                  widget.historical ? 'এই দিনের নামাজ' : 'আজকের নামাজ',
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
@@ -76,17 +154,13 @@ class _PrayerPageState extends State<PrayerPage> {
                 const SizedBox(height: 10),
                 ...prayerKeys.map((key) {
                   final status = _prayers[key] ??
-                      const PrayerStatus(prayed: false, jamaat: false);
+                      const PrayerStatus(state: PrayerState.unlogged);
                   return _PrayerTile(
+                    prayerKey: key,
                     label: prayerLabels[key] ?? key,
                     status: status,
-                    onPrayedChanged: (value) => _updatePrayer(
-                      key,
-                      status.copyWith(
-                        prayed: value,
-                        jamaat: value ? status.jamaat : false,
-                      ),
-                    ),
+                    onStateChanged: (state) =>
+                        _updatePrayer(key, status.copyWith(state: state)),
                     onJamaatChanged: status.prayed
                         ? (value) =>
                             _updatePrayer(key, status.copyWith(jamaat: value))
@@ -97,74 +171,63 @@ class _PrayerPageState extends State<PrayerPage> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'গতকালের কাযা',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                if (pendingQaza.isEmpty)
-                  const EmptyState(
-                    icon: Icons.check_circle_outline,
-                    message: 'গতকালের কোন কাযা বাকি নেই',
-                  )
-                else
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: pendingQaza.map((entry) {
-                      return ActionChip(
-                        avatar: const Icon(Icons.history_outlined),
-                        label: Text('${prayerLabels[entry.key]} কাযা সম্পন্ন'),
-                        onPressed: () => _completeQaza(entry.key),
-                      );
-                    }).toList(),
-                  ),
-              ],
+        if (!widget.historical) ...[
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history_outlined),
+              title: const Text('সব দিনের কাযা'),
+              subtitle: const Text('মিসড নামাজ দেখুন ও কাযা সম্পন্ন করুন'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _openingQaza ? null : _openQazaBacklog,
             ),
           ),
-        ),
+        ],
+        if (!widget.historical && ReminderService.supported) ...[
+          const SizedBox(height: 16),
+          PrayerAlertCard(
+            settings: _alertSettings,
+            locationReady: _timeConfig != null,
+            busy: _alertBusy || !_alertsLoaded,
+            permissionGranted: _alertPermissionGranted,
+            exact: _alertExact,
+            scheduledCount: _scheduledAlertCount,
+            onChanged: (next, requestPermission) => _changeAlertSettings(
+              next,
+              requestPermission: requestPermission,
+            ),
+            onConfigureLocation: _configurePrayerTimes,
+          ),
+        ],
       ],
     );
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
+    if (!widget.historical) {
+      try {
+        final config = await PrayerTimeStore(widget.repository.uid).load();
+        if (config != null) {
+          _timeConfig = config;
+          _updateSchedule(config);
+        }
+      } catch (_) {
+        _showMessage('নামাজের সময় লোড করতে সমস্যা হয়েছে');
+      }
+      if (ReminderService.supported) unawaited(_loadAlertSettings());
+    }
     try {
       final todayDoc = await widget.repository.loadPrayerDocument(
         dateKey(widget.day),
       );
-      final loadedPrayers = asStringMap(todayDoc?['prayers']);
-      if (loadedPrayers.isNotEmpty) {
-        _prayers = {
-          for (final key in prayerKeys)
-            key: PrayerStatus.fromMap(loadedPrayers[key]),
-        };
-      }
-
-      final yesterdayKey = dateKey(
-        DateTime(widget.day.year, widget.day.month, widget.day.day - 1),
-      );
-      final yesterdayDoc = await widget.repository.loadPrayerDocument(
-        yesterdayKey,
-      );
-      final qazaCompletions = parseBoolMap(yesterdayDoc?['qazaCompletions']);
-      final yesterdayPrayers = asStringMap(yesterdayDoc?['prayers']);
-
-      _qaza = {
-        for (final key in prayerKeys)
-          key: isQazaPending(yesterdayPrayers, qazaCompletions, key),
-      };
+      _prayers = prayerStatusesFromDocument(todayDoc);
+      _confirmedPrayers = Map<String, PrayerStatus>.of(_prayers);
     } catch (_) {
-      _showMessage('নামাজের ডেটা লোড করতে সমস্যা হয়েছে');
+      _loadFailed = true;
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -172,39 +235,247 @@ class _PrayerPageState extends State<PrayerPage> {
     }
   }
 
+  Future<void> _loadAlertSettings() async {
+    try {
+      final settings = await PrayerAlertStore(widget.repository.uid).load();
+      if (!mounted) return;
+      setState(() => _alertSettings = settings);
+      await _refreshPrayerAlerts();
+    } catch (_) {
+      _showMessage('নামাজের অ্যালার্ট লোড করতে সমস্যা হয়েছে');
+    } finally {
+      if (mounted) setState(() => _alertsLoaded = true);
+    }
+  }
+
+  Future<void> _configurePrayerTimes() async {
+    final config = await showModalBottomSheet<PrayerTimeConfig>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => PrayerTimeSettingsSheet(initial: _timeConfig),
+    );
+    if (config == null || !mounted) return;
+    try {
+      PrayerTimeService.forDay(config, widget.day);
+      await PrayerTimeStore(widget.repository.uid).save(config);
+      if (mounted) {
+        setState(() {
+          _timeConfig = config;
+          _updateSchedule(config);
+        });
+        await _refreshPrayerAlerts();
+      }
+    } catch (_) {
+      _showMessage('নামাজের সময় সংরক্ষণ করা যায়নি');
+    }
+  }
+
+  Future<void> _refreshPrayerAlerts() async {
+    if (!ReminderService.supported || _alertBusy) return;
+    try {
+      final result = await ReminderService.instance.syncPrayerAlerts(
+        config: _timeConfig,
+        settings: _alertSettings,
+      );
+      if (!mounted) return;
+      setState(() {
+        _alertPermissionGranted = result.permissionGranted;
+        _alertExact = result.exact;
+        _scheduledAlertCount = result.scheduledCount;
+      });
+    } catch (_) {
+      _showMessage('নামাজের অ্যালার্ট আপডেট করা যায়নি');
+    }
+  }
+
+  Future<void> _changeAlertSettings(
+    PrayerAlertSettings next, {
+    required bool requestPermission,
+  }) async {
+    if (_alertBusy || !_alertsLoaded) return;
+    setState(() => _alertBusy = true);
+    try {
+      final result = await ReminderService.instance.syncPrayerAlerts(
+        config: _timeConfig,
+        settings: next,
+        requestPermission: requestPermission,
+      );
+      if (!result.permissionGranted && next.enabled) {
+        _showMessage('অ্যালার্ট চালু করতে নোটিফিকেশন অনুমতি দিন।');
+        return;
+      }
+      await PrayerAlertStore(widget.repository.uid).save(next);
+      if (!mounted) return;
+      setState(() {
+        _alertSettings = next;
+        _alertPermissionGranted = result.permissionGranted;
+        _alertExact = result.exact;
+        _scheduledAlertCount = result.scheduledCount;
+      });
+    } catch (_) {
+      try {
+        await ReminderService.instance.syncPrayerAlerts(
+          config: _timeConfig,
+          settings: _alertSettings,
+        );
+      } catch (_) {
+        // The next app launch will retry the persisted settings.
+      }
+      _showMessage('নামাজের অ্যালার্ট সংরক্ষণ করা যায়নি');
+    } finally {
+      if (mounted) setState(() => _alertBusy = false);
+    }
+  }
+
+  void _updateSchedule(PrayerTimeConfig config) {
+    final zone = PrayerTimeService.location(config.timeZoneId);
+    final now = tz.TZDateTime.from(DateTime.now(), zone);
+    _schedule = PrayerTimeService.forDay(config, now);
+    _scheduleTimer?.cancel();
+    final midnight = tz.TZDateTime(zone, now.year, now.month, now.day + 1);
+    final delay =
+        midnight.difference(DateTime.now()) + const Duration(seconds: 1);
+    if (delay > Duration.zero) {
+      _scheduleTimer = Timer(delay, () {
+        if (mounted) setState(() => _updateSchedule(config));
+      });
+    }
+  }
+
   Future<void> _updatePrayer(String key, PrayerStatus status) async {
     setState(() => _prayers[key] = status);
-    final prayers = Map<String, PrayerStatus>.of(_prayers);
-    final operation = _writeQueue.then((_) => widget.repository.savePrayer(
-          date: dateKey(widget.day),
-          prayers: prayers,
-        ));
-    _writeQueue = operation.catchError((Object _) {
-      _showMessage('নামাজের ডেটা সিঙ্ক করতে সমস্যা হয়েছে');
+    final operation =
+        _writeQueue.then((_) => widget.repository.savePrayerStatus(
+              date: dateKey(widget.day),
+              prayerKey: key,
+              status: status,
+            ));
+    _writeQueue = operation.then((_) {
+      _confirmedPrayers[key] = status;
+      widget.onSaved?.call();
+    }).catchError((Object _) {
+      if (mounted && identical(_prayers[key], status)) {
+        setState(() => _prayers[key] = _confirmedPrayers[key]!);
+      }
+      const message = 'নামাজের ডেটা সিঙ্ক করতে সমস্যা হয়েছে';
+      if (widget.onSaveError case final onSaveError?) {
+        onSaveError(message);
+      } else {
+        _showMessage(message);
+      }
     });
     await _writeQueue;
   }
 
-  Future<void> _completeQaza(String key) async {
-    setState(() => _qaza[key] = false);
-    final operation = _writeQueue.then((_) => widget.repository.completeQaza(
-        date: dateKey(
-          DateTime(widget.day.year, widget.day.month, widget.day.day - 1),
+  Future<void> _openQazaBacklog() async {
+    if (_openingQaza) return;
+    setState(() => _openingQaza = true);
+    try {
+      await _writeQueue;
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('নামাজ')),
+            body: QazaPage(repository: widget.repository),
+          ),
         ),
-        prayerKey: key,
-      ));
-    _writeQueue = operation.catchError((Object _) {
-      _showMessage('কাযা আপডেট করতে সমস্যা হয়েছে');
-    });
-    await _writeQueue;
+      );
+      if (!mounted) return;
+      final document = await widget.repository.loadPrayerDocument(
+        dateKey(widget.day),
+      );
+      if (!mounted) return;
+      setState(() {
+        _prayers = prayerStatusesFromDocument(document);
+        _confirmedPrayers = Map<String, PrayerStatus>.of(_prayers);
+      });
+    } catch (_) {
+      _showMessage('নামাজের হিসাব রিফ্রেশ করা যায়নি');
+    } finally {
+      if (mounted) setState(() => _openingQaza = false);
+    }
   }
 
   void _showMessage(String message) {
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(message)));
+    });
+  }
+}
+
+class _PrayerTimesCard extends StatelessWidget {
+  const _PrayerTimesCard({
+    required this.config,
+    required this.schedule,
+    required this.onConfigure,
+  });
+
+  final PrayerTimeConfig? config;
+  final PrayerSchedule? schedule;
+  final VoidCallback onConfigure;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'নামাজের সময়',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onConfigure,
+                  child: Text(config == null ? 'সেট করুন' : 'পরিবর্তন'),
+                ),
+              ],
+            ),
+            if (config == null || schedule == null)
+              const Text(
+                  'স্থান নির্বাচন করলে আপনার এলাকার সময় এখানে দেখা যাবে।')
+            else ...[
+              Text(
+                '${config!.placeName} • ${prayerCalculationMethods[config!.method]} • '
+                '${compactDateLabel(schedule!.entries.first.time)}',
+              ),
+              const SizedBox(height: 8),
+              for (final entry in schedule!.entries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child: Text(prayerLabels[entry.key] ?? entry.key)),
+                      Text(
+                        formatPrayerTime(entry.time),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                'সময় অঞ্চল: ${config!.timeZoneId} • স্থানীয় মসজিদের সময় যাচাই করুন',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -225,11 +496,11 @@ class _StatTile extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            '$value',
+            banglaNumber(value),
             style: Theme.of(context)
                 .textTheme
                 .headlineSmall
-                ?.copyWith(color: color, fontWeight: FontWeight.w900),
+                ?.copyWith(color: color, fontWeight: FontWeight.w700),
           ),
           Text(label, textAlign: TextAlign.center),
         ],
@@ -240,48 +511,104 @@ class _StatTile extends StatelessWidget {
 
 class _PrayerTile extends StatelessWidget {
   const _PrayerTile({
+    required this.prayerKey,
     required this.label,
     required this.status,
-    required this.onPrayedChanged,
+    required this.onStateChanged,
     required this.onJamaatChanged,
   });
 
+  final String prayerKey;
   final String label;
   final PrayerStatus status;
-  final ValueChanged<bool> onPrayedChanged;
+  final ValueChanged<PrayerState> onStateChanged;
   final ValueChanged<bool>? onJamaatChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Material(
-        color:
-            status.prayed ? const Color(0xFFECFDF5) : const Color(0xFFFFF7ED),
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: [
-              Checkbox(
-                value: status.prayed,
-                onChanged: (value) => onPrayedChanged(value ?? false),
-              ),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const Text('জামাত'),
-              Switch(value: status.jamaat, onChanged: onJamaatChanged),
-            ],
+    final color = switch (status.state) {
+      PrayerState.prayed => AppColors.success,
+      PrayerState.missed => AppColors.danger,
+      PrayerState.madeUp => AppColors.information,
+      PrayerState.unlogged => AppColors.muted,
+    };
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 600 ||
+          MediaQuery.textScalerOf(context).scale(14) > 20;
+      final selector = SizedBox(
+          width: 150,
+          child: Semantics(
+            label: '$label: নামাজের অবস্থা',
+            child: DropdownButton<PrayerState>(
+              key: ValueKey('prayer_state_$prayerKey'),
+              isExpanded: true,
+              value: status.state,
+              onChanged: (value) {
+                if (value != null && value != status.state) {
+                  onStateChanged(value);
+                }
+              },
+              items: [
+                for (final state in PrayerState.values)
+                  DropdownMenuItem(
+                      value: state, child: Text(prayerStateLabels[state]!))
+              ],
+            ),
+          ));
+      final heading = Row(children: [
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 10),
+        Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
+        selector,
+        if (!compact) ...[
+          const SizedBox(width: 24),
+          SizedBox(
+              width: 128,
+              child: status.prayed
+                  ? Row(children: [
+                      Semantics(
+                          label: '$label জামাতে পড়া হয়েছে',
+                          child: Switch(
+                              value: status.jamaat,
+                              onChanged: onJamaatChanged)),
+                      const SizedBox(width: 6),
+                      const Flexible(child: Text('জামাত')),
+                    ])
+                  : const SizedBox.shrink()),
+        ],
+      ]);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Material(
+          color: Theme.of(context)
+              .colorScheme
+              .secondaryContainer
+              .withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              children: [
+                heading,
+                if (compact && status.prayed)
+                  Semantics(
+                      label: label,
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('জামাতে পড়া হয়েছে'),
+                        value: status.jamaat,
+                        onChanged: onJamaatChanged,
+                      )),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

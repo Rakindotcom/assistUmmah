@@ -1,47 +1,77 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
+    function signedIn() { return request.auth != null; }
+    function owns(userId) { return signedIn() && request.auth.uid == userId; }
+    function deleting(userId) {
+      return exists(/databases/$(database)/documents/accountDeletions/$(userId));
     }
+    function activeOwner(userId) { return owns(userId) && !deleting(userId); }
 
-    function owns(userId) {
-      return signedIn() && request.auth.uid == userId;
+    // An empty marker freezes writes and makes interrupted deletion resumable.
+    // It contains no profile or activity fields and cannot be removed by clients.
+    match /accountDeletions/{userId} {
+      allow read: if owns(userId);
+      allow create: if owns(userId)
+        && request.resource.data.keys().size() == 0
+        && request.auth.token.auth_time >= request.time.toMillis() / 1000 - 300;
+      allow update, delete: if false;
     }
 
     match /users/{userId} {
-      allow read, write: if owns(userId);
+      allow read, delete: if owns(userId);
+      allow create, update: if activeOwner(userId);
     }
-
     match /userTasks/{userId} {
-      allow read, write: if owns(userId);
+      allow read, delete: if owns(userId);
+      allow create, update: if activeOwner(userId);
     }
-
-    match /userPrayers/{userId}/dailyPrayers/{dateId} {
-      allow read, write: if owns(userId);
-    }
-
-    match /userGrowth/{userId}/dailyGrowth/{dateId} {
-      allow read, write: if owns(userId);
-    }
-
     match /userPreferences/{userId} {
-      allow read, write: if owns(userId);
+      allow read, delete: if owns(userId);
+      allow create, update: if activeOwner(userId);
     }
-
     match /userContacts/{userId} {
-      allow read, write: if owns(userId);
+      allow read, delete: if owns(userId);
+      allow create, update: if activeOwner(userId);
     }
-
     match /userSettings/{userId} {
-      allow read, write: if owns(userId);
+      allow read, delete: if owns(userId);
+      allow create, update: if activeOwner(userId);
     }
-
+    match /userPrayers/{userId} {
+      allow read, delete: if owns(userId);
+      match /dailyPrayers/{dateId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if activeOwner(userId);
+      }
+    }
+    match /userGrowth/{userId} {
+      allow read, delete: if owns(userId);
+      match /dailyGrowth/{dateId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if activeOwner(userId);
+      }
+    }
+    match /userQuran/{userId} {
+      allow read, delete: if owns(userId);
+      match /dailyReading/{dateId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if activeOwner(userId);
+      }
+    }
+    match /userDhikr/{userId} {
+      allow read, delete: if owns(userId);
+      match /dailyDhikr/{dateId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if activeOwner(userId);
+      }
+    }
     match /userActivities/{activityId} {
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if false;
+      allow create: if signedIn() && activeOwner(request.resource.data.userId);
+      // Only an owner with an active deletion request can enumerate legacy logs.
+      allow read, delete: if signedIn()
+        && owns(resource.data.userId) && deleting(request.auth.uid);
+      allow update: if false;
     }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "verifiedAtUtc": "2026-10-27T15:26:27.079560+00:00",
+  "package": "com.rakindotcom.ummah_assist",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "sourceBundleSha256": "b7c695b88396b9197fe5cf7b2c08964419f472a4a33a4a2f80e11d7aa55e8893",
+  "universalApkSha256": "7b03716a9a6e435bc42fb7ef4c12a6d56b3a4b00adc5566f2d857ae772f959d7",
+  "installedApkHashMatches": true,
+  "androidApi": 36,
+  "pageSize": 16384,
+  "architecture": "x86_64",
+  "productionReleaseBinary": true,
+  "activityResumed": true,
+  "processRunning": true,
+  "scope": "Startup smoke only; full app flow verified separately with the profile integration test. Physical devices and Play-signed builds remain unverified."
+}

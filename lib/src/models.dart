@@ -5,6 +5,9 @@ class TaskItem {
     required this.completed,
     required this.createdAt,
     required this.dateCreated,
+    this.recurrenceId = '',
+    this.dueDate = '',
+    this.section = '',
   });
 
   final String id;
@@ -12,14 +15,24 @@ class TaskItem {
   final bool completed;
   final String createdAt;
   final String dateCreated;
+  final String recurrenceId;
+  final String dueDate;
+  final String section;
 
-  TaskItem copyWith({bool? completed}) {
+  TaskItem copyWith(
+      {bool? completed,
+      String? dateCreated,
+      String? dueDate,
+      String? section}) {
     return TaskItem(
       id: id,
       text: text,
       completed: completed ?? this.completed,
       createdAt: createdAt,
-      dateCreated: dateCreated,
+      dateCreated: dateCreated ?? this.dateCreated,
+      recurrenceId: recurrenceId,
+      dueDate: dueDate ?? this.dueDate,
+      section: section ?? this.section,
     );
   }
 
@@ -31,6 +44,9 @@ class TaskItem {
       completed: map['completed'] == true,
       createdAt: '${map['createdAt'] ?? ''}',
       dateCreated: '${map['dateCreated'] ?? ''}',
+      recurrenceId: '${map['recurrenceId'] ?? ''}',
+      dueDate: '${map['dueDate'] ?? ''}',
+      section: '${map['section'] ?? ''}',
     );
   }
 
@@ -41,37 +57,160 @@ class TaskItem {
       'completed': completed,
       'createdAt': createdAt,
       'dateCreated': dateCreated,
+      if (recurrenceId.isNotEmpty) 'recurrenceId': recurrenceId,
+      if (dueDate.isNotEmpty) 'dueDate': dueDate,
+      if (section.isNotEmpty) 'section': section,
     };
   }
 }
 
-class PrayerStatus {
-  const PrayerStatus({required this.prayed, required this.jamaat});
+enum TaskRepeat { daily, weekly }
 
-  final bool prayed;
+class RecurringTask {
+  const RecurringTask({
+    required this.id,
+    required this.text,
+    required this.section,
+    required this.repeat,
+    required this.startDate,
+  });
+
+  final String id;
+  final String text;
+  final String section;
+  final TaskRepeat repeat;
+  final String startDate;
+
+  factory RecurringTask.fromMap(Object? raw) {
+    final map = asStringMap(raw);
+    return RecurringTask(
+      id: '${map['id'] ?? ''}',
+      text: '${map['text'] ?? ''}',
+      section: '${map['section'] ?? ''}',
+      repeat: TaskRepeat.values.firstWhere(
+        (value) => value.name == map['repeat'],
+        orElse: () => TaskRepeat.daily,
+      ),
+      startDate: '${map['startDate'] ?? ''}',
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'id': id,
+        'text': text,
+        'section': section,
+        'repeat': repeat.name,
+        'startDate': startDate,
+      };
+}
+
+enum PrayerState { unlogged, prayed, missed, madeUp }
+
+const prayerStateLabels = {
+  PrayerState.unlogged: 'হিসাব নেই',
+  PrayerState.prayed: 'পড়া হয়েছে',
+  PrayerState.missed: 'মিস হয়েছে',
+  PrayerState.madeUp: 'কাযা আদায়',
+};
+
+class PrayerStatus {
+  const PrayerStatus({required this.state, this.jamaat = false})
+      : assert(state == PrayerState.prayed || !jamaat);
+
+  final PrayerState state;
   final bool jamaat;
 
-  PrayerStatus copyWith({bool? prayed, bool? jamaat}) {
+  bool get prayed => state == PrayerState.prayed;
+  bool get logged => state != PrayerState.unlogged;
+
+  PrayerStatus copyWith({PrayerState? state, bool? jamaat}) {
+    final nextState = state ?? this.state;
     return PrayerStatus(
-      prayed: prayed ?? this.prayed,
-      jamaat: jamaat ?? this.jamaat,
+      state: nextState,
+      jamaat: nextState == PrayerState.prayed ? jamaat ?? this.jamaat : false,
     );
   }
 
-  factory PrayerStatus.fromMap(Object? raw) {
+  factory PrayerStatus.fromMap(
+    Object? raw, {
+    bool legacyQazaCompleted = false,
+  }) {
     final map = asStringMap(raw);
+    final rawState = map['state'];
+    PrayerState? state;
+    for (final candidate in PrayerState.values) {
+      if (candidate.name == rawState) {
+        state = candidate;
+        break;
+      }
+    }
+    state ??= map['prayed'] == true
+        ? PrayerState.prayed
+        : legacyQazaCompleted && map.isNotEmpty
+            ? PrayerState.madeUp
+            : PrayerState.unlogged;
     return PrayerStatus(
-      prayed: map['prayed'] == true,
-      jamaat: map['jamat'] == true || map['jamaat'] == true,
+      state: state,
+      jamaat: state == PrayerState.prayed &&
+          (map['jamat'] == true || map['jamaat'] == true),
     );
   }
 
-  Map<String, Object?> toMap() {
-    return {
-      'prayed': prayed,
-      'jamat': jamaat,
-    };
+  Map<String, Object?> toMap() => {
+        'state': state.name,
+        'prayed': prayed,
+        'jamat': jamaat,
+      };
+}
+
+Map<String, PrayerStatus> prayerStatusesFromDocument(
+  Map<String, dynamic>? document,
+) {
+  final prayers = asStringMap(document?['prayers']);
+  final completions = parseBoolMap(document?['qazaCompletions']);
+  return {
+    for (final key in prayerKeys)
+      key: PrayerStatus.fromMap(
+        prayers[key],
+        legacyQazaCompleted: completions[key] == true,
+      ),
+  };
+}
+
+class PrayerSummary {
+  const PrayerSummary({
+    required this.prayed,
+    required this.missed,
+    required this.madeUp,
+    required this.unlogged,
+    required this.jamaat,
+  });
+
+  final int prayed;
+  final int missed;
+  final int madeUp;
+  final int unlogged;
+  final int jamaat;
+
+  bool get anyLogged => unlogged < prayerKeys.length;
+
+  factory PrayerSummary.fromStatuses(Iterable<PrayerStatus> statuses) {
+    final values = statuses.toList();
+    return PrayerSummary(
+      prayed:
+          values.where((status) => status.state == PrayerState.prayed).length,
+      missed:
+          values.where((status) => status.state == PrayerState.missed).length,
+      madeUp:
+          values.where((status) => status.state == PrayerState.madeUp).length,
+      unlogged:
+          values.where((status) => status.state == PrayerState.unlogged).length,
+      jamaat: values.where((status) => status.jamaat).length,
+    );
   }
+
+  factory PrayerSummary.fromDocument(Map<String, dynamic>? document) =>
+      PrayerSummary.fromStatuses(prayerStatusesFromDocument(document).values);
 }
 
 class ContactItem {
@@ -108,6 +247,106 @@ class ChecklistItem {
 
   final String key;
   final String label;
+
+  Map<String, String> toMap() => {'key': key, 'label': label};
+}
+
+List<ChecklistItem> parseChecklistItems(Object? raw) {
+  if (raw is! Iterable) return [];
+  final seen = <String>{};
+  final items = <ChecklistItem>[];
+  final safeKey = RegExp(r'^[a-zA-Z0-9_-]{1,80}$');
+  for (final value in raw) {
+    final map = asStringMap(value);
+    final key = map['key'];
+    final label = map['label'];
+    if (key is! String ||
+        label is! String ||
+        !safeKey.hasMatch(key) ||
+        label.trim().isEmpty ||
+        label.length > 160 ||
+        !seen.add(key)) {
+      continue;
+    }
+    items.add(ChecklistItem(key, label.trim()));
+  }
+  return items;
+}
+
+class GrowthChecklistConfig {
+  const GrowthChecklistConfig({required this.iman, required this.life});
+
+  final List<ChecklistItem> iman;
+  final Map<String, List<ChecklistItem>> life;
+
+  factory GrowthChecklistConfig.defaults() => const GrowthChecklistConfig(
+        iman: imanChecklist,
+        life: lifeChecklists,
+      );
+
+  factory GrowthChecklistConfig.fromMap(Object? raw) {
+    final map = asStringMap(raw);
+    final rawLife = asStringMap(map['life']);
+    return GrowthChecklistConfig(
+      iman: map['iman'] is Iterable
+          ? parseChecklistItems(map['iman'])
+          : imanChecklist,
+      life: {
+        for (final type in userTypeLabels.keys)
+          type: rawLife[type] is Iterable
+              ? parseChecklistItems(rawLife[type])
+              : lifeChecklists[type]!,
+      },
+    );
+  }
+
+  List<ChecklistItem> lifeFor(String userType) =>
+      life[userType] ?? life['student'] ?? lifeChecklists['student']!;
+
+  GrowthChecklistConfig withItems(
+    String category,
+    String userType,
+    List<ChecklistItem> items,
+  ) =>
+      category == 'iman'
+          ? GrowthChecklistConfig(iman: List.of(items), life: life)
+          : GrowthChecklistConfig(
+              iman: iman,
+              life: {...life, userType: List.of(items)},
+            );
+
+  Map<String, Object?> toMap() => {
+        'iman': iman.map((item) => item.toMap()).toList(),
+        'life': {
+          for (final entry in life.entries)
+            entry.key: entry.value.map((item) => item.toMap()).toList(),
+        },
+      };
+}
+
+class GrowthChecklistSnapshot {
+  const GrowthChecklistSnapshot({required this.iman, required this.life});
+
+  final List<ChecklistItem> iman;
+  final List<ChecklistItem> life;
+
+  factory GrowthChecklistSnapshot.fromDocument(Map<String, dynamic>? doc) {
+    final userType = '${doc?['userType'] ?? 'student'}';
+    final raw = asStringMap(doc?['checklistItems']);
+    return GrowthChecklistSnapshot(
+      iman: raw['iman'] is Iterable
+          ? parseChecklistItems(raw['iman'])
+          : imanChecklist,
+      life: raw['life'] is Iterable
+          ? parseChecklistItems(raw['life'])
+          : lifeChecklists[userType] ?? lifeChecklists['student']!,
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'iman': iman.map((item) => item.toMap()).toList(),
+        'life': life.map((item) => item.toMap()).toList(),
+      };
 }
 
 class ReportSummary {
@@ -117,6 +356,8 @@ class ReportSummary {
     required this.totalPrayed,
     required this.totalJamaat,
     required this.totalMissed,
+    required this.totalMadeUp,
+    required this.totalUnlogged,
     required this.growthLoggedDays,
     required this.averageIman,
     required this.averageLife,
@@ -128,6 +369,8 @@ class ReportSummary {
   final int totalPrayed;
   final int totalJamaat;
   final int totalMissed;
+  final int totalMadeUp;
+  final int totalUnlogged;
   final int growthLoggedDays;
   final int averageIman;
   final int averageLife;
@@ -139,6 +382,8 @@ class ReportSummary {
     totalPrayed: 0,
     totalJamaat: 0,
     totalMissed: 0,
+    totalMadeUp: 0,
+    totalUnlogged: 0,
     growthLoggedDays: 0,
     averageIman: 0,
     averageLife: 0,
@@ -221,7 +466,7 @@ int checklistScore(Map<String, bool> values, List<ChecklistItem> items) {
 Map<String, PrayerStatus> defaultPrayerMap() {
   return {
     for (final key in prayerKeys)
-      key: const PrayerStatus(prayed: false, jamaat: false),
+      key: const PrayerStatus(state: PrayerState.unlogged),
   };
 }
 

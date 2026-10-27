@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome rendition of the arch, guiding star, and path for status bars. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="1254" android:viewportHeight="1254">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M627,120 C665,205 771,236 866,309 C937,365 973,421 973,487 L973,976 C948,947 915,916 880,894 L880,496 C880,404 756,337 659,267 C646,257 635,245 627,237 C585,283 502,315 435,365 C393,397 375,432 375,495 L375,894 C341,915 310,945 280,976 L280,496 C280,389 382,316 489,252 C555,212 605,178 627,120 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M607,547 C720,596 573,614 555,639 C525,680 814,698 841,780 C866,855 778,900 763,944 C749,996 869,1080 984,1122 L267,1122 C270,1015 432,963 563,892 C689,816 741,764 582,713 C512,686 479,673 482,650 C486,620 572,606 608,585 C637,569 607,547 607,547 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M627,379 C637,425 655,445 703,457 C657,467 640,486 627,532 C614,486 597,468 552,457 C599,444 618,423 627,379 Z" />
+</vector>

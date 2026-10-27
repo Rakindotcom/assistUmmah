@@ -7,22 +7,41 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
+  characters: ^1.4.0
+  intl: ^0.20.2
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cloud_firestore: ^5.6.0
+  url_launcher: ^6.3.3
   cupertino_icons: ^1.0.8
   firebase_auth: ^5.3.4
   firebase_core: ^3.9.0
+  firebase_crashlytics: ^4.3.10
   flutter_local_notifications: ^19.5.0
   flutter_timezone: ^5.1.1
-  google_fonts: ^6.3.2
   google_sign_in: ^6.2.2
   timezone: ^0.10.1
-
+  adhan_dart: ^2.0.1
+  geolocator: ^14.1.2
+  shared_preferences: ^2.5.6
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  shared_preferences_platform_interface: ^2.4.2
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/brand/app_icon.png
+    - assets/legal/privacy.bn.json
+    - assets/legal/account-data-paths.json
+    - assets/fonts/AnekBangla-OFL.txt
+  fonts:
+    - family: AnekBangla
+      fonts:
+        - asset: assets/fonts/AnekBangla.ttf

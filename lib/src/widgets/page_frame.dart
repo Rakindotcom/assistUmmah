@@ -1,47 +1,82 @@
 import 'package:flutter/material.dart';
 
+import '../display_formatters.dart';
+
 class PageFrame extends StatelessWidget {
   const PageFrame({
     super.key,
     required this.title,
     required this.subtitle,
     required this.children,
+    this.action,
   });
 
   final String title;
   final String subtitle;
   final List<Widget> children;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 820;
     return SafeArea(
       top: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+            wide ? 32 : 20, wide ? 32 : 24, wide ? 32 : 20, 104),
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 920),
+              constraints: const BoxConstraints(maxWidth: 1040),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey.shade700,
-                        ),
-                  ),
-                  const SizedBox(height: 22),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final heading = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Semantics(
+                              container: true,
+                              header: true,
+                              child: Text(title,
+                                  style: wide
+                                      ? Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                      : Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall)),
+                          const SizedBox(height: 8),
+                          Text(subtitle,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
+                        ]);
+                    if (action == null) return heading;
+                    if (constraints.maxWidth >= 640 &&
+                        MediaQuery.textScalerOf(context).scale(14) < 22) {
+                      return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: heading),
+                            const SizedBox(width: 24),
+                            action!,
+                          ]);
+                    }
+                    return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          heading,
+                          const SizedBox(height: 16),
+                          action!,
+                        ]);
+                  }),
+                  const SizedBox(height: 24),
                   ...children,
                 ],
               ),
@@ -67,13 +102,25 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36),
-      child: Column(
-        children: [
-          Icon(icon, size: 48, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text(message, style: TextStyle(color: Colors.grey.shade700)),
-        ],
-      ),
+      child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            children: [
+              Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Icon(icon,
+                      size: 28, color: Theme.of(context).colorScheme.primary)),
+              const SizedBox(height: 16),
+              Text(message,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          )),
     );
   }
 }
@@ -94,9 +141,10 @@ class ScoreBadge extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        '$score%',
+        '${banglaNumber(score)}%',
         style: TextStyle(
-          fontWeight: FontWeight.w800,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
           color: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
       ),

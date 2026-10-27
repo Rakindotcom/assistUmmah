@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static const String placeholder = 'REPLACE_WITH_FIREBASE_VALUE';
 
-  static bool get isConfigured => web.apiKey != placeholder;
+  static bool get isConfigured => currentPlatform.apiKey != placeholder;
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {

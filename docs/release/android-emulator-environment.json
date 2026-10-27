@@ -1,0 +1,15 @@
+{
+  "source": "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-36_r07.zip",
+  "size": 1849428145,
+  "officialRepositorySha1": "dd783282e84bf475a02eba6777c79fc5695e1583",
+  "sha256": "56005e428f0d30105789bde96f60bbd32c5c62e710321abd7c10f9e591889ff7",
+  "androidApi": 36,
+  "architecture": "x86_64",
+  "adbReportedPageSize": 16384,
+  "screenWidth": 720,
+  "screenHeight": 1280,
+  "hardwareAcceleration": "KVM",
+  "physicalDevice": false,
+  "productionAppRuntimeVerified": true,
+  "productionRuntimeScope": "Signed universal APK startup smoke; full profile flow reported separately."
+}

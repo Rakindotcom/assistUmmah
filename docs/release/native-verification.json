@@ -1,0 +1,21 @@
+{
+  "nativeStartup": true,
+  "bundledPrivacy": true,
+  "crashCollectionInitiallyDisabled": true,
+  "notificationPluginInitializationAndCancellation": true,
+  "notificationPermissionUngrantedSchedulesZero": true,
+  "nativePreferenceRoundTripAndRemoval": true,
+  "nativePasswordSignIn": true,
+  "nativeSignInFormSubmitted": true,
+  "formTextInputSimulated": true,
+  "nativeFirestoreOwnerRead": true,
+  "nativeSignOut": true,
+  "profileRuntimePageSize": 16384,
+  "screenCount": 6,
+  "dataSource": "dedicated synthetic Firebase reviewer records; production widgets and repository",
+  "googleSignInTested": false,
+  "notificationDeliveryTested": false,
+  "playInstalledBuild": false,
+  "verifiedAtUtc": "2026-10-27T15:23:14.715666Z",
+  "buildMode": "profile integration test"
+}

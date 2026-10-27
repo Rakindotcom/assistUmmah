@@ -2,7 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'date_helpers.dart';
 import 'daily_logic.dart';
+import 'dhikr_progress.dart';
+import 'growth_progress.dart';
 import 'models.dart';
+import 'progress_trends.dart';
+import 'quran_reading.dart';
+import 'qaza_backlog.dart';
 
 class AppRepository {
   const AppRepository({required this.uid, required this.firebaseReady});
@@ -30,21 +35,26 @@ class AppRepository {
     return _db.collection('userPreferences').doc(uid);
   }
 
-  DocumentReference<Map<String, dynamic>> _prayerRef(String date) {
-    return _db
-        .collection('userPrayers')
-        .doc(uid)
-        .collection('dailyPrayers')
-        .doc(date);
-  }
+  CollectionReference<Map<String, dynamic>> get _prayersCollection =>
+      _db.collection('userPrayers').doc(uid).collection('dailyPrayers');
 
-  DocumentReference<Map<String, dynamic>> _growthRef(String date) {
-    return _db
-        .collection('userGrowth')
-        .doc(uid)
-        .collection('dailyGrowth')
-        .doc(date);
-  }
+  DocumentReference<Map<String, dynamic>> _prayerRef(String date) =>
+      _prayersCollection.doc(date);
+
+  DocumentReference<Map<String, dynamic>> _growthRef(String date) =>
+      _growthCollection.doc(date);
+
+  CollectionReference<Map<String, dynamic>> get _growthCollection =>
+      _db.collection('userGrowth').doc(uid).collection('dailyGrowth');
+
+  CollectionReference<Map<String, dynamic>> get _quranCollection =>
+      _db.collection('userQuran').doc(uid).collection('dailyReading');
+
+  DocumentReference<Map<String, dynamic>> _quranRef(String date) =>
+      _quranCollection.doc(date);
+
+  CollectionReference<Map<String, dynamic>> get _dhikrCollection =>
+      _db.collection('userDhikr').doc(uid).collection('dailyDhikr');
 
   Future<void> ensureUserDocument({String? email, String? displayName}) async {
     if (!canSync) {
@@ -71,6 +81,8 @@ class AppRepository {
     required void Function(
       Map<String, List<TaskItem>> today,
       Map<String, List<TaskItem>> missed,
+      List<RecurringTask> recurring,
+      List<TaskItem> scheduled,
     ) apply,
   }) async {
     if (!canSync) {
@@ -84,6 +96,8 @@ class AppRepository {
     void Function(
       Map<String, List<TaskItem>> today,
       Map<String, List<TaskItem>> missed,
+      List<RecurringTask> recurring,
+      List<TaskItem> scheduled,
     )? apply,
   }) {
     return _db.runTransaction((transaction) async {
@@ -97,23 +111,30 @@ class AppRepository {
       final data = snap.data() ?? <String, dynamic>{};
       final today = _taskBucketsFromMap(data['todayTasks']);
       final missed = _taskBucketsFromMap(data['missedTasks']);
+      final recurring = _recurringTasksFromMap(data['recurringTasks']);
+      final scheduled = _scheduledTasksFromMap(data['scheduledTasks']);
       final moved = rollOverTaskBuckets(
         today,
         missed,
         date,
         previousDate: data['dateUpdated'] as String?,
       );
-      apply?.call(today, missed);
+      apply?.call(today, missed, recurring, scheduled);
+      final promoted = materializeScheduledTasks(today, scheduled, date);
+      final generated = materializeRecurringTasks(today, recurring, date,
+          scheduled: scheduled);
 
       final result = <String, dynamic>{
         'todayTasks': _taskBucketsToMap(today),
         'missedTasks': _taskBucketsToMap(missed),
+        'recurringTasks': recurring.map((task) => task.toMap()).toList(),
+        'scheduledTasks': scheduled.map((task) => task.toMap()).toList(),
         'dateUpdated': date,
       };
       if (date != dateKey()) {
         throw StateError('The task day changed before this update.');
       }
-      if (moved || apply != null) {
+      if (moved || promoted || generated || apply != null) {
         transaction.set(_tasksRef, {
           ...result,
           'lastUpdated': FieldValue.serverTimestamp(),
@@ -131,33 +152,69 @@ class AppRepository {
     return snap.data();
   }
 
-  Future<void> savePrayer({
+  Future<void> savePrayerStatus({
     required String date,
-    required Map<String, PrayerStatus> prayers,
+    required String prayerKey,
+    required PrayerStatus status,
   }) async {
     if (!canSync) {
       return;
     }
 
     await _prayerRef(date).set({
-      'prayers': prayers.map((key, value) => MapEntry(key, value.toMap())),
+      'prayers': {prayerKey: status.toMap()},
       'date': date,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
-  Future<void> completeQaza({
+  Future<QazaBacklog> loadQazaBacklog({DateTime? today}) async {
+    final asOf = today ?? dateOnly();
+    if (!canSync) {
+      return QazaBacklog.fromDocuments(const {}, today: asOf);
+    }
+
+    final snapshots = await Future.wait([
+      for (final key in prayerKeys)
+        _prayersCollection
+            .where('prayers.$key.state', isEqualTo: 'missed')
+            .get(),
+    ]);
+    final documents = <String, Map<String, dynamic>>{};
+    for (final snapshot in snapshots) {
+      for (final document in snapshot.docs) {
+        documents[document.id] = document.data();
+      }
+    }
+    return QazaBacklog.fromDocuments(documents, today: asOf);
+  }
+
+  Future<bool> completeQazaIfMissed({
     required String date,
     required String prayerKey,
   }) async {
-    if (!canSync) {
-      return;
+    if (!canSync) return false;
+    if (!prayerKeys.contains(prayerKey)) {
+      throw ArgumentError.value(prayerKey, 'prayerKey');
     }
 
-    await _prayerRef(date).set({
-      'qazaCompletions': {prayerKey: true},
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    final reference = _prayerRef(date);
+    return _db.runTransaction<bool>((transaction) async {
+      final document = await transaction.get(reference);
+      final current = prayerStatusesFromDocument(document.data())[prayerKey]!;
+      if (current.state != PrayerState.missed) return false;
+      transaction.set(
+          reference,
+          {
+            'prayers': {
+              prayerKey: const PrayerStatus(state: PrayerState.madeUp).toMap(),
+            },
+            'date': date,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+      return true;
+    });
   }
 
   Future<Map<String, dynamic>?> loadGrowth(String date) async {
@@ -176,11 +233,197 @@ class AppRepository {
     return snap.data()?['userType'] as String?;
   }
 
+  Future<GrowthChecklistConfig> loadGrowthChecklistConfig() async {
+    if (!canSync) return GrowthChecklistConfig.defaults();
+    final snap = await _preferencesRef.get();
+    return GrowthChecklistConfig.fromMap(snap.data()?['growthChecklist']);
+  }
+
+  Future<QuranGoal> loadQuranGoal() async {
+    if (!canSync) return QuranGoal.standard;
+    final snap = await _preferencesRef.get();
+    return QuranGoal.fromMap(snap.data()?['quranGoal']);
+  }
+
+  Future<void> saveQuranGoal(QuranGoal goal, {required DateTime today}) async {
+    if (!goal.valid) throw ArgumentError.value(goal.target, 'target');
+    if (!canSync) return;
+    final dayRef = _quranRef(dateKey(today));
+    await _db.runTransaction((transaction) async {
+      final day = await transaction.get(dayRef);
+      transaction.set(
+        _preferencesRef,
+        {
+          'quranGoal': goal.toMap(),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+      if (day.exists) {
+        transaction.set(
+          dayRef,
+          {
+            'goal': goal.toMap(),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+      }
+    });
+  }
+
+  Future<Map<String, dynamic>?> loadQuranDocument(String date) async {
+    if (!canSync) return null;
+    final snap = await _quranRef(date).get();
+    return snap.data();
+  }
+
+  Future<void> saveQuranDay(QuranReadingDay day) async {
+    final parsed = DateTime.tryParse(day.date);
+    if (!day.logged ||
+        parsed == null ||
+        dateKey(parsed) != day.date ||
+        day.date.compareTo(dateKey()) > 0 ||
+        day.minutes < 0 ||
+        day.minutes > 1440 ||
+        day.pages < 0 ||
+        day.pages > 1000 ||
+        day.lastRead.length > 120 ||
+        !day.goal.valid) {
+      throw ArgumentError.value(day, 'day');
+    }
+    if (!canSync) return;
+    await _quranRef(day.date).set({
+      ...day.toMap(),
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<QuranHistory> loadQuranHistory({
+    required DateTime end,
+    required QuranGoal fallbackGoal,
+    int dayCount = 7,
+  }) async {
+    if (dayCount < 1 || dayCount > 366) {
+      throw ArgumentError.value(dayCount, 'dayCount');
+    }
+    final last = dateOnly(end);
+    if (!canSync) {
+      return QuranHistory.fromDocuments(
+        end: last,
+        dayCount: dayCount,
+        documents: const {},
+        fallbackGoal: fallbackGoal,
+      );
+    }
+    final first = DateTime(last.year, last.month, last.day - dayCount + 1);
+    final snapshot = await _quranCollection
+        .where(FieldPath.documentId, isGreaterThanOrEqualTo: dateKey(first))
+        .where(FieldPath.documentId, isLessThanOrEqualTo: dateKey(last))
+        .get();
+    return QuranHistory.fromDocuments(
+      end: last,
+      dayCount: dayCount,
+      documents: {
+        for (final document in snapshot.docs) document.id: document.data(),
+      },
+      fallbackGoal: fallbackGoal,
+    );
+  }
+
+  Future<DhikrGoals> loadDhikrGoals() async {
+    if (!canSync) return DhikrGoals.standard;
+    final snapshot = await _preferencesRef.get();
+    return DhikrGoals.fromList(snapshot.data()?['dhikrGoals']);
+  }
+
+  Future<void> saveDhikrGoals(DhikrGoals goals) async {
+    if (!goals.valid) throw ArgumentError.value(goals, 'goals');
+    if (!canSync) return;
+    await _preferencesRef.set({
+      'dhikrGoals': goals.toList(),
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<Map<String, dynamic>?> loadDhikrDocument(String date) async {
+    if (!canSync) return null;
+    return (await _dhikrCollection.doc(date).get()).data();
+  }
+
+  /// Apply a relative change so another device's increments are preserved.
+  /// The first count saves the goal snapshot for this date.
+  Future<DhikrDay> changeDhikrCount({
+    required String date,
+    required String goalId,
+    required int delta,
+    required DhikrGoals fallback,
+  }) async {
+    final parsed = DateTime.tryParse(date);
+    if (parsed == null ||
+        dateKey(parsed) != date ||
+        date.compareTo(dateKey()) > 0 ||
+        !fallback.valid ||
+        delta == 0 ||
+        delta.abs() > 100000) {
+      throw ArgumentError('Invalid dhikr count change');
+    }
+    if (!canSync) {
+      return DhikrDay.fromDocument(date, null, fallback: fallback)
+          .change(goalId, delta);
+    }
+    final ref = _dhikrCollection.doc(date);
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final day =
+          DhikrDay.fromDocument(date, snapshot.data(), fallback: fallback)
+              .change(goalId, delta);
+      transaction.set(
+          ref,
+          {
+            ...day.toMap(),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+      return day;
+    });
+  }
+
+  Future<DhikrHistory> loadDhikrHistory({
+    required DateTime end,
+    required DhikrGoals fallback,
+    int dayCount = 7,
+  }) async {
+    if (dayCount < 1 || dayCount > 366) {
+      throw ArgumentError.value(dayCount, 'dayCount');
+    }
+    final last = dateOnly(end);
+    final first = DateTime(last.year, last.month, last.day - dayCount + 1);
+    final documents = <String, Map<String, dynamic>>{};
+    if (canSync) {
+      final snapshot = await _dhikrCollection
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: dateKey(first))
+          .where(FieldPath.documentId, isLessThanOrEqualTo: dateKey(last))
+          .get();
+      documents
+          .addEntries(snapshot.docs.map((doc) => MapEntry(doc.id, doc.data())));
+    }
+    return DhikrHistory(
+        end: last,
+        documents: documents,
+        fallback: fallback,
+        dayCount: dayCount);
+  }
+
   Future<void> saveGrowth({
     required String date,
     required String userType,
     required Map<String, bool> iman,
     required Map<String, bool> life,
+    bool updatePreferredType = true,
+    GrowthChecklistSnapshot? checklistSnapshot,
+    GrowthChecklistConfig? checklistConfig,
+    bool prayerLinked = false,
   }) async {
     if (!canSync) {
       return;
@@ -189,15 +432,29 @@ class AppRepository {
     final batch = _db.batch();
     batch.set(_growthRef(date), {
       'growthData': {'iman': iman, 'life': life},
+      'checklistItems': (checklistSnapshot ??
+              GrowthChecklistSnapshot(
+                iman: imanChecklist,
+                life: lifeChecklists[userType] ?? lifeChecklists['student']!,
+              ))
+          .toMap(),
+      'prayerLinked': prayerLinked,
       'userType': userType,
       'date': date,
       'lastUpdated': FieldValue.serverTimestamp(),
     });
 
-    batch.set(_preferencesRef, {
-      'userType': userType,
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    if (updatePreferredType || checklistConfig != null) {
+      batch.set(
+          _preferencesRef,
+          {
+            if (updatePreferredType) 'userType': userType,
+            if (checklistConfig != null)
+              'growthChecklist': checklistConfig.toMap(),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+    }
     await batch.commit();
   }
 
@@ -277,7 +534,8 @@ class AppRepository {
     var totalPrayed = 0;
     var totalJamaat = 0;
     var totalMissed = 0;
-    final today = dateOnly();
+    var totalMadeUp = 0;
+    var totalUnlogged = 0;
     final imanScores = <int>[];
     final lifeScores = <int>[];
     final overallScores = <int>[];
@@ -288,30 +546,25 @@ class AppRepository {
 
       final prayerSnap = await _prayerRef(key).get();
       final prayerDoc = prayerSnap.data();
-      final prayers = asStringMap(prayerDoc?['prayers']);
-      if (prayers.isNotEmpty) {
+      final prayerSummary = PrayerSummary.fromDocument(prayerDoc);
+      if (prayerSummary.anyLogged) {
         prayerLoggedDays++;
-        final statuses = prayerKeys.map(
-          (key) => PrayerStatus.fromMap(prayers[key]),
-        );
-        final prayed = statuses.where((status) => status.prayed).length;
-        final jamaat = statuses.where((status) => status.jamaat).length;
-        totalPrayed += prayed;
-        totalJamaat += jamaat;
-        totalMissed += missedPrayerCountForDay(date, today, prayed);
+        totalPrayed += prayerSummary.prayed;
+        totalJamaat += prayerSummary.jamaat;
+        totalMissed += prayerSummary.missed;
+        totalMadeUp += prayerSummary.madeUp;
+        totalUnlogged += prayerSummary.unlogged;
       }
 
       final growthSnap = await _growthRef(key).get();
       final growthDoc = growthSnap.data();
       final growthData = asStringMap(growthDoc?['growthData']);
       if (growthData.isNotEmpty) {
-        final userType = '${growthDoc?['userType'] ?? 'student'}';
-        final iman = parseBoolMap(growthData['iman']);
+        final iman = imanValuesForDocuments(growthDoc, prayerDoc);
         final life = parseBoolMap(growthData['life']);
-        final lifeItems =
-            lifeChecklists[userType] ?? lifeChecklists['student']!;
-        final imanScore = checklistScore(iman, imanChecklist);
-        final lifeScore = checklistScore(life, lifeItems);
+        final snapshot = GrowthChecklistSnapshot.fromDocument(growthDoc);
+        final imanScore = checklistScore(iman, snapshot.iman);
+        final lifeScore = checklistScore(life, snapshot.life);
         imanScores.add(imanScore);
         lifeScores.add(lifeScore);
         overallScores.add(((imanScore + lifeScore) / 2).round());
@@ -324,10 +577,56 @@ class AppRepository {
       totalPrayed: totalPrayed,
       totalJamaat: totalJamaat,
       totalMissed: totalMissed,
+      totalMadeUp: totalMadeUp,
+      totalUnlogged: totalUnlogged,
       growthLoggedDays: overallScores.length,
       averageIman: _average(imanScores),
       averageLife: _average(lifeScores),
       averageOverall: _average(overallScores),
+    );
+  }
+
+  Future<ProgressTrends> loadProgressTrends({
+    required DateTime end,
+    int dayCount = 30,
+  }) async {
+    if (dayCount < 1 || dayCount > 366) {
+      throw ArgumentError.value(dayCount, 'dayCount');
+    }
+    final last = dateOnly(end);
+    final first = DateTime(last.year, last.month, last.day - dayCount + 1);
+    if (!canSync) {
+      return ProgressTrends.fromDocuments(
+        end: last,
+        dayCount: dayCount,
+        prayers: const {},
+        growth: const {},
+      );
+    }
+
+    final firstKey = dateKey(first);
+    final lastKey = dateKey(last);
+    final snapshots = await Future.wait([
+      _prayersCollection
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: firstKey)
+          .where(FieldPath.documentId, isLessThanOrEqualTo: lastKey)
+          .get(),
+      _growthCollection
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: firstKey)
+          .where(FieldPath.documentId, isLessThanOrEqualTo: lastKey)
+          .get(),
+    ]);
+    final prayers = {
+      for (final document in snapshots[0].docs) document.id: document.data(),
+    };
+    final growth = {
+      for (final document in snapshots[1].docs) document.id: document.data(),
+    };
+    return ProgressTrends.fromDocuments(
+      end: last,
+      dayCount: dayCount,
+      prayers: prayers,
+      growth: growth,
     );
   }
 
@@ -350,6 +649,33 @@ class AppRepository {
     }
 
     return {'mustDo': parse(map['mustDo']), 'goodToDo': parse(map['goodToDo'])};
+  }
+
+  List<RecurringTask> _recurringTasksFromMap(Object? raw) {
+    if (raw is! Iterable) return [];
+    return raw
+        .where((value) =>
+            asStringMap(value)['repeat'] == 'daily' ||
+            asStringMap(value)['repeat'] == 'weekly')
+        .map(RecurringTask.fromMap)
+        .where((task) =>
+            task.id.isNotEmpty &&
+            task.text.trim().isNotEmpty &&
+            (task.section == 'mustDo' || task.section == 'goodToDo'))
+        .toList();
+  }
+
+  List<TaskItem> _scheduledTasksFromMap(Object? raw) {
+    if (raw is! Iterable) return [];
+    return raw
+        .map(TaskItem.fromMap)
+        .where((task) =>
+            task.id.isNotEmpty &&
+            task.text.trim().isNotEmpty &&
+            (task.section == 'mustDo' || task.section == 'goodToDo') &&
+            DateTime.tryParse(task.dueDate) != null &&
+            dateKey(DateTime.parse(task.dueDate)) == task.dueDate)
+        .toList();
   }
 
   Map<String, List<ContactItem>> _contactsFromMap(Object? raw) {

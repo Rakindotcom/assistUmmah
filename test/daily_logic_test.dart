@@ -8,36 +8,6 @@ import 'package:ummah_assist/src/models.dart';
 import 'package:ummah_assist/src/pages/prayer_page.dart';
 
 void main() {
-  test('unlogged prayers are not classified as qaza', () {
-    expect(isQazaPending({}, {}, 'fajr'), isFalse);
-    expect(
-      isQazaPending(
-        {
-          'fajr': {'prayed': false},
-        },
-        {},
-        'fajr',
-      ),
-      isTrue,
-    );
-    expect(
-      isQazaPending(
-        {
-          'fajr': {'prayed': false},
-        },
-        {'fajr': true},
-        'fajr',
-      ),
-      isFalse,
-    );
-  });
-
-  test('today’s remaining prayers are not reported as missed', () {
-    final today = DateTime(2026, 10, 25);
-    expect(missedPrayerCountForDay(today, today, 1), 0);
-    expect(missedPrayerCountForDay(DateTime(2026, 10, 24), today, 1), 4);
-  });
-
   test('rollover moves unfinished tasks and removes completed tasks', () {
     TaskItem task(String id, bool completed) => TaskItem(
           id: id,
@@ -86,6 +56,132 @@ void main() {
     );
     expect(today['mustDo'], isEmpty);
     expect(missed['mustDo']!.single.id, 'legacy');
+  });
+
+  test('daily recurrence creates one fresh task per opened day', () {
+    final today = <String, List<TaskItem>>{'mustDo': [], 'goodToDo': []};
+    final missed = <String, List<TaskItem>>{'mustDo': [], 'goodToDo': []};
+    final recurring = [
+      const RecurringTask(
+        id: 'routine',
+        text: 'Read',
+        section: 'mustDo',
+        repeat: TaskRepeat.daily,
+        startDate: '2026-10-24',
+      ),
+    ];
+
+    expect(materializeRecurringTasks(today, recurring, '2026-10-24'), isTrue);
+    expect(materializeRecurringTasks(today, recurring, '2026-10-24'), isFalse);
+    today['mustDo']![0] = today['mustDo']!.single.copyWith(completed: true);
+    expect(rollOverTaskBuckets(today, missed, '2026-10-25'), isTrue);
+    expect(materializeRecurringTasks(today, recurring, '2026-10-25'), isTrue);
+    expect(today['mustDo']!.single.completed, isFalse);
+    expect(today['mustDo']!.single.id, 'routine:2026-10-25');
+    expect(missed['mustDo'], isEmpty);
+  });
+
+  test('weekly recurrence uses its start weekday and respects start date', () {
+    final today = <String, List<TaskItem>>{'mustDo': [], 'goodToDo': []};
+    final recurring = [
+      const RecurringTask(
+        id: 'friday',
+        text: 'Weekly review',
+        section: 'goodToDo',
+        repeat: TaskRepeat.weekly,
+        startDate: '2026-10-23',
+      ),
+    ];
+
+    expect(materializeRecurringTasks(today, recurring, '2026-10-22'), isFalse);
+    expect(materializeRecurringTasks(today, recurring, '2026-10-24'), isFalse);
+    expect(materializeRecurringTasks(today, recurring, '2026-10-30'), isTrue);
+    expect(today['goodToDo']!.single.recurrenceId, 'friday');
+  });
+
+  test('scheduled task becomes due once and preserves its original due date',
+      () {
+    final today = <String, List<TaskItem>>{'mustDo': [], 'goodToDo': []};
+    final scheduled = [
+      const TaskItem(
+        id: 'planned',
+        text: 'Call family',
+        completed: false,
+        createdAt: '',
+        dateCreated: '2026-10-24',
+        dueDate: '2026-10-28',
+        section: 'goodToDo',
+      ),
+    ];
+    expect(materializeScheduledTasks(today, scheduled, '2026-10-27'), isFalse);
+    expect(materializeScheduledTasks(today, scheduled, '2026-10-29'), isTrue);
+    expect(materializeScheduledTasks(today, scheduled, '2026-10-29'), isFalse);
+    expect(scheduled, isEmpty);
+    expect(today['goodToDo']!.single.dateCreated, '2026-10-29');
+    expect(today['goodToDo']!.single.dueDate, '2026-10-28');
+  });
+
+  test('rescheduled recurring occurrence is not regenerated on its old day',
+      () {
+    final today = <String, List<TaskItem>>{'mustDo': [], 'goodToDo': []};
+    final scheduled = [
+      const TaskItem(
+        id: 'routine:2026-10-25',
+        text: 'Read',
+        completed: false,
+        createdAt: '',
+        dateCreated: '2026-10-25',
+        dueDate: '2026-10-28',
+        section: 'mustDo',
+        recurrenceId: 'routine',
+      ),
+    ];
+    final recurring = [
+      const RecurringTask(
+        id: 'routine',
+        text: 'Read',
+        section: 'mustDo',
+        repeat: TaskRepeat.daily,
+        startDate: '2026-10-25',
+      ),
+    ];
+    expect(
+      materializeRecurringTasks(today, recurring, '2026-10-25',
+          scheduled: scheduled),
+      isFalse,
+    );
+    expect(today['mustDo'], isEmpty);
+    expect(materializeRecurringTasks(today, recurring, '2026-10-26'), isTrue);
+  });
+
+  test('postponed recurrence and the regular occurrence can share a day', () {
+    final today = <String, List<TaskItem>>{
+      'mustDo': [
+        const TaskItem(
+          id: 'routine:2026-10-25',
+          text: 'Read',
+          completed: false,
+          createdAt: '',
+          dateCreated: '2026-10-28',
+          recurrenceId: 'routine',
+          dueDate: '2026-10-28',
+          section: 'mustDo',
+        ),
+      ],
+      'goodToDo': [],
+    };
+    final recurring = [
+      const RecurringTask(
+        id: 'routine',
+        text: 'Read',
+        section: 'mustDo',
+        repeat: TaskRepeat.daily,
+        startDate: '2026-10-25',
+      ),
+    ];
+    expect(materializeRecurringTasks(today, recurring, '2026-10-28'), isTrue);
+    expect(today['mustDo']!.map((task) => task.id),
+        ['routine:2026-10-25', 'routine:2026-10-28']);
   });
 
   test('date range advances by calendar days', () {

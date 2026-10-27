@@ -1,3 +1,5 @@
+import 'display_formatters.dart';
+
 String dateKey([DateTime? value]) {
   final date = value ?? DateTime.now();
   final month = date.month.toString().padLeft(2, '0');
@@ -27,5 +29,5 @@ Iterable<DateTime> datesBetween(DateTime start, DateTime end) sync* {
 String compactDateLabel(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
   final day = date.day.toString().padLeft(2, '0');
-  return '$day/$month/${date.year}';
+  return banglaDigits('$day/$month/${date.year}');
 }

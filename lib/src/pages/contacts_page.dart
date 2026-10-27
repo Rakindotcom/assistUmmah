@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../app_repository.dart';
+import '../display_formatters.dart';
 import '../models.dart';
 import '../widgets/page_frame.dart';
+import '../widgets/load_failure_state.dart';
+import '../widgets/text_entry_dialog.dart';
+import '../widgets/status_badge.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key, required this.repository});
@@ -18,6 +22,7 @@ class _ContactsPageState extends State<ContactsPage> {
 
   String _activeSection = 'message';
   bool _loading = true;
+  bool _loadFailed = false;
   Future<void> _writeQueue = Future<void>.value();
 
   @override
@@ -31,17 +36,27 @@ class _ContactsPageState extends State<ContactsPage> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_loadFailed) {
+      return LoadFailureState(title: 'যোগাযোগ লোড করা যায়নি', onRetry: _load);
+    }
 
     final contacts = _contacts[_activeSection] ?? [];
+    final wide = MediaQuery.sizeOf(context).width >= 820;
 
     return Stack(
       children: [
         PageFrame(
           title: 'জরুরি যোগাযোগ',
           subtitle: 'যাদের সাথে নিয়মিত যোগাযোগ রাখা দরকার',
+          action: wide
+              ? FilledButton.icon(
+                  onPressed: _showAddContactDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('যোগাযোগ'))
+              : null,
           children: [
             Wrap(
-              alignment: WrapAlignment.center,
+              alignment: WrapAlignment.start,
               spacing: 10,
               runSpacing: 10,
               children: [
@@ -84,7 +99,8 @@ class _ContactsPageState extends State<ContactsPage> {
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ),
-                        Chip(label: Text('${contacts.length}')),
+                        StatusBadge(
+                            label: '${banglaNumber(contacts.length)} জন'),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -106,27 +122,32 @@ class _ContactsPageState extends State<ContactsPage> {
             ),
           ],
         ),
-        Positioned(
-          right: 22,
-          bottom: 22,
-          child: FloatingActionButton.extended(
-            onPressed: _showAddContactDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('যোগাযোগ'),
+        if (!wide)
+          Positioned(
+            right: 22,
+            bottom: 22,
+            child: FloatingActionButton.extended(
+              onPressed: _showAddContactDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('যোগাযোগ'),
+            ),
           ),
-        ),
       ],
     );
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
     try {
       final data = await widget.repository.loadContacts();
       final contacts = asStringMap(data?['contacts']);
       _contacts['message'] = _parseContacts(contacts['message']);
       _contacts['call'] = _parseContacts(contacts['call']);
     } catch (_) {
-      _showMessage('যোগাযোগ লোড করতে সমস্যা হয়েছে');
+      _loadFailed = true;
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -135,65 +156,43 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 
   Future<void> _showAddContactDialog() async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('নতুন যোগাযোগ যোগ করুন'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: _activeSection == 'message'
-                  ? 'মেসেজ যোগাযোগের নাম'
-                  : 'কল যোগাযোগের নাম',
-            ),
-            onSubmitted: (value) => Navigator.of(context).pop(value),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('বাতিল'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('যোগ করুন'),
-            ),
-          ],
-        );
-      },
-    );
-    controller.dispose();
-
-    if (!mounted) return;
-
-    final name = result?.trim() ?? '';
-    if (name.isEmpty) {
-      return;
-    }
-
     final now = DateTime.now();
-    final contact = ContactItem(
-      id: '${now.microsecondsSinceEpoch}',
-      name: name,
-      createdAt: now.toIso8601String(),
-    );
-
     final section = _activeSection;
-    await _runChange((contacts) {
-      if (!contacts[section]!.any((item) => item.id == contact.id)) {
-        contacts[section]!.add(contact);
-      }
-    });
+    final uid = widget.repository.uid;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => TextEntryDialog(
+          title: 'নতুন যোগাযোগ যোগ করুন',
+          label: 'যোগাযোগের নাম',
+          submitLabel: 'যোগ করুন',
+          errorMessage: 'যোগাযোগ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
+          onSave: (name) async {
+            if (!mounted || uid != widget.repository.uid) {
+              throw StateError('Account changed');
+            }
+            final contact = ContactItem(
+                id: '${now.microsecondsSinceEpoch}',
+                name: name,
+                createdAt: now.toIso8601String());
+            await _runChange((contacts) {
+              if (!contacts[section]!.any((item) => item.id == contact.id)) {
+                contacts[section]!.add(contact);
+              }
+            });
+          }),
+    );
   }
 
   Future<void> _deleteContact(String id) async {
     final section = _activeSection;
-    await _runChange((contacts) {
-      contacts[section] =
-          contacts[section]!.where((item) => item.id != id).toList();
-    });
+    try {
+      await _runChange((contacts) {
+        contacts[section] =
+            contacts[section]!.where((item) => item.id != id).toList();
+      });
+    } catch (_) {
+      _showMessage('যোগাযোগ মুছে ফেলা যায়নি। আবার চেষ্টা করুন।');
+    }
   }
 
   Future<void> _runChange(
@@ -204,9 +203,10 @@ class _ContactsPageState extends State<ContactsPage> {
       return Future<void>.value();
     }
 
+    final repository = widget.repository;
     final operation = _writeQueue.then((_) async {
-      final data = await widget.repository.changeContacts(apply);
-      if (mounted && data != null) {
+      final data = await repository.changeContacts(apply);
+      if (mounted && data != null && repository.uid == widget.repository.uid) {
         final contacts = asStringMap(data['contacts']);
         setState(() {
           _contacts['message'] = _parseContacts(contacts['message']);
@@ -214,10 +214,8 @@ class _ContactsPageState extends State<ContactsPage> {
         });
       }
     });
-    _writeQueue = operation.catchError((Object _) {
-      _showMessage('যোগাযোগ সিঙ্ক করতে সমস্যা হয়েছে');
-    });
-    return _writeQueue;
+    _writeQueue = operation.catchError((Object _) {});
+    return operation;
   }
 
   List<ContactItem> _parseContacts(Object? raw) {
@@ -250,8 +248,11 @@ class _ContactTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Material(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
+        color: Theme.of(context)
+            .colorScheme
+            .secondaryContainer
+            .withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -259,9 +260,10 @@ class _ContactTile extends StatelessWidget {
           ),
           title: Text(contact.name),
           trailing: IconButton(
+            tooltip: 'যোগাযোগ মুছুন',
             onPressed: onDelete,
             icon: const Icon(Icons.delete_outline),
-            color: Colors.red.shade500,
+            color: Theme.of(context).colorScheme.error,
           ),
         ),
       ),

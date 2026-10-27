@@ -1,0 +1,10 @@
+{
+  "documents": ["users", "userTasks", "userPrayers", "userGrowth", "userQuran", "userDhikr", "userPreferences", "userContacts", "userSettings"],
+  "subcollections": {
+    "userPrayers": "dailyPrayers",
+    "userGrowth": "dailyGrowth",
+    "userQuran": "dailyReading",
+    "userDhikr": "dailyDhikr"
+  },
+  "activity": { "collection": "userActivities", "ownerField": "userId" }
+}
