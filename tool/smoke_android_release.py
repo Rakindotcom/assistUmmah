@@ -71,7 +71,20 @@ def main() -> None:
         if 'লগইন' in ui and 'রবের পথে' in ui:
             ready = True
             break
-    assert ready and 'অ্যাপ চালু করা যায়নি' not in ui, 'Signed app did not reach its login screen'
+    if not ready or 'অ্যাপ চালু করা যায়নি' in ui:
+        diagnostics = ROOT / '.local/logs'
+        diagnostics.mkdir(parents=True, exist_ok=True)
+        (diagnostics / 'release-smoke-ui.xml').write_text(ui)
+        (diagnostics / 'release-smoke-logcat.txt').write_text(
+            adb('logcat', '-d', '-s', 'ComponentDiscovery:V', 'FirebaseApp:V',
+                'FirebaseCrashlytics:V', 'FirebaseInitProvider:V', 'flutter:I'))
+        screenshot = subprocess.run(
+            [str(ADB), '-s', DEVICE, 'exec-out', 'screencap', '-p'],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=40,
+        )
+        (diagnostics / 'release-smoke-screen.png').write_bytes(screenshot.stdout)
+        raise AssertionError('Signed app did not reach its login screen; see .local/logs/release-smoke-*')
 
     pid = adb('shell', 'pidof', package)
     assert pid.isdigit(), 'Release process is not running'
@@ -102,6 +115,7 @@ def main() -> None:
         'firebaseInitialized': True,
         'firebaseCrashlyticsInitialized': True,
         'firebaseRegistrarErrorsAbsent': True,
+        'currentBundleVerified': True,
         'scope': 'Fresh signed APK startup/login smoke on dedicated 16 KB emulator. Full app flow, physical ARM64 and Play-signed builds remain unverified.',
     }
     (DOCS / 'signed-release-smoke.json').write_text(

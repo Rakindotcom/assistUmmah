@@ -18,6 +18,17 @@ def main():
     bundle = ROOT / verification['bundle']
     assert hashlib.sha256(bundle.read_bytes()).hexdigest() == verification['sha256'], 'Bundle changed: revalidate first'
     assert verification['signatureVerified'] and verification['apkZipAlignmentVerified']
+    summary = json.loads((docs / 'verification-summary.json').read_text())
+    assert summary['bundleSha256'] == verification['sha256'], 'Verification summary belongs to another bundle'
+    smoke = json.loads((docs / 'signed-release-smoke.json').read_text())
+    assert smoke['sourceBundleSha256'] == verification['sha256'], 'Signed runtime smoke belongs to another bundle'
+    apk = ROOT / '.local/app-release-universal.apk'
+    assert apk.is_file() and hashlib.sha256(apk.read_bytes()).hexdigest() == smoke['universalApkSha256'], 'Validated APK differs from smoke-tested APK'
+    assert smoke['installedApkHashMatches'] and smoke['loginScreenVisibleInAccessibilityTree']
+    assert smoke['firebaseInitialized'] and smoke['firebaseRegistrarErrorsAbsent']
+    assert smoke['productionReleaseBinary'] and smoke['pageSize'] == 16384
+    assert smoke['currentBundleVerified']
+    assert summary['signedReleaseStartupSmokePassed']
     private_review = ROOT / '.local/play-reviewer-credentials.json'
     if private_review.exists():
         credentials = json.loads(private_review.read_text())

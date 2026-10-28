@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ummah_assist/src/app_repository.dart';
@@ -231,6 +233,122 @@ void main() {
     expect(find.text('রিট্রাই'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'failed growth write keeps the draft across tab refresh and retries',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _GrowthRepository()..failSave = true;
+    Widget page(int token) => MaterialApp(
+          home: Scaffold(
+            body: GrowthPage(
+              repository: repository,
+              day: DateTime(2026, 10, 26),
+              refreshToken: token,
+            ),
+          ),
+        );
+    await tester.pumpWidget(page(0));
+    await tester.pump();
+    final checkbox = find.widgetWithText(
+        CheckboxListTile, 'ইস্তিগফার ও মাইন্ডফুল জিকির করেছি');
+    await tester.ensureVisible(checkbox);
+    await tester.pumpAndSettle();
+    await tester.tap(checkbox);
+    await tester.pumpAndSettle();
+    expect(tester.widget<CheckboxListTile>(checkbox).value, isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষিত হয়নি'), findsOneWidget);
+    expect(repository.documents, isEmpty);
+
+    await tester.pumpWidget(page(1));
+    await tester.pumpAndSettle();
+    expect(tester.widget<CheckboxListTile>(checkbox).value, isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষিত হয়নি'), findsOneWidget);
+
+    repository.failSave = false;
+    await tester.ensureVisible(find.text('আবার সংরক্ষণ করুন'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('আবার সংরক্ষণ করুন'));
+    await tester.pumpAndSettle();
+    expect(
+        repository.documents['2026-10-26']!['growthData']['iman']['istigfar'],
+        isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষিত হয়নি'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('in-flight growth write survives tab refresh', (tester) async {
+    final repository = _GrowthRepository()..saveGate = Completer<void>();
+    Widget page(int token) => MaterialApp(
+          home: Scaffold(
+            body: GrowthPage(
+              repository: repository,
+              day: DateTime(2026, 10, 26),
+              refreshToken: token,
+            ),
+          ),
+        );
+    await tester.pumpWidget(page(0));
+    await tester.pump();
+    final checkbox = find.widgetWithText(
+        CheckboxListTile, 'ইস্তিগফার ও মাইন্ডফুল জিকির করেছি');
+    await tester.ensureVisible(checkbox);
+    await tester.pumpAndSettle();
+    await tester.tap(checkbox);
+    await tester.pump();
+    expect(find.text('পরিবর্তন সংরক্ষণ হচ্ছে…'), findsOneWidget);
+
+    await tester.pumpWidget(page(1));
+    await tester.pump();
+    expect(tester.widget<CheckboxListTile>(checkbox).value, isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষণ হচ্ছে…'), findsOneWidget);
+
+    repository.saveGate!.complete();
+    await tester.pumpAndSettle();
+    expect(
+        repository.documents['2026-10-26']!['growthData']['iman']['istigfar'],
+        isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষণ হচ্ছে…'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('checklist save confirms an earlier failed checkbox edit',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _GrowthRepository()..failSave = true;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: GrowthPage(repository: repository, day: DateTime(2026, 10, 26)),
+      ),
+    ));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(
+        CheckboxListTile, 'ইস্তিগফার ও মাইন্ডফুল জিকির করেছি'));
+    await tester.pumpAndSettle();
+    expect(find.text('পরিবর্তন সংরক্ষিত হয়নি'), findsOneWidget);
+
+    repository.failSave = false;
+    await tester.tap(find.byTooltip('ইমান চেকলিস্ট সম্পাদনা'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('আইটেম যোগ'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Daily reflection');
+    await tester.tap(find.text('ঠিক আছে'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    expect(
+        repository.documents['2026-10-26']!['growthData']['iman']['istigfar'],
+        isTrue);
+    expect(find.text('পরিবর্তন সংরক্ষিত হয়নি'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _GrowthRepository extends AppRepository {
@@ -241,6 +359,7 @@ class _GrowthRepository extends AppRepository {
   final Map<String, Map<String, dynamic>> prayers = {};
   bool failSave = false;
   bool failPrayerRead = false;
+  Completer<void>? saveGate;
 
   @override
   Future<GrowthChecklistConfig> loadGrowthChecklistConfig() async => config;
@@ -269,6 +388,7 @@ class _GrowthRepository extends AppRepository {
     GrowthChecklistConfig? checklistConfig,
     bool prayerLinked = false,
   }) async {
+    if (saveGate case final gate?) await gate.future;
     if (failSave) throw StateError('Simulated write failure');
     if (checklistConfig != null) config = checklistConfig;
     documents[date] = {

@@ -16,5 +16,7 @@
   "firebaseInitialized": true,
   "firebaseCrashlyticsInitialized": true,
   "firebaseRegistrarErrorsAbsent": true,
-  "scope": "Fresh signed APK startup/login smoke on dedicated 16 KB emulator. Full app flow, physical ARM64 and Play-signed builds remain unverified."
+  "scope": "Fresh signed APK startup/login smoke on dedicated 16 KB emulator. Full app flow, physical ARM64 and Play-signed builds remain unverified.",
+  "currentBundleVerified": false,
+  "supersededByBundleSha256": "8034198a45a0f14dbf8203226b06c877a78d5623f379f9a28cc84852d9017145"
 }

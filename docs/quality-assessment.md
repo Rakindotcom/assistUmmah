@@ -10,12 +10,12 @@ the app. They describe the verified product, including the limits of the tests.
 | --- | ---: | --- |
 | Functionality | 8/10 | Tasks, prayers, growth, calendar, qaza, Quran, dhikr, contacts, reports and deletion are implemented. Long offline sessions and interrupted writes remain a data-loss risk for some flows. |
 | Mobile UI | 8.5/10 | Six captures from the signed-in Android app and 320–390 px widget layouts show consistent Anek Bangla, Bengali digits and phone navigation. Physical screens, keyboard and TalkBack have not been reviewed. |
-| UX | 8/10 | Explicit loading, retry, empty and save feedback exist. The task composer retains its draft after a failed write; reports retry in place and distinguish missing growth records from a true zero. Bengali user research and end-to-end onboarding observation remain outstanding. |
+| UX | 8/10 | Explicit loading, retry, empty and save feedback exist. Task drafts and failed growth edits remain visible with a retry; reports retry in place and distinguish missing growth records from a true zero. Bengali user research and end-to-end onboarding observation remain outstanding. |
 | Performance | 7.5/10 | Unopened tabs now load on demand and monthly reports use two parallel bounded range queries, replacing up to 62 sequential document reads. The single API 36 emulator sample took 6.46 s from sign-in tap to ready dashboard and 0.83 s for a seven-day live report. It recorded 9 raster frames over budget out of 50 navigation frames. A low-end ARM device and repeated measurements remain outstanding. |
 | Reliability | 8/10 | Flutter unit/widget tests and Firebase rules emulator tests cover core flows. Reminder operations are serialized across sign-out and explicit preference changes. Long offline operation, OS kill/restart and notification delivery still need device exercises. |
 | Privacy and security | 8/10 | Owner-scoped rules, account deletion, disabled-by-default diagnostics, private release credentials and account-scoped navigation are in place. A Play-installed sign-in check, privacy declaration review and abuse testing remain outstanding. |
 | Accessibility | 7.5/10 | Contrast, labels, target size and large-text widget checks exist. Actual TalkBack/VoiceOver traversal and Bengali comprehension need testing with people. |
-| Release readiness | 7.5/10 | The current signed Android bundle passes signature, 16 KB alignment and fresh startup/login checks on an API 36 emulator. Physical ARM64 devices, a Play-installed build, Play Console declarations and any closed-test requirement remain outstanding. |
+| Release readiness | 7/10 | The current signed Android bundle passes signature and 16 KB alignment checks. Fresh startup/login verification of this exact bundle is pending after a timeout on the dedicated emulator. Physical ARM64 devices, a Play-installed build, Play Console declarations and any closed-test requirement remain outstanding. |
 
 **Overall: 8/10, provisionally.** This is a weighted engineering assessment of
 the shipping experience. Raising the score requires proof from the remaining
@@ -39,19 +39,25 @@ change the Play Store status by themselves.
   task ID stays stable across retries so a lost response after a successful
   commit does not duplicate the task. A 360 px test caught and fixed a
   dropdown overflow during the busy state.
+- Growth edits now retain their optimistic state and visible save status when a
+  tab refresh arrives before the write finishes or after it fails. The failed
+  state offers an inline retry, preserving the latest checklist values instead
+  of silently replacing them with older server data.
 - A profile-mode Android integration audit measures sign-in, first tab loads,
-  a live seven-day report and navigation frames. The current audit passes with
+  a live seven-day report and navigation frames. The prior-build audit passes with
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 274 unit/widget tests passed
+The final Flutter analyzer found no issues and all 277 unit/widget tests passed
 on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was
 made after that profile APK was built, so its mobile coverage currently comes
 from widget tests rather than that APK. The signed release build includes the
-task composer. A fresh [signed release smoke](release/signed-release-smoke.json)
-also caught and resolved a release-only Firebase registrar startup error.
+task composer. The [signed release smoke](release/signed-release-smoke.json)
+caught a release-only Firebase registrar startup error and then passed on the
+prior bundle. The current bundle needs a new successful runtime check before
+that evidence can be applied to this build.
 
 ## Evidence for the next rating
 

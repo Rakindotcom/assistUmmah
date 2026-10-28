@@ -46,6 +46,9 @@ class _GrowthPageState extends State<GrowthPage> {
   bool _loadFailed = false;
   bool _savingConfig = false;
   int _loadId = 0;
+  int _mutationRevision = 0;
+  int _confirmedRevision = 0;
+  int _pendingSaves = 0;
   Future<void> _writeQueue = Future<void>.value();
 
   @override
@@ -57,9 +60,11 @@ class _GrowthPageState extends State<GrowthPage> {
   @override
   void didUpdateWidget(covariant GrowthPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.refreshToken != widget.refreshToken ||
-        oldWidget.repository.uid != widget.repository.uid ||
-        dateKey(oldWidget.day) != dateKey(widget.day)) {
+    final identityChanged = oldWidget.repository.uid != widget.repository.uid ||
+        dateKey(oldWidget.day) != dateKey(widget.day);
+    if (identityChanged ||
+        (oldWidget.refreshToken != widget.refreshToken &&
+            _mutationRevision == _confirmedRevision)) {
       _load();
     }
   }
@@ -134,6 +139,36 @@ class _GrowthPageState extends State<GrowthPage> {
           ),
         ),
         const SizedBox(height: 16),
+        if (_mutationRevision > _confirmedRevision) ...[
+          Semantics(
+            liveRegion: true,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_pendingSaves > 0
+                        ? 'পরিবর্তন সংরক্ষণ হচ্ছে…'
+                        : 'পরিবর্তন সংরক্ষিত হয়নি'),
+                    if (_pendingSaves == 0) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                          'এই পৃষ্ঠায় পরিবর্তন রাখা আছে। আবার চেষ্টা করুন।'),
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: _savingConfig ? null : _save,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('আবার সংরক্ষণ করুন'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (_imanItems.any((item) => item.key == 'prayer')) ...[
           Card(
             child: SwitchListTile(
@@ -275,6 +310,8 @@ class _GrowthPageState extends State<GrowthPage> {
           ...defaultChecklistMap(lifeItems),
           ...parseBoolMap(growthData['life']),
         };
+        _mutationRevision = 0;
+        _confirmedRevision = 0;
         _loading = false;
       });
     } catch (_) {
@@ -298,6 +335,7 @@ class _GrowthPageState extends State<GrowthPage> {
       _userType = userType;
       _lifeItems = nextItems;
       _life = nextLife;
+      _mutationRevision++;
     });
     await _save();
   }
@@ -313,30 +351,40 @@ class _GrowthPageState extends State<GrowthPage> {
       } else {
         _life[key] = value;
       }
+      _mutationRevision++;
     });
     await _save();
   }
 
   Future<bool> _save() async {
+    final revision = _mutationRevision;
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
+    final historical = widget.historical;
+    final prayerLinked = _prayerLinked;
     final userType = _userType;
     final iman = linkedImanValues(
-        Map<String, bool>.of(_iman), _prayerLinked, _prayerDocument);
+        Map<String, bool>.of(_iman), prayerLinked, _prayerDocument);
     final life = Map<String, bool>.of(_life);
     final snapshot =
         GrowthChecklistSnapshot(iman: _imanItems, life: _lifeItems);
-    final operation = _writeQueue.then((_) => widget.repository.saveGrowth(
-          date: dateKey(widget.day),
+    setState(() => _pendingSaves++);
+    final operation = _writeQueue.then((_) => repository.saveGrowth(
+          date: day,
           userType: userType,
           iman: iman,
           life: life,
           checklistSnapshot: snapshot,
-          prayerLinked: _prayerLinked,
-          updatePreferredType: !widget.historical,
+          prayerLinked: prayerLinked,
+          updatePreferredType: !historical,
         ));
     _writeQueue = operation.catchError((Object _) {});
     try {
       await operation;
-      widget.onSaved?.call();
+      if (mounted && revision > _confirmedRevision) {
+        setState(() => _confirmedRevision = revision);
+      }
+      if (mounted) widget.onSaved?.call();
       return true;
     } catch (_) {
       const message = 'গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে';
@@ -346,20 +394,27 @@ class _GrowthPageState extends State<GrowthPage> {
         _showMessage(message);
       }
       return false;
+    } finally {
+      if (mounted) setState(() => _pendingSaves--);
     }
   }
 
   Future<void> _setPrayerLinked(bool next) async {
     if (_savingConfig || next == _prayerLinked) return;
     final previous = _prayerLinked;
+    final previousRevision = _mutationRevision;
     setState(() {
       _savingConfig = true;
       _prayerLinked = next;
+      _mutationRevision++;
     });
     final saved = await _save();
     if (!mounted) return;
     setState(() {
-      if (!saved) _prayerLinked = previous;
+      if (!saved) {
+        _prayerLinked = previous;
+        _mutationRevision = previousRevision;
+      }
       _savingConfig = false;
     });
   }
@@ -391,13 +446,18 @@ class _GrowthPageState extends State<GrowthPage> {
     final nextLife = {
       for (final item in nextLifeItems) item.key: _life[item.key] ?? false,
     };
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
+    final userType = _userType;
+    final prayerLinked = _prayerLinked;
+    final revision = _mutationRevision;
     setState(() => _savingConfig = true);
-    final operation = _writeQueue.then((_) => widget.repository.saveGrowth(
-          date: dateKey(widget.day),
-          userType: _userType,
+    final operation = _writeQueue.then((_) => repository.saveGrowth(
+          date: day,
+          userType: userType,
           iman: savedIman,
           life: nextLife,
-          prayerLinked: _prayerLinked,
+          prayerLinked: prayerLinked,
           checklistSnapshot: GrowthChecklistSnapshot(
             iman: nextImanItems,
             life: nextLifeItems,
@@ -414,6 +474,7 @@ class _GrowthPageState extends State<GrowthPage> {
         _lifeItems = nextLifeItems;
         _iman = nextIman;
         _life = nextLife;
+        if (revision > _confirmedRevision) _confirmedRevision = revision;
       });
       widget.onSaved?.call();
     } catch (_) {

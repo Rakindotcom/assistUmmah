@@ -4,13 +4,18 @@ Updated 28 October 2026 (Asia/Dhaka).
 
 ## Current decision
 
-The signed Android release candidate is built and its artifact checks pass.
-Production approval still requires Android device testing and the Play Console
+The current signed Android bundle passes static artifact checks. Its fresh
+runtime smoke is pending: the latest attempt did not reach the login screen
+within the test window, and emulator diagnostics could not yet be read.
+Production approval also requires Android device testing and the Play Console
 gates below. A browser or widget pass does not establish native delivery.
+The older generated upload packet has been moved into the ignored `.local`
+archive; no packet for the current bundle will be issued until its runtime
+smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **274 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **277 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -19,8 +24,9 @@ Verified locally through 28 October 2026:
 - Signed AAB: `1.0.0+1`, API 36, minimum API 24, ARM64 present. Bundletool and
   upload signature validation pass; all nine native libraries were inspected.
 - Generated universal APK: signature and `zipalign -c -P 16 -v 4` pass. All
-  64-bit native ELF load segments have at least 16 KB alignment. Its startup
-  and login screen pass on the 16 KB emulator. Play-generated APK tests remain open.
+  64-bit native ELF load segments have at least 16 KB alignment. Startup of
+  this exact bundle needs a successful repeat smoke; Play-generated APK tests
+  remain open.
 - Live policy and deletion form load successfully; the form initializes without
   browser console errors. Browser deletion was verified using synthetic emulator
   data only.
@@ -39,13 +45,13 @@ Verified locally through 28 October 2026:
   the raster budget. These numbers are not physical-device benchmarks. The
   task composer was changed after this profile APK was built; its retry and
   360 px layout are covered by widget tests.
-- The actual signed production APK was installed independently: its bytes
-  match the validated artifact, Firebase initializes, the login controls appear
-  in Android's accessibility tree, and its activity stays resumed on API 36 /
-  16 KB. The first release attempt exposed an R8-reflection bug: Firebase's
-  manifest registrars had lost their public constructors. A targeted keep rule
-  fixes it; the repeatable smoke check rejects that error. See
-  [signed release evidence](signed-release-smoke.json).
+- A prior signed production APK was installed independently: its bytes matched
+  that prior bundle, Firebase initialized, and the login controls appeared in
+  Android's accessibility tree on API 36 / 16 KB. An earlier release attempt
+  exposed an R8 reflection bug: Firebase's manifest registrars had lost their
+  public constructors. A targeted keep rule fixed it. The
+  [prior signed release evidence](signed-release-smoke.json) is not evidence for
+  the current bundle; the release packager checks matching hashes.
 - A dedicated reviewer account is provisioned and its private credentials are
   stored at `.local/play-reviewer-credentials.json` (0600). They are excluded
   from Git and the upload packet. No Google account/mailbox was created and no
@@ -57,6 +63,8 @@ Verified locally through 28 October 2026:
   retried without losing text or recurrence. The task identity remains stable
   across retries, preventing duplicates when a committed write loses its
   response.
+- Growth checklist edits show pending or failed save status. A tab refresh
+  preserves an unsaved draft, and failed changes can be retried in place.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at
