@@ -9,34 +9,70 @@ import '../widgets/text_entry_dialog.dart';
 import '../widgets/status_badge.dart';
 
 class ContactsPage extends StatefulWidget {
-  const ContactsPage({super.key, required this.repository});
+  const ContactsPage({super.key, required this.repository, this.active = true});
 
   final AppRepository repository;
+  final bool active;
 
   @override
   State<ContactsPage> createState() => _ContactsPageState();
 }
 
-class _ContactsPageState extends State<ContactsPage> {
+class _ContactsPageState extends State<ContactsPage>
+    with WidgetsBindingObserver {
   final Map<String, List<ContactItem>> _contacts = {'message': [], 'call': []};
 
   String _activeSection = 'message';
   bool _loading = true;
+  bool _refreshing = false;
+  bool _hasLoaded = false;
   bool _loadFailed = false;
   Future<void> _writeQueue = Future<void>.value();
+  int _loadRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
+  void didUpdateWidget(covariant ContactsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository.uid != widget.repository.uid) {
+      _hasLoaded = false;
+      _writeQueue = Future<void>.value();
+      _contacts['message'] = [];
+      _contacts['call'] = [];
+    }
+    if (!identical(oldWidget.repository, widget.repository) ||
+        (!oldWidget.active && widget.active && widget.repository.canSync)) {
+      _load();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        widget.active &&
+        widget.repository.canSync) {
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading && !_hasLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_loadFailed) {
+    if (_loadFailed && !_hasLoaded) {
       return LoadFailureState(title: 'যোগাযোগ লোড করা যায়নি', onRetry: _load);
     }
 
@@ -45,82 +81,98 @@ class _ContactsPageState extends State<ContactsPage> {
 
     return Stack(
       children: [
-        PageFrame(
-          title: 'জরুরি যোগাযোগ',
-          subtitle: 'যাদের সাথে নিয়মিত যোগাযোগ রাখা দরকার',
-          action: wide
-              ? FilledButton.icon(
-                  onPressed: _showAddContactDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('যোগাযোগ'))
-              : null,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.start,
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                ChoiceChip(
-                  label: const Text('মেসেজ দিলেও হবে'),
-                  selected: _activeSection == 'message',
-                  onSelected: (_) => setState(() => _activeSection = 'message'),
+        RefreshIndicator(
+          onRefresh: _load,
+          child: PageFrame(
+            title: 'জরুরি যোগাযোগ',
+            subtitle: 'যাদের সাথে নিয়মিত যোগাযোগ রাখা দরকার',
+            action: wide
+                ? FilledButton.icon(
+                    onPressed: _showAddContactDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('যোগাযোগ'))
+                : null,
+            children: [
+              if (_refreshing) const LinearProgressIndicator(),
+              if (_loadFailed)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.sync_problem_outlined),
+                    title: const Text('সর্বশেষ যোগাযোগ আনা যায়নি'),
+                    trailing: TextButton(
+                      onPressed: _load,
+                      child: const Text('রিট্রাই'),
+                    ),
+                  ),
                 ),
-                ChoiceChip(
-                  label: const Text('কল করতে হবে'),
-                  selected: _activeSection == 'call',
-                  onSelected: (_) => setState(() => _activeSection = 'call'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _activeSection == 'message'
-                              ? Icons.chat_bubble_outline
-                              : Icons.call_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
+              Wrap(
+                alignment: WrapAlignment.start,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ChoiceChip(
+                    label: const Text('মেসেজ দিলেও হবে'),
+                    selected: _activeSection == 'message',
+                    onSelected: (_) =>
+                        setState(() => _activeSection = 'message'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('কল করতে হবে'),
+                    selected: _activeSection == 'call',
+                    onSelected: (_) => setState(() => _activeSection = 'call'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
                             _activeSection == 'message'
-                                ? 'যাদের মেসেজ দিলেও হবে'
-                                : 'যাদের কল করতে হবে',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w800),
+                                ? Icons.chat_bubble_outline
+                                : Icons.call_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _activeSection == 'message'
+                                  ? 'যাদের মেসেজ দিলেও হবে'
+                                  : 'যাদের কল করতে হবে',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          StatusBadge(
+                              label: '${banglaNumber(contacts.length)} জন'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (contacts.isEmpty)
+                        const EmptyState(
+                          icon: Icons.person_add_alt_1_outlined,
+                          message: 'এখনো কোন যোগাযোগ যোগ করা হয়নি',
+                        )
+                      else
+                        ...contacts.map(
+                          (contact) => _ContactTile(
+                            contact: contact,
+                            onDelete: () => _deleteContact(contact.id),
                           ),
                         ),
-                        StatusBadge(
-                            label: '${banglaNumber(contacts.length)} জন'),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (contacts.isEmpty)
-                      const EmptyState(
-                        icon: Icons.person_add_alt_1_outlined,
-                        message: 'এখনো কোন যোগাযোগ যোগ করা হয়নি',
-                      )
-                    else
-                      ...contacts.map(
-                        (contact) => _ContactTile(
-                          contact: contact,
-                          onDelete: () => _deleteContact(contact.id),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         if (!wide)
           Positioned(
@@ -137,20 +189,33 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 
   Future<void> _load() async {
+    final requestId = ++_loadRequestId;
+    final repository = widget.repository;
     setState(() {
-      _loading = true;
+      _loading = !_hasLoaded;
+      _refreshing = _hasLoaded;
       _loadFailed = false;
     });
     try {
-      final data = await widget.repository.loadContacts();
-      final contacts = asStringMap(data?['contacts']);
-      _contacts['message'] = _parseContacts(contacts['message']);
-      _contacts['call'] = _parseContacts(contacts['call']);
+      await _writeQueue;
+      if (!mounted || requestId != _loadRequestId) return;
+      final data = await repository.loadContacts();
+      if (!mounted ||
+          requestId != _loadRequestId ||
+          !identical(repository, widget.repository)) {
+        return;
+      }
+      if (repository.canSync) _applySnapshot(data);
+      _hasLoaded = true;
     } catch (_) {
+      if (!mounted || requestId != _loadRequestId) return;
       _loadFailed = true;
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
+      if (mounted && requestId == _loadRequestId) {
+        setState(() {
+          _loading = false;
+          _refreshing = false;
+        });
       }
     }
   }
@@ -204,18 +269,30 @@ class _ContactsPageState extends State<ContactsPage> {
     }
 
     final repository = widget.repository;
+    ++_loadRequestId;
+    if (_loading || _refreshing) {
+      setState(() {
+        _loading = false;
+        _refreshing = false;
+        _loadFailed = false;
+      });
+    }
     final operation = _writeQueue.then((_) async {
       final data = await repository.changeContacts(apply);
-      if (mounted && data != null && repository.uid == widget.repository.uid) {
-        final contacts = asStringMap(data['contacts']);
+      if (mounted && data != null && identical(repository, widget.repository)) {
         setState(() {
-          _contacts['message'] = _parseContacts(contacts['message']);
-          _contacts['call'] = _parseContacts(contacts['call']);
+          _applySnapshot(data);
         });
       }
     });
     _writeQueue = operation.catchError((Object _) {});
     return operation;
+  }
+
+  void _applySnapshot(Map<String, dynamic>? data) {
+    final contacts = asStringMap(data?['contacts']);
+    _contacts['message'] = _parseContacts(contacts['message']);
+    _contacts['call'] = _parseContacts(contacts['call']);
   }
 
   List<ContactItem> _parseContacts(Object? raw) {

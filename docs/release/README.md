@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **281 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **288 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -68,6 +68,9 @@ Verified locally through 28 October 2026:
   resumes. A failed refresh keeps the last loaded list and offers retry;
   delayed older responses cannot replace newer task data. Preview mode skips
   the unnecessary server refresh.
+- Contacts refresh when reopened or when the active app resumes. Phone users
+  can pull to refresh without leaving the screen. A failed refresh retains
+  the previous list and offers retry; preview contacts survive a refresh.
 - Growth checklist edits show pending or failed save status. A tab refresh
   preserves an unsaved draft, and failed changes can be retried in place.
 

@@ -188,7 +188,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               refreshToken: _calendarRefreshToken,
             )
           : const SizedBox.shrink(),
-      ContactsPage(repository: widget.repository),
+      ContactsPage(repository: widget.repository, active: _index == 6),
       SettingsPage(
         repository: widget.repository,
         user: widget.user,
