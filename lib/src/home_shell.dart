@@ -164,6 +164,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         key: ValueKey('prayer-${dateKey(_day)}'),
         repository: widget.repository,
         day: _day,
+        active: _index == 2,
       ),
       GrowthPage(
         key: ValueKey('growth-${dateKey(_day)}'),

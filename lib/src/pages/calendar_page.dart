@@ -228,6 +228,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Future<void> _editPrayer() async {
     final day = _selectedDay;
+    final uid = widget.repository.uid;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
@@ -237,18 +238,30 @@ class _CalendarPageState extends State<CalendarPage> {
             day: day,
             historical: dateKey(day) != dateKey(widget.today),
             onSaved: () {
-              if (mounted && dateKey(_selectedDay) == dateKey(day)) _load();
+              if (mounted &&
+                  uid == widget.repository.uid &&
+                  dateKey(_selectedDay) == dateKey(day)) {
+                _load();
+              }
             },
-            onSaveError: (message) => _showSaveError(day, message),
+            onSaveError: (message) {
+              if (mounted && uid == widget.repository.uid) {
+                _showSaveError(day, message);
+              }
+            },
           ),
         ),
       ),
     );
-    if (mounted && dateKey(_selectedDay) == dateKey(day)) await _load();
+    if (mounted && uid == widget.repository.uid &&
+        dateKey(_selectedDay) == dateKey(day)) {
+      await _load();
+    }
   }
 
   Future<void> _editGrowth() async {
     final day = _selectedDay;
+    final uid = widget.repository.uid;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => Scaffold(
@@ -258,14 +271,25 @@ class _CalendarPageState extends State<CalendarPage> {
             day: day,
             historical: dateKey(day) != dateKey(widget.today),
             onSaved: () {
-              if (mounted && dateKey(_selectedDay) == dateKey(day)) _load();
+              if (mounted &&
+                  uid == widget.repository.uid &&
+                  dateKey(_selectedDay) == dateKey(day)) {
+                _load();
+              }
             },
-            onSaveError: (message) => _showSaveError(day, message),
+            onSaveError: (message) {
+              if (mounted && uid == widget.repository.uid) {
+                _showSaveError(day, message);
+              }
+            },
           ),
         ),
       ),
     );
-    if (mounted && dateKey(_selectedDay) == dateKey(day)) await _load();
+    if (mounted && uid == widget.repository.uid &&
+        dateKey(_selectedDay) == dateKey(day)) {
+      await _load();
+    }
   }
 
   void _showSaveError(DateTime day, String message) {

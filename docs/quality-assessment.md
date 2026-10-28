@@ -12,7 +12,7 @@ the app. They describe the verified product, including the limits of the tests.
 | Mobile UI | 8.5/10 | Six captures from the signed-in Android app and 320–390 px widget layouts show consistent Anek Bangla, Bengali digits and phone navigation. Physical screens, keyboard and TalkBack have not been reviewed. |
 | UX | 8/10 | Explicit loading, retry, empty and save feedback exist. Task drafts and failed growth edits remain visible with a retry; reports retry in place and distinguish missing growth records from a true zero. Contacts can be refreshed by pulling on a phone without losing the prior list if the request fails. Bengali user research and end-to-end onboarding observation remain outstanding. |
 | Performance | 7.5/10 | Unopened tabs now load on demand and monthly reports use two parallel bounded range queries, replacing up to 62 sequential document reads. The single API 36 emulator sample took 6.46 s from sign-in tap to ready dashboard and 0.83 s for a seven-day live report. It recorded 9 raster frames over budget out of 50 navigation frames. A low-end ARM device and repeated measurements remain outstanding. |
-| Reliability | 8/10 | Flutter unit/widget tests and Firebase rules emulator tests cover core flows. Reminder operations are serialized across sign-out and explicit preference changes. Tasks refresh on re-entry and resume while retaining the last loaded list on failure. Long offline operation, OS kill/restart and notification delivery still need device exercises. |
+| Reliability | 8/10 | Flutter unit/widget tests and Firebase rules emulator tests cover core flows. Reminder operations are serialized across sign-out and explicit preference changes. Tasks, contacts and prayer statuses refresh on return/resume while retaining the last loaded data on failure. Long offline operation, OS kill/restart and notification delivery still need device exercises. |
 | Privacy and security | 8/10 | Owner-scoped rules, account deletion, disabled-by-default diagnostics, private release credentials and account-scoped navigation are in place. A Play-installed sign-in check, privacy declaration review and abuse testing remain outstanding. |
 | Accessibility | 7.5/10 | Contrast, labels, target size and large-text widget checks exist. Actual TalkBack/VoiceOver traversal and Bengali comprehension need testing with people. |
 | Release readiness | 7/10 | The current signed Android bundle passes signature and 16 KB alignment checks. Fresh startup/login verification of this exact bundle is pending after a timeout on the dedicated emulator. Physical ARM64 devices, a Play-installed build, Play Console declarations and any closed-test requirement remain outstanding. |
@@ -45,6 +45,10 @@ change the Play Store status by themselves.
 - Contacts now refresh on tab return, app resume and a phone pull gesture.
   They retain the last loaded list through failures and protect newer results
   from older requests. Preview contacts survive a refresh.
+- Prayer status refreshes on tab return, app resume and a phone pull gesture.
+  It waits for pending saves, retains the prior status on failed refresh, and
+  shows when an edit is still saving. Calendar receives late save results even
+  after its editor route closes, with account-scoped callback guards.
 - Growth edits now retain their optimistic state and visible save status when a
   tab refresh arrives before the write finishes or after it fails. The failed
   state offers an inline retry, preserving the latest checklist values instead
@@ -54,7 +58,7 @@ change the Play Store status by themselves.
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 288 unit/widget tests passed
+The final Flutter analyzer found no issues and all 294 unit/widget tests passed
 on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was

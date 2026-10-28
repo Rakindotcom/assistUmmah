@@ -22,6 +22,7 @@ class PrayerPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.day,
+    this.active = true,
     this.historical = false,
     this.onSaved,
     this.onSaveError,
@@ -29,6 +30,7 @@ class PrayerPage extends StatefulWidget {
 
   final AppRepository repository;
   final DateTime day;
+  final bool active;
   final bool historical;
   final VoidCallback? onSaved;
   final ValueChanged<String>? onSaveError;
@@ -41,7 +43,11 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   Map<String, PrayerStatus> _prayers = defaultPrayerMap();
   Map<String, PrayerStatus> _confirmedPrayers = defaultPrayerMap();
   bool _loading = true;
+  bool _hasLoaded = false;
   bool _loadFailed = false;
+  bool _refreshing = false;
+  bool _refreshFailed = false;
+  int _pendingSaves = 0;
   bool _openingQaza = false;
   PrayerTimeConfig? _timeConfig;
   PrayerSchedule? _schedule;
@@ -53,12 +59,40 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   bool _alertExact = true;
   int _scheduledAlertCount = 0;
   Future<void> _writeQueue = Future<void>.value();
+  int _statusRequestId = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant PrayerPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final contextChanged = oldWidget.repository.uid != widget.repository.uid ||
+        dateKey(oldWidget.day) != dateKey(widget.day) ||
+        oldWidget.historical != widget.historical;
+    if (contextChanged) {
+      _hasLoaded = false;
+      _writeQueue = Future<void>.value();
+      _prayers = defaultPrayerMap();
+      _confirmedPrayers = defaultPrayerMap();
+      _pendingSaves = 0;
+      _scheduleTimer?.cancel();
+      _timeConfig = null;
+      _schedule = null;
+      _alertSettings = PrayerAlertSettings();
+      _alertsLoaded = false;
+      _load();
+    } else if (!identical(oldWidget.repository, widget.repository)) {
+      _load();
+    } else if (!oldWidget.active &&
+        widget.active &&
+        widget.repository.canSync) {
+      _refreshPrayerStatuses();
+    }
   }
 
   @override
@@ -70,6 +104,11 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        widget.active &&
+        widget.repository.canSync) {
+      unawaited(_refreshPrayerStatuses());
+    }
     if (!widget.historical &&
         state == AppLifecycleState.resumed &&
         _timeConfig != null) {
@@ -90,127 +129,156 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
 
     final summary = PrayerSummary.fromStatuses(_prayers.values);
 
-    return PageFrame(
-      title: widget.historical ? 'নামাজের হিসাব' : 'নামাজ ট্র্যাকিং',
-      subtitle: widget.historical
-          ? '${compactDateLabel(widget.day)} দিনের হিসাব সংশোধন করুন'
-          : 'আজকের পাঁচ ওয়াক্ত নামাজ ও জামাতে পড়া ট্র্যাক করুন',
-      children: [
-        if (!widget.historical) ...[
-          _PrayerTimesCard(
-            config: _timeConfig,
-            schedule: _schedule,
-            onConfigure: _configurePrayerTimes,
-          ),
-        ],
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                _StatTile(
-                  label: 'পড়া',
-                  value: summary.prayed,
-                  color: AppColors.success,
-                ),
-                _StatTile(
-                    label: 'মিস',
-                    value: summary.missed,
-                    color: AppColors.danger),
-                _StatTile(
-                    label: 'কাযা',
-                    value: summary.madeUp,
-                    color: AppColors.information),
-                _StatTile(
-                  label: 'হিসাব নেই',
-                  value: summary.unlogged,
-                  color: AppColors.muted,
-                ),
-              ],
+    return RefreshIndicator(
+      onRefresh: _refreshPrayerStatuses,
+      child: PageFrame(
+        title: widget.historical ? 'নামাজের হিসাব' : 'নামাজ ট্র্যাকিং',
+        subtitle: widget.historical
+            ? '${compactDateLabel(widget.day)} দিনের হিসাব সংশোধন করুন'
+            : 'আজকের পাঁচ ওয়াক্ত নামাজ ও জামাতে পড়া ট্র্যাক করুন',
+        children: [
+          if (_refreshing) const LinearProgressIndicator(),
+          if (_pendingSaves > 0)
+            Semantics(
+              liveRegion: true,
+              child: const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text('নামাজের হিসাব সংরক্ষণ হচ্ছে…'),
+              ),
             ),
-          ),
-        ),
-        if (summary.jamaat > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-                '${banglaNumber(summary.jamaat)} ওয়াক্ত জামাতে পড়া হয়েছে'),
-          ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.historical ? 'এই দিনের নামাজ' : 'আজকের নামাজ',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+          if (_refreshFailed)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.sync_problem_outlined),
+                title: const Text('সর্বশেষ নামাজের হিসাব আনা যায়নি'),
+                trailing: TextButton(
+                  onPressed: _refreshPrayerStatuses,
+                  child: const Text('রিট্রাই'),
                 ),
-                const SizedBox(height: 10),
-                ...prayerKeys.map((key) {
-                  final status = _prayers[key] ??
-                      const PrayerStatus(state: PrayerState.unlogged);
-                  return _PrayerTile(
-                    prayerKey: key,
-                    label: prayerLabels[key] ?? key,
-                    status: status,
-                    onStateChanged: (state) =>
-                        _updatePrayer(key, status.copyWith(state: state)),
-                    onJamaatChanged: status.prayed
-                        ? (value) =>
-                            _updatePrayer(key, status.copyWith(jamaat: value))
-                        : null,
-                  );
-                }),
-              ],
+              ),
             ),
-          ),
-        ),
-        if (!widget.historical) ...[
+          if (!widget.historical) ...[
+            _PrayerTimesCard(
+              config: _timeConfig,
+              schedule: _schedule,
+              onConfigure: _configurePrayerTimes,
+            ),
+          ],
           const SizedBox(height: 16),
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.history_outlined),
-              title: const Text('সব দিনের কাযা'),
-              subtitle: const Text('মিসড নামাজ দেখুন ও কাযা সম্পন্ন করুন'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _openingQaza ? null : _openQazaBacklog,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  _StatTile(
+                    label: 'পড়া',
+                    value: summary.prayed,
+                    color: AppColors.success,
+                  ),
+                  _StatTile(
+                      label: 'মিস',
+                      value: summary.missed,
+                      color: AppColors.danger),
+                  _StatTile(
+                      label: 'কাযা',
+                      value: summary.madeUp,
+                      color: AppColors.information),
+                  _StatTile(
+                    label: 'হিসাব নেই',
+                    value: summary.unlogged,
+                    color: AppColors.muted,
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-        if (!widget.historical && ReminderService.supported) ...[
+          if (summary.jamaat > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                  '${banglaNumber(summary.jamaat)} ওয়াক্ত জামাতে পড়া হয়েছে'),
+            ),
           const SizedBox(height: 16),
-          PrayerAlertCard(
-            settings: _alertSettings,
-            locationReady: _timeConfig != null,
-            busy: _alertBusy || !_alertsLoaded,
-            permissionGranted: _alertPermissionGranted,
-            exact: _alertExact,
-            scheduledCount: _scheduledAlertCount,
-            onChanged: (next, requestPermission) => _changeAlertSettings(
-              next,
-              requestPermission: requestPermission,
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    widget.historical ? 'এই দিনের নামাজ' : 'আজকের নামাজ',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 10),
+                  ...prayerKeys.map((key) {
+                    final status = _prayers[key] ??
+                        const PrayerStatus(state: PrayerState.unlogged);
+                    return _PrayerTile(
+                      prayerKey: key,
+                      label: prayerLabels[key] ?? key,
+                      status: status,
+                      onStateChanged: (state) =>
+                          _updatePrayer(key, status.copyWith(state: state)),
+                      onJamaatChanged: status.prayed
+                          ? (value) =>
+                              _updatePrayer(key, status.copyWith(jamaat: value))
+                          : null,
+                    );
+                  }),
+                ],
+              ),
             ),
-            onConfigureLocation: _configurePrayerTimes,
           ),
+          if (!widget.historical) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.history_outlined),
+                title: const Text('সব দিনের কাযা'),
+                subtitle: const Text('মিসড নামাজ দেখুন ও কাযা সম্পন্ন করুন'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _openingQaza ? null : _openQazaBacklog,
+              ),
+            ),
+          ],
+          if (!widget.historical && ReminderService.supported) ...[
+            const SizedBox(height: 16),
+            PrayerAlertCard(
+              settings: _alertSettings,
+              locationReady: _timeConfig != null,
+              busy: _alertBusy || !_alertsLoaded,
+              permissionGranted: _alertPermissionGranted,
+              exact: _alertExact,
+              scheduledCount: _scheduledAlertCount,
+              onChanged: (next, requestPermission) => _changeAlertSettings(
+                next,
+                requestPermission: requestPermission,
+              ),
+              onConfigureLocation: _configurePrayerTimes,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
   Future<void> _load() async {
+    final requestId = ++_statusRequestId;
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
     setState(() {
       _loading = true;
       _loadFailed = false;
+      _refreshing = false;
+      _refreshFailed = false;
     });
     if (!widget.historical) {
       try {
-        final config = await PrayerTimeStore(widget.repository.uid).load();
+        final config = await PrayerTimeStore(repository.uid).load();
+        if (!mounted || requestId != _statusRequestId) return;
         if (config != null) {
           _timeConfig = config;
           _updateSchedule(config);
@@ -218,19 +286,69 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
       } catch (_) {
         _showMessage('নামাজের সময় লোড করতে সমস্যা হয়েছে');
       }
-      if (ReminderService.supported) unawaited(_loadAlertSettings());
+      if (ReminderService.supported &&
+          mounted &&
+          requestId == _statusRequestId) {
+        unawaited(_loadAlertSettings());
+      }
     }
     try {
-      final todayDoc = await widget.repository.loadPrayerDocument(
-        dateKey(widget.day),
-      );
+      await _writeQueue;
+      if (!mounted || requestId != _statusRequestId) return;
+      final todayDoc = await repository.loadPrayerDocument(day);
+      if (!mounted ||
+          requestId != _statusRequestId ||
+          !identical(repository, widget.repository) ||
+          day != dateKey(widget.day)) {
+        return;
+      }
       _prayers = prayerStatusesFromDocument(todayDoc);
       _confirmedPrayers = Map<String, PrayerStatus>.of(_prayers);
+      _hasLoaded = true;
     } catch (_) {
+      if (!mounted || requestId != _statusRequestId) return;
       _loadFailed = true;
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _statusRequestId) {
         setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _refreshPrayerStatuses() async {
+    if (!widget.repository.canSync) return;
+    if (!_hasLoaded) {
+      await _load();
+      return;
+    }
+    final requestId = ++_statusRequestId;
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
+    setState(() {
+      _refreshing = true;
+      _refreshFailed = false;
+    });
+    try {
+      await _writeQueue;
+      if (!mounted || requestId != _statusRequestId) return;
+      final document = await repository.loadPrayerDocument(day);
+      if (!mounted ||
+          requestId != _statusRequestId ||
+          !identical(repository, widget.repository) ||
+          day != dateKey(widget.day)) {
+        return;
+      }
+      setState(() {
+        _prayers = prayerStatusesFromDocument(document);
+        _confirmedPrayers = Map<String, PrayerStatus>.of(_prayers);
+      });
+    } catch (_) {
+      if (mounted && requestId == _statusRequestId) {
+        setState(() => _refreshFailed = true);
+      }
+    } finally {
+      if (mounted && requestId == _statusRequestId) {
+        setState(() => _refreshing = false);
       }
     }
   }
@@ -344,24 +462,46 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   }
 
   Future<void> _updatePrayer(String key, PrayerStatus status) async {
-    setState(() => _prayers[key] = status);
-    final operation =
-        _writeQueue.then((_) => widget.repository.savePrayerStatus(
-              date: dateKey(widget.day),
-              prayerKey: key,
-              status: status,
-            ));
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
+    final onSaved = widget.onSaved;
+    final onSaveError = widget.onSaveError;
+    ++_statusRequestId;
+    setState(() {
+      _prayers[key] = status;
+      _pendingSaves++;
+      _refreshing = false;
+      _refreshFailed = false;
+    });
+    final operation = _writeQueue.then((_) => repository.savePrayerStatus(
+          date: day,
+          prayerKey: key,
+          status: status,
+        ));
     _writeQueue = operation.then((_) {
-      _confirmedPrayers[key] = status;
-      widget.onSaved?.call();
+      if (mounted &&
+          identical(repository, widget.repository) &&
+          day == dateKey(widget.day)) {
+        _confirmedPrayers[key] = status;
+        setState(() => _pendingSaves--);
+      }
+      onSaved?.call();
     }).catchError((Object _) {
-      if (mounted && identical(_prayers[key], status)) {
-        setState(() => _prayers[key] = _confirmedPrayers[key]!);
+      final current = mounted &&
+          identical(repository, widget.repository) &&
+          day == dateKey(widget.day);
+      if (current) {
+        setState(() {
+          _pendingSaves--;
+          if (identical(_prayers[key], status)) {
+            _prayers[key] = _confirmedPrayers[key]!;
+          }
+        });
       }
       const message = 'নামাজের ডেটা সিঙ্ক করতে সমস্যা হয়েছে';
-      if (widget.onSaveError case final onSaveError?) {
+      if (onSaveError != null) {
         onSaveError(message);
-      } else {
+      } else if (current) {
         _showMessage(message);
       }
     });
@@ -383,10 +523,20 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
         ),
       );
       if (!mounted) return;
-      final document = await widget.repository.loadPrayerDocument(
-        dateKey(widget.day),
-      );
+      final requestId = ++_statusRequestId;
+      setState(() {
+        _refreshing = false;
+        _refreshFailed = false;
+      });
+      final repository = widget.repository;
+      final day = dateKey(widget.day);
+      final document = await repository.loadPrayerDocument(day);
       if (!mounted) return;
+      if (requestId != _statusRequestId ||
+          !identical(repository, widget.repository) ||
+          day != dateKey(widget.day)) {
+        return;
+      }
       setState(() {
         _prayers = prayerStatusesFromDocument(document);
         _confirmedPrayers = Map<String, PrayerStatus>.of(_prayers);

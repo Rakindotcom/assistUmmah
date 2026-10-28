@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **288 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **294 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -71,6 +71,10 @@ Verified locally through 28 October 2026:
 - Contacts refresh when reopened or when the active app resumes. Phone users
   can pull to refresh without leaving the screen. A failed refresh retains
   the previous list and offers retry; preview contacts survive a refresh.
+- Prayer statuses refresh when the tab is reopened, the active app resumes, or
+  the phone view is pulled down. Refresh waits for pending saves and keeps the
+  last known status on failure. A visible pending message accompanies prayer
+  edits, and Calendar still receives save results after its editor closes.
 - Growth checklist edits show pending or failed save status. A tab refresh
   preserves an unsaved draft, and failed changes can be retried in place.
 
