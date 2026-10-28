@@ -1,6 +1,6 @@
 {
   "bundle": "build/app/outputs/bundle/release/app-release.aab",
-  "sha256": "55ae35564b7e5da1dfaf21063e3e62ce4b1a45a5d85c406e71860f1fabfd25ca",
+  "sha256": "4b8972ee3614d8b16fcfa7a4f1f48fdd0b40dc0243c0b14c207215354090615b",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
   "versionCode": 1,

@@ -57,7 +57,8 @@ class _QazaPageState extends State<QazaPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final count = _entries.length;
-    final showEntries = !_loading && !_loadFailed && count > 0;
+    final showEntries = count > 0;
+    final showStatus = _loading || _loadFailed;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
@@ -67,7 +68,7 @@ class _QazaPageState extends State<QazaPage> with WidgetsBindingObserver {
             24,
             MediaQuery.sizeOf(context).width >= 820 ? 32 : 20,
             96),
-        itemCount: 1 + (showEntries ? count : 1),
+        itemCount: 1 + (showEntries ? count + (showStatus ? 1 : 0) : 1),
         itemBuilder: (context, index) {
           if (index == 0) {
             return _bounded(
@@ -94,35 +95,36 @@ class _QazaPageState extends State<QazaPage> with WidgetsBindingObserver {
               ),
             );
           }
-          if (_loading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (_loadFailed) {
-            return _bounded(
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.sync_problem_outlined),
-                  title: const Text('কাযার তালিকা লোড করা যায়নি'),
-                  trailing: TextButton(
-                    onPressed: _load,
-                    child: const Text('রিট্রাই'),
+          if (!showEntries || (showStatus && index == 1)) {
+            if (_loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (_loadFailed) {
+              return _bounded(
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.sync_problem_outlined),
+                    title: Text(showEntries
+                        ? 'নতুন তালিকা লোড করা যায়নি'
+                        : 'কাযার তালিকা লোড করা যায়নি'),
+                    trailing: TextButton(
+                      onPressed: _load,
+                      child: const Text('রিট্রাই'),
+                    ),
                   ),
                 ),
-              ),
-            );
-          }
-          if (count == 0) {
+              );
+            }
             return _bounded(
               EmptyState(
-                icon: Icons.check_circle_outline,
-                message: widget.repository.canSync
-                    ? 'কোনো মিসড নামাজ চিহ্নিত নেই'
-                    : 'সব দিনের কাযা দেখতে সাইন ইন করুন',
-              ),
+                  icon: Icons.check_circle_outline,
+                  message: widget.repository.canSync
+                      ? 'কোনো মিসড নামাজ চিহ্নিত নেই'
+                      : 'সব দিনের কাযা দেখতে সাইন ইন করুন'),
             );
           }
 
-          final entry = _entries[index - 1];
+          final entry = _entries[index - 1 - (showStatus ? 1 : 0)];
           final date = DateTime.parse(entry.date);
           final busy = _busyIds.contains(entry.id);
           return _bounded(
@@ -140,7 +142,7 @@ class _QazaPageState extends State<QazaPage> with WidgetsBindingObserver {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : TextButton(
-                            onPressed: () => _complete(entry),
+                            onPressed: _loading ? null : () => _complete(entry),
                             child: const Text('কাযা সম্পন্ন'),
                           ),
                   ),
@@ -178,7 +180,6 @@ class _QazaPageState extends State<QazaPage> with WidgetsBindingObserver {
     } catch (_) {
       if (!mounted || requestId != _requestId) return;
       setState(() {
-        _entries = const [];
         _loading = false;
         _loadFailed = true;
       });

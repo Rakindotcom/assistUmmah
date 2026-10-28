@@ -156,6 +156,54 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('refresh failure keeps the last backlog visible for retry', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _QazaRepository();
+    repository.documents['2026-10-24'] = _missed('fajr');
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: QazaPage(repository: repository, today: DateTime(2026, 10, 25)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('১ ওয়াক্ত কাযা বাকি'), findsOneWidget);
+
+    final gate = Completer<void>();
+    repository.loadGate = gate.future;
+    repository.failLoad = true;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(find.text('১ ওয়াক্ত কাযা বাকি'), findsOneWidget);
+    expect(find.text('ফজর'), findsOneWidget);
+    expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'কাযা সম্পন্ন'))
+            .onPressed,
+        isNull);
+
+    gate.complete();
+    await tester.pump();
+    expect(find.text('নতুন তালিকা লোড করা যায়নি'), findsOneWidget);
+    expect(find.text('ফজর'), findsOneWidget);
+    expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'কাযা সম্পন্ন'))
+            .onPressed,
+        isNotNull);
+
+    repository.failLoad = false;
+    await tester.tap(find.text('রিট্রাই'));
+    await tester.pumpAndSettle();
+    expect(find.text('নতুন তালিকা লোড করা যায়নি'), findsNothing);
+    expect(find.text('১ ওয়াক্ত কাযা বাকি'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('stale completion refreshes instead of overwriting a correction',
       (
     tester,
@@ -203,6 +251,8 @@ class _QazaRepository extends AppRepository {
   String? completedId;
   bool failCompletion = false;
   Completer<void>? pendingSave;
+  Future<void>? loadGate;
+  bool failLoad = false;
 
   @override
   bool get canSync => true;
@@ -226,11 +276,15 @@ class _QazaRepository extends AppRepository {
   }
 
   @override
-  Future<QazaBacklog> loadQazaBacklog({DateTime? today}) async =>
-      QazaBacklog.fromDocuments(
-        documents,
-        today: today ?? DateTime(2026, 10, 26),
-      );
+  Future<QazaBacklog> loadQazaBacklog({DateTime? today}) async {
+    final gate = loadGate;
+    if (gate != null) await gate;
+    if (failLoad) throw StateError('Simulated backlog read failure');
+    return QazaBacklog.fromDocuments(
+      documents,
+      today: today ?? DateTime(2026, 10, 26),
+    );
+  }
 
   @override
   Future<bool> completeQazaIfMissed({

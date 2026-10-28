@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **300 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **301 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -86,6 +86,8 @@ Verified locally through 28 October 2026:
   cover both outcomes.
 - Quran goal and reading editors keep pending saves on screen. Android Back
   cannot discard the draft during a write; a failed write stays retryable.
+- A failed Qaza refresh keeps the previously loaded backlog visible with a
+  retry action. Completion controls pause during the refresh.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at
