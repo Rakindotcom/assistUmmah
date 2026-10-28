@@ -178,6 +178,10 @@ APK using temporary private password files, checks its signature and 16 KB ZIP
 alignment, and adds those results to the report. A 16 KB device run and testing
 the Play-generated APKs are separate checks.
 
+Bundle verification invalidates native runtime claims when the AAB hash changes.
+A successful signed smoke records that exact hash in the bundle, emulator and
+summary evidence. The upload packager requires all four records to agree.
+
 With the dedicated `rober_pothe_audit_16k` emulator running as `emulator-5556`,
 run `python3 tool/smoke_android_release.py`. The script clears only that
 emulator's app data, compares the installed APK hash, and requires a ready
@@ -221,8 +225,9 @@ signing credentials are excluded from that packet.
 6. Confirm optional diagnostic reporting off/on/off behavior and receipt of a
    controlled test report in Crashlytics. Do not crash a real user's session.
 7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. Emulator
-   16 KB profile flows and signed APK startup pass; physical ARM64 and Play-signed
-   builds remain unverified. No physical Android device is connected here.
+   16 KB profile flows passed on an earlier build; the current signed APK startup,
+   physical ARM64 and Play-signed builds remain unverified. No physical Android
+   device is connected here.
 8. Review the six prepared native captures. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,

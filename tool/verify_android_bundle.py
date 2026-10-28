@@ -13,6 +13,8 @@ import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
 
+from release_runtime_evidence import reconcile_runtime_evidence
+
 ANDROID = '{http://schemas.android.com/apk/res/android}'
 
 
@@ -77,6 +79,9 @@ def main():
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(output,indent=2)+'\n')
     args.output.with_suffix('.manifest.xml').write_text('\n'.join(line.rstrip() for line in manifest.splitlines()) + '\n')
+    release_report = Path(__file__).resolve().parents[1] / 'docs/release/bundle-verification.json'
+    if args.output.resolve() == release_report:
+        reconcile_runtime_evidence(args.output.parent, output['sha256'])
     print(f'Validated signed bundle, API {output["targetSdk"]}, ARM64 and {len(libraries)} native libraries.')
     print('Still required: generated APK ZIP alignment and native runtime verification.')
 

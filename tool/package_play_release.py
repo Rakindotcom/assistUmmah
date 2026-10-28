@@ -28,7 +28,12 @@ def main():
     assert smoke['firebaseInitialized'] and smoke['firebaseRegistrarErrorsAbsent']
     assert smoke['productionReleaseBinary'] and smoke['pageSize'] == 16384
     assert smoke['currentBundleVerified']
-    assert summary['signedReleaseStartupSmokePassed']
+    assert verification['runtime16KbVerified'], 'Current bundle lacks a 16 KB runtime check'
+    assert summary['nativeRuntimeTested'] and summary['signedReleaseStartupSmokePassed']
+    assert summary['signedReleaseLoginVisible'] and summary['firebaseRegistrarErrorsAbsent']
+    environment = json.loads((docs / 'android-emulator-environment.json').read_text())
+    assert environment['productionAppRuntimeVerified']
+    assert environment['productionRuntimeBundleSha256'] == verification['sha256'], 'Emulator evidence belongs to another bundle'
     private_review = ROOT / '.local/play-reviewer-credentials.json'
     if private_review.exists():
         credentials = json.loads(private_review.read_text())

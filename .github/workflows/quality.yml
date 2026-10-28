@@ -21,6 +21,7 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: flutter analyze --no-pub
       - run: flutter test --no-pub
+      - run: python3 -m unittest discover -s tool -p 'test_*.py'
       - run: git diff --check
   account-lifecycle:
     runs-on: ubuntu-latest

@@ -11,6 +11,8 @@ import subprocess
 import time
 from datetime import datetime, timezone
 
+from release_runtime_evidence import reconcile_runtime_evidence, write_json
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SDK = Path(os.environ.get('ANDROID_HOME', ROOT / '.local/android-sdk'))
@@ -118,8 +120,8 @@ def main() -> None:
         'currentBundleVerified': True,
         'scope': 'Fresh signed APK startup/login smoke on dedicated 16 KB emulator. Full app flow, physical ARM64 and Play-signed builds remain unverified.',
     }
-    (DOCS / 'signed-release-smoke.json').write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+    write_json(DOCS / 'signed-release-smoke.json', report)
+    assert reconcile_runtime_evidence(DOCS, verification['sha256'])
     print('PASS: signed APK hash, Firebase startup and login UI on the 16 KB emulator.')
 
 
