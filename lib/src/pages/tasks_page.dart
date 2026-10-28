@@ -12,16 +12,22 @@ import '../widgets/status_badge.dart';
 import 'task_entry_dialog.dart';
 
 class TasksPage extends StatefulWidget {
-  const TasksPage({super.key, required this.repository, required this.day});
+  const TasksPage({
+    super.key,
+    required this.repository,
+    required this.day,
+    this.active = true,
+  });
 
   final AppRepository repository;
   final DateTime day;
+  final bool active;
 
   @override
   State<TasksPage> createState() => _TasksPageState();
 }
 
-class _TasksPageState extends State<TasksPage> {
+class _TasksPageState extends State<TasksPage> with WidgetsBindingObserver {
   final Map<String, List<TaskItem>> _todayTasks = {
     'mustDo': [],
     'goodToDo': [],
@@ -34,23 +40,64 @@ class _TasksPageState extends State<TasksPage> {
   final List<TaskItem> _scheduledTasks = [];
 
   bool _loading = true;
+  bool _refreshing = false;
+  bool _hasLoaded = false;
   bool _loadFailed = false;
   String _activeList = 'mustDo';
   String _activeTab = 'today';
   Future<void> _writeQueue = Future<void>.value();
+  int _loadRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
+  void didUpdateWidget(covariant TasksPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final contextChanged = oldWidget.repository.uid != widget.repository.uid ||
+        dateKey(oldWidget.day) != dateKey(widget.day);
+    if (contextChanged) {
+      _hasLoaded = false;
+      _writeQueue = Future<void>.value();
+      _todayTasks['mustDo'] = [];
+      _todayTasks['goodToDo'] = [];
+      _missedTasks['mustDo'] = [];
+      _missedTasks['goodToDo'] = [];
+      _recurringTasks.clear();
+      _scheduledTasks.clear();
+    }
+    if (!identical(oldWidget.repository, widget.repository) ||
+        contextChanged ||
+        (!oldWidget.active && widget.active && widget.repository.canSync)) {
+      _load();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        widget.active &&
+        widget.repository.canSync) {
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading && !_hasLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_loadFailed) {
+    if (_loadFailed && !_hasLoaded) {
       return LoadFailureState(title: 'কাজ লোড করা যায়নি', onRetry: _load);
     }
 
@@ -73,6 +120,18 @@ class _TasksPageState extends State<TasksPage> {
                   label: const Text('কাজ যোগ'))
               : null,
           children: [
+            if (_refreshing) const LinearProgressIndicator(),
+            if (_loadFailed)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.sync_problem_outlined),
+                  title: const Text('সর্বশেষ কাজ আনা যায়নি'),
+                  trailing: TextButton(
+                    onPressed: _load,
+                    child: const Text('রিট্রাই'),
+                  ),
+                ),
+              ),
             _FilterBar(
               activeTab: _activeTab,
               activeList: _activeList,
@@ -154,29 +213,37 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Future<void> _load() async {
+    final requestId = ++_loadRequestId;
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
     setState(() {
-      _loading = true;
+      _loading = !_hasLoaded;
+      _refreshing = _hasLoaded;
       _loadFailed = false;
     });
     try {
-      final data = await widget.repository.loadTasksForDate(
-        dateKey(widget.day),
-      );
-      if (data != null) {
-        _replaceBuckets(_todayTasks, _parseTaskBuckets(data['todayTasks']));
-        _replaceBuckets(_missedTasks, _parseTaskBuckets(data['missedTasks']));
-        _recurringTasks
-          ..clear()
-          ..addAll(_parseRecurringTasks(data['recurringTasks']));
-        _scheduledTasks
-          ..clear()
-          ..addAll(_parseTaskList(data['scheduledTasks']));
+      await _writeQueue;
+      if (!mounted || requestId != _loadRequestId) return;
+      final data = await repository.loadTasksForDate(day);
+      if (!mounted ||
+          requestId != _loadRequestId ||
+          !identical(repository, widget.repository) ||
+          day != dateKey(widget.day)) {
+        return;
       }
+      if (data != null) {
+        _applySnapshot(data);
+      }
+      _hasLoaded = true;
     } catch (_) {
+      if (!mounted || requestId != _loadRequestId) return;
       _loadFailed = true;
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
+      if (mounted && requestId == _loadRequestId) {
+        setState(() {
+          _loading = false;
+          _refreshing = false;
+        });
       }
     }
   }
@@ -367,21 +434,27 @@ class _TasksPageState extends State<TasksPage> {
       return Future<void>.value();
     }
 
+    final repository = widget.repository;
+    final day = dateKey(widget.day);
+    ++_loadRequestId;
+    if (_loading || _refreshing) {
+      setState(() {
+        _loading = false;
+        _refreshing = false;
+        _loadFailed = false;
+      });
+    }
     final operation = _writeQueue.then((_) async {
-      final data = await widget.repository.changeTasks(
-        date: dateKey(widget.day),
+      final data = await repository.changeTasks(
+        date: day,
         apply: apply,
       );
-      if (mounted && data != null) {
+      if (mounted &&
+          data != null &&
+          identical(repository, widget.repository) &&
+          day == dateKey(widget.day)) {
         setState(() {
-          _replaceBuckets(_todayTasks, _parseTaskBuckets(data['todayTasks']));
-          _replaceBuckets(_missedTasks, _parseTaskBuckets(data['missedTasks']));
-          _recurringTasks
-            ..clear()
-            ..addAll(_parseRecurringTasks(data['recurringTasks']));
-          _scheduledTasks
-            ..clear()
-            ..addAll(_parseTaskList(data['scheduledTasks']));
+          _applySnapshot(data);
         });
       }
     });
@@ -389,6 +462,17 @@ class _TasksPageState extends State<TasksPage> {
       if (!propagateError) _showMessage('সিঙ্ক করতে সমস্যা হয়েছে');
     });
     return propagateError ? operation : _writeQueue;
+  }
+
+  void _applySnapshot(Map<String, dynamic> data) {
+    _replaceBuckets(_todayTasks, _parseTaskBuckets(data['todayTasks']));
+    _replaceBuckets(_missedTasks, _parseTaskBuckets(data['missedTasks']));
+    _recurringTasks
+      ..clear()
+      ..addAll(_parseRecurringTasks(data['recurringTasks']));
+    _scheduledTasks
+      ..clear()
+      ..addAll(_parseTaskList(data['scheduledTasks']));
   }
 
   Map<String, List<TaskItem>> _parseTaskBuckets(Object? raw) {

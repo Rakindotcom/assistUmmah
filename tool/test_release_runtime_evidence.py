@@ -33,6 +33,10 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         self.assertFalse(reconcile_runtime_evidence(self.docs, 'new'))
         self.assertFalse(read_json(self.docs / 'bundle-verification.json')['runtime16KbVerified'])
         self.assertFalse(read_json(self.docs / 'signed-release-smoke.json')['currentBundleVerified'])
+        self.assertEqual(
+            read_json(self.docs / 'signed-release-smoke.json')['supersededByBundleSha256'],
+            'new',
+        )
         environment = read_json(self.docs / 'android-emulator-environment.json')
         self.assertFalse(environment['productionAppRuntimeVerified'])
         self.assertIsNone(environment['productionRuntimeBundleSha256'])
@@ -46,6 +50,8 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         write_json(self.docs / 'signed-release-smoke.json', self.smoke)
         self.assertTrue(reconcile_runtime_evidence(self.docs, 'new'))
         self.assertTrue(read_json(self.docs / 'bundle-verification.json')['runtime16KbVerified'])
+        self.assertNotIn('supersededByBundleSha256',
+                         read_json(self.docs / 'signed-release-smoke.json'))
         environment = read_json(self.docs / 'android-emulator-environment.json')
         self.assertEqual(environment['productionRuntimeBundleSha256'], 'new')
         self.assertTrue(read_json(self.docs / 'verification-summary.json')['signedReleaseStartupSmokePassed'])

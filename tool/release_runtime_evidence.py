@@ -34,8 +34,12 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
                    and smoke.get('firebaseCrashlyticsInitialized')
                    and smoke.get('firebaseRegistrarErrorsAbsent')
                    and smoke.get('pageSize') == 16384)
-    if smoke is not None and smoke.get('currentBundleVerified') != current:
+    if smoke is not None:
         smoke['currentBundleVerified'] = current
+        if current:
+            smoke.pop('supersededByBundleSha256', None)
+        else:
+            smoke['supersededByBundleSha256'] = bundle_sha256
         write_json(smoke_path, smoke)
 
     bundle_path = docs / 'bundle-verification.json'

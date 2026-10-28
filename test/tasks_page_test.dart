@@ -210,6 +210,162 @@ void main() {
         findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('returning to Tasks refreshes changes made on another device',
+      (tester) async {
+    final repository = _TaskRepository();
+    Widget page(bool active) => MaterialApp(
+          home: Scaffold(
+            body: TasksPage(
+              repository: repository,
+              day: DateTime(2026, 10, 25),
+              active: active,
+            ),
+          ),
+        );
+    await tester.pumpWidget(page(true));
+    await tester.pump();
+    expect(find.text('External task'), findsNothing);
+
+    await tester.pumpWidget(page(false));
+    repository.today['mustDo']!.add(const TaskItem(
+      id: 'external',
+      text: 'External task',
+      completed: false,
+      createdAt: '',
+      dateCreated: '2026-10-25',
+      dueDate: '2026-10-25',
+      section: 'mustDo',
+    ));
+    await tester.pumpWidget(page(true));
+    await tester.pump();
+    expect(find.text('External task'), findsOneWidget);
+  });
+
+  testWidgets('active Tasks refreshes after the app resumes', (tester) async {
+    final repository = _TaskRepository();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: TasksPage(repository: repository, day: DateTime(2026, 10, 25)),
+      ),
+    ));
+    await tester.pump();
+    repository.today['mustDo']!.add(const TaskItem(
+      id: 'resume',
+      text: 'Resumed task',
+      completed: false,
+      createdAt: '',
+      dateCreated: '2026-10-25',
+      dueDate: '2026-10-25',
+      section: 'mustDo',
+    ));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(find.text('Resumed task'), findsOneWidget);
+  });
+
+  testWidgets('late refresh cannot replace a newer Tasks response',
+      (tester) async {
+    final repository = _DeferredTaskRepository();
+    Widget page(bool active) => MaterialApp(
+          home: Scaffold(
+            body: TasksPage(
+              repository: repository,
+              day: DateTime(2026, 10, 25),
+              active: active,
+            ),
+          ),
+        );
+    await tester.pumpWidget(page(true));
+    await tester.pump();
+    await tester.pumpWidget(page(false));
+    await tester.pumpWidget(page(true));
+    expect(repository.refreshes, hasLength(1));
+    await tester.pumpWidget(page(false));
+    await tester.pumpWidget(page(true));
+    expect(repository.refreshes, hasLength(2));
+
+    repository.refreshes[1].complete(_taskSnapshot('new', 'New task'));
+    await tester.pump();
+    expect(find.text('New task'), findsOneWidget);
+    repository.refreshes[0].complete(_taskSnapshot('old', 'Old task'));
+    await tester.pump();
+    expect(find.text('New task'), findsOneWidget);
+    expect(find.text('Old task'), findsNothing);
+  });
+
+  testWidgets('failed Tasks refresh retains the last loaded list and retry',
+      (tester) async {
+    final repository = _DeferredTaskRepository();
+    repository.today['mustDo']!.add(const TaskItem(
+      id: 'saved',
+      text: 'Saved task',
+      completed: false,
+      createdAt: '',
+      dateCreated: '2026-10-25',
+      dueDate: '2026-10-25',
+      section: 'mustDo',
+    ));
+    Widget page(bool active) => MaterialApp(
+          home: Scaffold(
+            body: TasksPage(
+              repository: repository,
+              day: DateTime(2026, 10, 25),
+              active: active,
+            ),
+          ),
+        );
+    await tester.pumpWidget(page(true));
+    await tester.pump();
+    expect(find.text('Saved task'), findsOneWidget);
+    await tester.pumpWidget(page(false));
+    await tester.pumpWidget(page(true));
+    expect(find.text('Saved task'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    repository.refreshes.single.completeError(StateError('network'));
+    await tester.pump();
+    expect(find.text('Saved task'), findsOneWidget);
+    expect(find.text('সর্বশেষ কাজ আনা যায়নি'), findsOneWidget);
+    expect(find.text('রিট্রাই'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+Map<String, dynamic> _taskSnapshot(String id, String text) => {
+      'todayTasks': {
+        'mustDo': [
+          TaskItem(
+            id: id,
+            text: text,
+            completed: false,
+            createdAt: '',
+            dateCreated: '2026-10-25',
+            dueDate: '2026-10-25',
+            section: 'mustDo',
+          ).toMap(),
+        ],
+        'goodToDo': <Map<String, dynamic>>[],
+      },
+      'missedTasks': {
+        'mustDo': <Map<String, dynamic>>[],
+        'goodToDo': <Map<String, dynamic>>[],
+      },
+      'recurringTasks': <Map<String, dynamic>>[],
+      'scheduledTasks': <Map<String, dynamic>>[],
+    };
+
+class _DeferredTaskRepository extends _TaskRepository {
+  int loads = 0;
+  final refreshes = <Completer<Map<String, dynamic>?>>[];
+
+  @override
+  Future<Map<String, dynamic>?> loadTasksForDate(String date) {
+    loads++;
+    if (loads == 1) return super.loadTasksForDate(date);
+    final refresh = Completer<Map<String, dynamic>?>();
+    refreshes.add(refresh);
+    return refresh.future;
+  }
 }
 
 class _TaskRepository extends AppRepository {

@@ -5,8 +5,9 @@ Updated 28 October 2026 (Asia/Dhaka).
 ## Current decision
 
 The current signed Android bundle passes static artifact checks. Its fresh
-runtime smoke is pending: the latest attempt did not reach the login screen
-within the test window, and emulator diagnostics could not yet be read.
+runtime smoke is pending: the last attempt on an earlier bundle did not reach
+the login screen within the test window, and emulator diagnostics could not
+yet be read.
 Production approval also requires Android device testing and the Play Console
 gates below. A browser or widget pass does not establish native delivery.
 The older generated upload packet has been moved into the ignored `.local`
@@ -15,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **277 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **281 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -63,6 +64,10 @@ Verified locally through 28 October 2026:
   retried without losing text or recurrence. The task identity remains stable
   across retries, preventing duplicates when a committed write loses its
   response.
+- The Tasks tab refreshes server data when reopened or when the active app
+  resumes. A failed refresh keeps the last loaded list and offers retry;
+  delayed older responses cannot replace newer task data. Preview mode skips
+  the unnecessary server refresh.
 - Growth checklist edits show pending or failed save status. A tab refresh
   preserves an unsaved draft, and failed changes can be retried in place.
 
