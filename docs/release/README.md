@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **296 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **298 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -81,6 +81,9 @@ Verified locally through 28 October 2026:
   Bengali text. Actual TalkBack traversal remains a device check.
 - Growth checklist edits show pending or failed save status. A tab refresh
   preserves an unsaved draft, and failed changes can be retried in place.
+- Calendar refreshes after a delayed growth save even when its editor has
+  closed, and reports a failed save on the Calendar screen. Regression tests
+  cover both outcomes.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at

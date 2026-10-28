@@ -56,12 +56,16 @@ change the Play Store status by themselves.
   tab refresh arrives before the write finishes or after it fails. The failed
   state offers an inline retry, preserving the latest checklist values instead
   of silently replacing them with older server data.
+- Calendar receives a delayed growth save result after its editor closes. A
+  successful save refreshes that date's summary; a failed save reports the
+  error on the Calendar screen. The same callback handling covers checklist
+  template edits.
 - A profile-mode Android integration audit measures sign-in, first tab loads,
   a live seven-day report and navigation frames. The prior-build audit passes with
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 296 unit/widget tests passed
+The final Flutter analyzer found no issues and all 298 unit/widget tests passed
 on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was

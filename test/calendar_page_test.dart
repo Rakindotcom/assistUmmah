@@ -120,6 +120,69 @@ void main() {
     expect(find.text('১ পড়া • ০ মিস • ০ কাযা • ৪ হিসাব নেই'), findsOneWidget);
   });
 
+  testWidgets('calendar refreshes after a delayed growth write completes', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final repository = _MemoryRepository()..growthWriteGate = gate.future;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body:
+            CalendarPage(repository: repository, today: DateTime(2026, 10, 25)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('calendar_previous_day')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'গ্রোথ চেকলিস্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(CheckboxListTile).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CheckboxListTile).first);
+    await tester.pump();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('ইমান ২০% • লাইফ ০%'), findsNothing);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('ইমান ২০% • লাইফ ০%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('failed growth save is reported after leaving the editor', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final repository = _MemoryRepository()
+      ..growthWriteGate = gate.future
+      ..failGrowthWrite = true;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body:
+            CalendarPage(repository: repository, today: DateTime(2026, 10, 25)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('calendar_previous_day')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'গ্রোথ চেকলিস্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(CheckboxListTile).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CheckboxListTile).first);
+    await tester.pump();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    gate.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('২৪/১০/২০২৬: গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে'),
+        findsOneWidget);
+    expect(find.text('ইমান ২০% • লাইফ ০%'), findsNothing);
+  });
+
   testWidgets('calendar date selection works on a narrow screen', (
     tester,
   ) async {
@@ -300,6 +363,8 @@ class _MemoryRepository extends AppRepository {
   bool? updatedPreferredType;
   Future<void>? prayerWriteGate;
   bool failPrayerWrite = false;
+  Future<void>? growthWriteGate;
+  bool failGrowthWrite = false;
 
   @override
   Future<Map<String, dynamic>?> loadPrayerDocument(String date) async =>
@@ -344,6 +409,9 @@ class _MemoryRepository extends AppRepository {
     GrowthChecklistConfig? checklistConfig,
     bool prayerLinked = false,
   }) async {
+    final gate = growthWriteGate;
+    if (gate != null) await gate;
+    if (failGrowthWrite) throw StateError('Simulated growth write failure');
     savedGrowthDate = date;
     updatedPreferredType = updatePreferredType;
     _growth[date] = {

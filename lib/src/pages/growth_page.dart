@@ -360,6 +360,8 @@ class _GrowthPageState extends State<GrowthPage> {
   Future<bool> _save() async {
     final revision = _mutationRevision;
     final repository = widget.repository;
+    final onSaved = widget.onSaved;
+    final onSaveError = widget.onSaveError;
     final day = dateKey(widget.day);
     final historical = widget.historical;
     final prayerLinked = _prayerLinked;
@@ -385,11 +387,11 @@ class _GrowthPageState extends State<GrowthPage> {
       if (mounted && revision > _confirmedRevision) {
         setState(() => _confirmedRevision = revision);
       }
-      if (mounted) widget.onSaved?.call();
+      onSaved?.call();
       return true;
     } catch (_) {
       const message = 'গ্রোথ ডেটা সিঙ্ক করতে সমস্যা হয়েছে';
-      if (widget.onSaveError case final onSaveError?) {
+      if (onSaveError != null) {
         onSaveError(message);
       } else {
         _showMessage(message);
@@ -448,6 +450,8 @@ class _GrowthPageState extends State<GrowthPage> {
       for (final item in nextLifeItems) item.key: _life[item.key] ?? false,
     };
     final repository = widget.repository;
+    final onSaved = widget.onSaved;
+    final onSaveError = widget.onSaveError;
     final day = dateKey(widget.day);
     final userType = _userType;
     final prayerLinked = _prayerLinked;
@@ -468,18 +472,24 @@ class _GrowthPageState extends State<GrowthPage> {
     _writeQueue = operation.catchError((Object _) {});
     try {
       await operation;
-      if (!mounted) return;
-      setState(() {
-        _config = nextConfig;
-        _imanItems = nextImanItems;
-        _lifeItems = nextLifeItems;
-        _iman = nextIman;
-        _life = nextLife;
-        if (revision > _confirmedRevision) _confirmedRevision = revision;
-      });
-      widget.onSaved?.call();
+      if (mounted) {
+        setState(() {
+          _config = nextConfig;
+          _imanItems = nextImanItems;
+          _lifeItems = nextLifeItems;
+          _iman = nextIman;
+          _life = nextLife;
+          if (revision > _confirmedRevision) _confirmedRevision = revision;
+        });
+      }
+      onSaved?.call();
     } catch (_) {
-      _showMessage('চেকলিস্ট সংরক্ষণ করা যায়নি');
+      const message = 'চেকলিস্ট সংরক্ষণ করা যায়নি';
+      if (onSaveError != null) {
+        onSaveError(message);
+      } else {
+        _showMessage(message);
+      }
     } finally {
       if (mounted) setState(() => _savingConfig = false);
     }
