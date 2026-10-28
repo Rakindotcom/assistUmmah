@@ -66,12 +66,16 @@ def main() -> None:
     assert 'Events injected: 1' in launch
 
     ready = False
-    for _ in range(5):
-        time.sleep(3)
+    ui = ''
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
+        time.sleep(2)
         adb('shell', 'uiautomator', 'dump', '/sdcard/rober-pothe-smoke.xml')
         ui = adb('shell', 'cat', '/sdcard/rober-pothe-smoke.xml')
         if 'লগইন' in ui and 'রবের পথে' in ui:
             ready = True
+            break
+        if 'অ্যাপ চালু করা যায়নি' in ui:
             break
     if not ready or 'অ্যাপ চালু করা যায়নি' in ui:
         diagnostics = ROOT / '.local/logs'
