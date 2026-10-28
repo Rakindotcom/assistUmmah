@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ummah_assist/src/app_repository.dart';
@@ -124,6 +126,75 @@ void main() {
     expect(repository.goal.target, 20);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('back cannot discard a reading while its save is pending',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final gate = Completer<void>();
+    final repository = _QuranRepository()
+      ..daySaveGate = gate.future
+      ..failDaySave = true;
+    await tester.pumpWidget(_app(repository));
+    await tester.pump();
+    await tester.tap(find.text('রিডিং হিসাব লিখুন'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, '15');
+    await tester.tap(find.text('হিসাব সংরক্ষণ'));
+    await tester.pump();
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.text('এই দিনের কুরআন রিডিং'), findsOneWidget);
+    expect(find.text('15'), findsOneWidget);
+
+    gate.complete();
+    await tester.pump();
+    expect(find.text('রিডিং হিসাব সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'),
+        findsOneWidget);
+    repository.failDaySave = false;
+    await tester.tap(find.text('হিসাব সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    expect(repository.documents['2026-10-26']!['minutes'], 15);
+    expect(find.text('১৫ মিনিট • ০ পৃষ্ঠা'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('back cannot discard a goal while its save is pending',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final gate = Completer<void>();
+    final repository = _QuranRepository()
+      ..goalSaveGate = gate.future
+      ..failGoalSave = true;
+    await tester.pumpWidget(_app(repository));
+    await tester.pump();
+    await tester.tap(find.text('পরিবর্তন'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '20');
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pump();
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.text('দৈনিক লক্ষ্য পরিবর্তন'), findsOneWidget);
+    expect(find.text('20'), findsOneWidget);
+
+    gate.complete();
+    await tester.pump();
+    expect(find.text('লক্ষ্য সংরক্ষণ করা যায়নি'), findsOneWidget);
+    repository.failGoalSave = false;
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    expect(repository.goal.target, 20);
+    expect(find.text('২০ মিনিট'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Widget _app(_QuranRepository repository) => MaterialApp(
@@ -139,6 +210,8 @@ class _QuranRepository extends AppRepository {
   final Map<String, Map<String, dynamic>> documents = {};
   bool failDaySave = false;
   bool failGoalSave = false;
+  Future<void>? daySaveGate;
+  Future<void>? goalSaveGate;
 
   @override
   bool get canSync => true;
@@ -148,6 +221,8 @@ class _QuranRepository extends AppRepository {
 
   @override
   Future<void> saveQuranGoal(QuranGoal next, {required DateTime today}) async {
+    final gate = goalSaveGate;
+    if (gate != null) await gate;
     if (failGoalSave) throw StateError('Simulated goal save failure');
     goal = next;
     final date =
@@ -163,6 +238,8 @@ class _QuranRepository extends AppRepository {
 
   @override
   Future<void> saveQuranDay(QuranReadingDay day) async {
+    final gate = daySaveGate;
+    if (gate != null) await gate;
     if (failDaySave) throw StateError('Simulated save failure');
     documents[day.date] = day.toMap();
   }

@@ -60,12 +60,15 @@ change the Play Store status by themselves.
   successful save refreshes that date's summary; a failed save reports the
   error on the Calendar screen. The same callback handling covers checklist
   template edits.
+- The Quran goal and reading editors now keep the route open while a save is
+  pending. Android Back cannot discard an in-flight draft; a failed write
+  leaves the entered values available for retry.
 - A profile-mode Android integration audit measures sign-in, first tab loads,
   a live seven-day report and navigation frames. The prior-build audit passes with
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 298 unit/widget tests passed
+The final Flutter analyzer found no issues and all 300 unit/widget tests passed
 on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was

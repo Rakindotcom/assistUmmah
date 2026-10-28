@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **298 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **300 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -84,6 +84,8 @@ Verified locally through 28 October 2026:
 - Calendar refreshes after a delayed growth save even when its editor has
   closed, and reports a failed save on the Calendar screen. Regression tests
   cover both outcomes.
+- Quran goal and reading editors keep pending saves on screen. Android Back
+  cannot discard the draft during a write; a failed write stays retryable.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at

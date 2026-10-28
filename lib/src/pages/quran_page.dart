@@ -331,6 +331,7 @@ class _QuranPageState extends State<QuranPage> with WidgetsBindingObserver {
   Future<void> _editGoal() async {
     final updated = await showDialog<QuranGoal>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => _QuranGoalEditor(
         initial: _goal,
         onSave: (goal) async {
@@ -396,64 +397,67 @@ class _QuranGoalEditorState extends State<_QuranGoalEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('দৈনিক লক্ষ্য পরিবর্তন'),
-      content: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<QuranGoalUnit>(
-                initialValue: _unit,
-                decoration: const InputDecoration(labelText: 'লক্ষ্যের ধরন'),
-                items: const [
-                  DropdownMenuItem(
-                    value: QuranGoalUnit.minutes,
-                    child: Text('মিনিট'),
-                  ),
-                  DropdownMenuItem(
-                    value: QuranGoalUnit.pages,
-                    child: Text('পৃষ্ঠা'),
-                  ),
-                ],
-                onChanged: _saving
-                    ? null
-                    : (value) {
-                        if (value != null) setState(() => _unit = value);
-                      },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _target,
-                enabled: !_saving,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                maxLength: 4,
-                decoration: InputDecoration(
-                  labelText:
-                      'প্রতিদিন কত ${_unit == QuranGoalUnit.minutes ? 'মিনিট' : 'পৃষ্ঠা'}',
-                  errorText: _error,
-                  counterText: '',
+    return PopScope(
+      canPop: !_saving,
+      child: AlertDialog(
+        title: const Text('দৈনিক লক্ষ্য পরিবর্তন'),
+        content: SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<QuranGoalUnit>(
+                  initialValue: _unit,
+                  decoration: const InputDecoration(labelText: 'লক্ষ্যের ধরন'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: QuranGoalUnit.minutes,
+                      child: Text('মিনিট'),
+                    ),
+                    DropdownMenuItem(
+                      value: QuranGoalUnit.pages,
+                      child: Text('পৃষ্ঠা'),
+                    ),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (value) {
+                          if (value != null) setState(() => _unit = value);
+                        },
                 ),
-              ),
-            ],
-          )),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('বাতিল'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('সংরক্ষণ'),
-        ),
-      ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _target,
+                  enabled: !_saving,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 4,
+                  decoration: InputDecoration(
+                    labelText:
+                        'প্রতিদিন কত ${_unit == QuranGoalUnit.minutes ? 'মিনিট' : 'পৃষ্ঠা'}',
+                    errorText: _error,
+                    counterText: '',
+                  ),
+                ),
+              ],
+            )),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+            child: const Text('বাতিল'),
+          ),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('সংরক্ষণ'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -516,69 +520,73 @@ class _QuranLogEditorState extends State<_QuranLogEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: Text(compactDateLabel(DateTime.parse(widget.initial.date)))),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Text('এই দিনের কুরআন রিডিং',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _minutes,
-                    enabled: !_saving,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    maxLength: 4,
-                    decoration: const InputDecoration(
-                        labelText: 'মিনিট', counterText: ''),
-                    validator: (value) => _validateCount(value, 1440),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _pages,
-                    enabled: !_saving,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    maxLength: 4,
-                    decoration: const InputDecoration(
-                        labelText: 'পৃষ্ঠা', counterText: ''),
-                    validator: (value) => _validateCount(value, 1000),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _lastRead,
-                    enabled: !_saving,
-                    maxLength: 120,
-                    decoration: const InputDecoration(
-                      labelText: 'শেষ পড়া স্থান (ঐচ্ছিক)',
-                      hintText: 'যেমন: সূরা বাকারা, আয়াত ২০',
+    return PopScope(
+      canPop: !_saving,
+      child: Scaffold(
+        appBar: AppBar(
+            title: Text(compactDateLabel(DateTime.parse(widget.initial.date))),
+            automaticallyImplyLeading: !_saving),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Text('এই দিনের কুরআন রিডিং',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _minutes,
+                      enabled: !_saving,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      maxLength: 4,
+                      decoration: const InputDecoration(
+                          labelText: 'মিনিট', counterText: ''),
+                      validator: (value) => _validateCount(value, 1440),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (_error != null)
-                    Text(_error!,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: _saving ? null : _save,
-                    child: _saving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('হিসাব সংরক্ষণ'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _pages,
+                      enabled: !_saving,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      maxLength: 4,
+                      decoration: const InputDecoration(
+                          labelText: 'পৃষ্ঠা', counterText: ''),
+                      validator: (value) => _validateCount(value, 1000),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _lastRead,
+                      enabled: !_saving,
+                      maxLength: 120,
+                      decoration: const InputDecoration(
+                        labelText: 'শেষ পড়া স্থান (ঐচ্ছিক)',
+                        hintText: 'যেমন: সূরা বাকারা, আয়াত ২০',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_error != null)
+                      Text(_error!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error)),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: _saving ? null : _save,
+                      child: _saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('হিসাব সংরক্ষণ'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
