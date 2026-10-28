@@ -39,7 +39,19 @@ class ReminderService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   Future<void>? _initialization;
-  Future<void> _prayerAlertQueue = Future<void>.value();
+  Future<void> _queue = Future<void>.value();
+  int _generation = 0;
+  int _dailyRevision = 0;
+  int _prayerRevision = 0;
+
+  int get dailyRevision => _dailyRevision;
+  int get prayerRevision => _prayerRevision;
+
+  Future<T> _enqueue<T>(Future<T> Function() action) {
+    final operation = _queue.then((_) => action());
+    _queue = operation.then<void>((_) {}, onError: (Object _) {});
+    return operation;
+  }
 
   Future<void> _initialize() {
     final pending = _initialization;
@@ -72,6 +84,18 @@ class ReminderService {
   Future<bool> sync(
     Map<String, bool> preferences, {
     bool requestPermission = false,
+  }) {
+    final generation = _generation;
+    _dailyRevision++;
+    final saved = Map<String, bool>.of(preferences);
+    return _enqueue(() => generation != _generation
+        ? Future.value(false)
+        : _sync(saved, requestPermission: requestPermission));
+  }
+
+  Future<bool> _sync(
+    Map<String, bool> preferences, {
+    required bool requestPermission,
   }) async {
     if (!supported) return false;
     await _initialize();
@@ -94,18 +118,16 @@ class ReminderService {
     required PrayerAlertSettings settings,
     bool requestPermission = false,
   }) {
-    final operation = _prayerAlertQueue.then(
-      (_) => _syncPrayerAlerts(
-        config: config,
-        settings: settings,
-        requestPermission: requestPermission,
-      ),
-    );
-    _prayerAlertQueue = operation.then<void>(
-      (_) {},
-      onError: (Object _) {},
-    );
-    return operation;
+    final generation = _generation;
+    _prayerRevision++;
+    return _enqueue(() => generation != _generation
+        ? Future.value(const PrayerAlertScheduleResult(
+            permissionGranted: false, exact: false, scheduledCount: 0))
+        : _syncPrayerAlerts(
+            config: config,
+            settings: settings,
+            requestPermission: requestPermission,
+          ));
   }
 
   Future<PrayerAlertScheduleResult> _syncPrayerAlerts({
@@ -260,14 +282,20 @@ class ReminderService {
     await _plugin.cancel(prayerAlertRenewalId);
   }
 
-  Future<void> cancelAll() async {
-    if (!supported) return;
-    await _prayerAlertQueue;
-    await _initialize();
-    for (final reminder in _reminders) {
-      await _plugin.cancel(reminder.id);
-    }
-    await _cancelPrayerAlerts();
+  Future<void> cancelAll() {
+    // Invalidate queued work immediately, then finish any in-flight operation
+    // before cancellation. A signed-out account cannot leave reminders behind.
+    _generation++;
+    _dailyRevision++;
+    _prayerRevision++;
+    return _enqueue(() async {
+      if (!supported) return;
+      await _initialize();
+      for (final reminder in _reminders) {
+        await _plugin.cancel(reminder.id);
+      }
+      await _cancelPrayerAlerts();
+    });
   }
 
   Future<void> _schedule(_Reminder reminder) async {

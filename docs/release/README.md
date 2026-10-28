@@ -1,6 +1,6 @@
 # Release preparation — রবের পথে
 
-Updated 27 October 2026 (Asia/Dhaka).
+Updated 28 October 2026 (Asia/Dhaka).
 
 ## Current decision
 
@@ -8,9 +8,9 @@ The signed Android release candidate is built and its artifact checks pass.
 Production approval still requires Android device testing and the Play Console
 gates below. A browser or widget pass does not establish native delivery.
 
-Verified locally on 27 October 2026:
+Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **260 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **274 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -19,8 +19,8 @@ Verified locally on 27 October 2026:
 - Signed AAB: `1.0.0+1`, API 36, minimum API 24, ARM64 present. Bundletool and
   upload signature validation pass; all nine native libraries were inspected.
 - Generated universal APK: signature and `zipalign -c -P 16 -v 4` pass. All
-  64-bit native ELF load segments have at least 16 KB alignment. Native 16 KB
-  runtime and Play-generated APK tests remain open.
+  64-bit native ELF load segments have at least 16 KB alignment. Its startup
+  and login screen pass on the 16 KB emulator. Play-generated APK tests remain open.
 - Live policy and deletion form load successfully; the form initializes without
   browser console errors. Browser deletion was verified using synthetic emulator
   data only.
@@ -33,10 +33,19 @@ Verified locally on 27 October 2026:
   captures, not captures of a Play-installed build. See
   [capture provenance](native-captures/README.md) and
   [native audit evidence](native-verification.json).
-- The actual signed production APK was also installed independently: its bytes
-  match the validated artifact, its process stays running and its activity is
-  resumed on API 36 / 16 KB. This is a startup smoke check, separate from the
-  profile functional audit. See [signed release evidence](signed-release-smoke.json).
+- The updated profile audit also exercised live seven-day Firestore reporting and
+  recorded one emulator timing sample. Sign-in tap to ready dashboard took
+  6.46 s, the live report took 0.83 s, and 9 of 50 navigation frames exceeded
+  the raster budget. These numbers are not physical-device benchmarks. The
+  task composer was changed after this profile APK was built; its retry and
+  360 px layout are covered by widget tests.
+- The actual signed production APK was installed independently: its bytes
+  match the validated artifact, Firebase initializes, the login controls appear
+  in Android's accessibility tree, and its activity stays resumed on API 36 /
+  16 KB. The first release attempt exposed an R8-reflection bug: Firebase's
+  manifest registrars had lost their public constructors. A targeted keep rule
+  fixes it; the repeatable smoke check rejects that error. See
+  [signed release evidence](signed-release-smoke.json).
 - A dedicated reviewer account is provisioned and its private credentials are
   stored at `.local/play-reviewer-credentials.json` (0600). They are excluded
   from Git and the upload packet. No Google account/mailbox was created and no
@@ -44,6 +53,10 @@ Verified locally on 27 October 2026:
 - Task filters use one horizontally scrollable row on small screens. Priority
   choices and the task-card heading are more compact, keeping task content
   visible sooner. Narrow-screen scheduling still works through a tested swipe.
+- New task drafts stay open until the write succeeds; a failed write can be
+  retried without losing text or recurrence. The task identity remains stable
+  across retries, preventing duplicates when a committed write loses its
+  response.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at
@@ -156,6 +169,11 @@ and a JSON result. `tool/verify_android_apk.py` then generates a signed universa
 APK using temporary private password files, checks its signature and 16 KB ZIP
 alignment, and adds those results to the report. A 16 KB device run and testing
 the Play-generated APKs are separate checks.
+
+With the dedicated `rober_pothe_audit_16k` emulator running as `emulator-5556`,
+run `python3 tool/smoke_android_release.py`. The script clears only that
+emulator's app data, compares the installed APK hash, and requires a ready
+login screen, Firebase initialization, and no registrar error in the log.
 
 ## Private signing material
 

@@ -1,11 +1,98 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ummah_assist/src/app_repository.dart';
 import 'package:ummah_assist/src/daily_logic.dart';
 import 'package:ummah_assist/src/models.dart';
 import 'package:ummah_assist/src/pages/tasks_page.dart';
+import 'package:ummah_assist/src/pages/task_entry_dialog.dart';
 
 void main() {
+  testWidgets(
+      'failed save keeps task draft, recurrence and retry in the dialog',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _TransientTaskRepository();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+          body: TasksPage(repository: repository, day: DateTime(2026, 10, 25))),
+    ));
+    await tester.pump();
+    await tester.tap(find.text('কাজ যোগ'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Read Quran');
+    await tester.tap(find.text('একবার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('প্রতিদিন').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('যোগ করুন'));
+    await tester.pump();
+    expect(repository.calls, 1);
+    expect(find.byType(TaskEntryDialog), findsOneWidget);
+    expect(find.text('সংরক্ষণ হচ্ছে…'), findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'সংরক্ষণ হচ্ছে…'))
+            .onPressed,
+        isNull);
+    repository.firstAttempt.completeError(StateError('network'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('কাজ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Read Quran');
+    expect(find.text('প্রতিদিন'), findsOneWidget);
+    expect(repository.today['mustDo'], isEmpty);
+
+    await tester.tap(find.text('যোগ করুন'));
+    await tester.pumpAndSettle();
+    expect(repository.calls, 2);
+    expect(repository.today['mustDo'], hasLength(1));
+    expect(repository.recurring, hasLength(1));
+    expect(find.byType(TaskEntryDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('retry does not duplicate a task after an ambiguous commit',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _CommittedThenFailedRepository();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+          body: TasksPage(repository: repository, day: DateTime(2026, 10, 25))),
+    ));
+    await tester.pump();
+    await tester.tap(find.text('কাজ যোগ'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Read Quran');
+    await tester.tap(find.text('একবার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('প্রতিদিন').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('যোগ করুন'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('কাজ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'), findsOneWidget);
+    expect(repository.today['mustDo'], hasLength(1));
+    expect(repository.recurring, hasLength(1));
+
+    await tester.tap(find.text('যোগ করুন'));
+    await tester.pumpAndSettle();
+    expect(repository.calls, 2);
+    expect(repository.today['mustDo'], hasLength(1));
+    expect(repository.recurring, hasLength(1));
+    expect(find.byType(TaskEntryDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('daily task is created and removing it cancels the series', (
     tester,
   ) async {
@@ -168,4 +255,46 @@ class _TaskRepository extends AppRepository {
         'recurringTasks': recurring.map((task) => task.toMap()).toList(),
         'scheduledTasks': scheduled.map((task) => task.toMap()).toList(),
       };
+}
+
+class _TransientTaskRepository extends _TaskRepository {
+  final firstAttempt = Completer<void>();
+  int calls = 0;
+
+  @override
+  Future<Map<String, dynamic>?> changeTasks({
+    required String date,
+    required void Function(
+      Map<String, List<TaskItem>> today,
+      Map<String, List<TaskItem>> missed,
+      List<RecurringTask> recurring,
+      List<TaskItem> scheduled,
+    ) apply,
+  }) async {
+    calls++;
+    if (calls == 1) {
+      await firstAttempt.future;
+    }
+    return super.changeTasks(date: date, apply: apply);
+  }
+}
+
+class _CommittedThenFailedRepository extends _TaskRepository {
+  int calls = 0;
+
+  @override
+  Future<Map<String, dynamic>?> changeTasks({
+    required String date,
+    required void Function(
+      Map<String, List<TaskItem>> today,
+      Map<String, List<TaskItem>> missed,
+      List<RecurringTask> recurring,
+      List<TaskItem> scheduled,
+    ) apply,
+  }) async {
+    calls++;
+    final result = await super.changeTasks(date: date, apply: apply);
+    if (calls == 1) throw StateError('response lost after commit');
+    return result;
+  }
 }

@@ -50,10 +50,23 @@ async function main() {
       batch.set(doc(db, 'userDhikr', uid, 'dailyDhikr', date), {
         date, goals, counts: {subhanallah: 33, alhamdulillah: index === 0 ? 20 : 33, allahu_akbar: index === 0 ? 14 : 34},
       });
+      batch.set(doc(db, 'userGrowth', uid, 'dailyGrowth', date), {
+        date,
+        userType: 'student',
+        growthData: {
+          iman: {prayer: index > 0},
+          life: {planning: index > 0},
+        },
+        checklistItems: {
+          iman: [{key: 'prayer', label: 'নামাজ'}],
+          life: [{key: 'planning', label: 'পরিকল্পনা'}],
+        },
+        prayerLinked: true,
+      });
     }
     await batch.commit();
     await signOut(auth);
-    console.log('Seven days of fabricated prayer, Quran and dhikr records seeded only for the dedicated review identity.');
+    console.log('Seven days of fabricated prayer, Quran, dhikr and growth records seeded only for the dedicated review identity.');
   } finally {
     await deleteApp(app);
   }

@@ -41,6 +41,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('নামাজ দেখুন'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('নামাজ ট্র্যাকিং'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -54,6 +55,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('যোগাযোগ'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('জরুরি যোগাযোগ'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

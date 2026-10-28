@@ -52,6 +52,7 @@ android {
 
     buildTypes {
         release {
+            proguardFiles("proguard-rules.pro")
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }

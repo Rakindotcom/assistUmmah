@@ -6,6 +6,9 @@ import 'package:ummah_assist/src/date_helpers.dart';
 import 'package:ummah_assist/src/home_shell.dart';
 import 'package:ummah_assist/src/models.dart';
 import 'package:ummah_assist/src/pages/prayer_page.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'support/native_ui_channels.dart';
 
 void main() {
   test('rollover moves unfinished tasks and removes completed tasks', () {
@@ -197,6 +200,9 @@ void main() {
   testWidgets('daily pages reload when the app resumes on a new day', (
     tester,
   ) async {
+    configureNativeUiChannels();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
     var now = DateTime(2026, 10, 25, 23, 59);
     await tester.pumpWidget(
       MaterialApp(
@@ -208,6 +214,10 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    await tester.tap(find.descendant(
+        of: find.byType(NavigationBar), matching: find.text('নামাজ')));
+    await tester.pump();
     final prayerPage = find.byType(PrayerPage, skipOffstage: false);
     expect(tester.widget<PrayerPage>(prayerPage).day.day, 25);
 
@@ -215,6 +225,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(tester.widget<PrayerPage>(prayerPage).day.day, 26);
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'app_repository.dart';
 import 'date_helpers.dart';
+import 'reminder_session.dart';
 import 'pages/contacts_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/dashboard_page.dart';
@@ -42,9 +43,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _growthRefreshToken = 0;
   int _calendarRefreshToken = 0;
   int _detailReturnIndex = 4;
-  bool _calendarOpened = false;
-  bool _quranOpened = false;
-  bool _dhikrOpened = false;
+  final Set<int> _openedPages = {0};
+  late ReminderSession _reminders;
   late DateTime _day;
   Timer? _dayTimer;
 
@@ -54,12 +54,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _day = dateOnly(_now());
     WidgetsBinding.instance.addObserver(this);
     _scheduleDayChange();
+    _reminders = ReminderSession(repository: widget.repository);
+    unawaited(_refreshReminders());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _dayTimer?.cancel();
+    _reminders.dispose();
     super.dispose();
   }
 
@@ -67,6 +70,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshDay();
+      unawaited(_refreshReminders());
       if (_index == 0 && mounted) {
         setState(() => _dashboardRefreshToken++);
       } else if (_index == 3 && mounted) {
@@ -75,18 +79,28 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _refreshReminders() async {
+    final refreshed = await _reminders.refresh();
+    if (!mounted || refreshed) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('রিমাইন্ডার রিফ্রেশ করা যায়নি।'),
+      action: SnackBarAction(
+        label: 'আবার চেষ্টা',
+        onPressed: () => unawaited(_refreshReminders()),
+      ),
+    ));
+  }
+
   void _selectPage(int index) {
     setState(() {
       if (index >= 5) _detailReturnIndex = _index.clamp(0, 4);
       _index = index;
+      _openedPages.add(index);
       if (index == 0) _dashboardRefreshToken++;
       if (index == 3) _growthRefreshToken++;
       if (index == 5) {
-        _calendarOpened = true;
         _calendarRefreshToken++;
       }
-      if (index == 8) _quranOpened = true;
-      if (index == 9) _dhikrOpened = true;
     });
   }
 
@@ -165,7 +179,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onOpenContacts: () => _selectPage(6),
         onOpenSettings: () => _selectPage(7),
       ),
-      _calendarOpened
+      _openedPages.contains(5)
           ? CalendarPage(
               key: ValueKey('calendar-${dateKey(_day)}'),
               repository: widget.repository,
@@ -179,7 +193,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         user: widget.user,
         firebaseReady: widget.firebaseReady,
       ),
-      _quranOpened
+      _openedPages.contains(8)
           ? QuranPage(
               key: ValueKey('quran-${dateKey(_day)}'),
               repository: widget.repository,
@@ -187,7 +201,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               active: _index == 8,
             )
           : const SizedBox.shrink(),
-      _dhikrOpened
+      _openedPages.contains(9)
           ? DhikrPage(
               key: const ValueKey('dhikr'),
               repository: widget.repository,
@@ -247,9 +261,14 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     index: _index,
                     children: List.generate(
                       pages.length,
-                      (index) => HeroMode(
+                      (index) => TickerMode(
                         enabled: index == _index,
-                        child: pages[index],
+                        child: HeroMode(
+                          enabled: index == _index,
+                          child: _openedPages.contains(index)
+                              ? pages[index]
+                              : const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                   ),

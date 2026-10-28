@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'date_helpers.dart';
 import 'daily_logic.dart';
 import 'dhikr_progress.dart';
-import 'growth_progress.dart';
 import 'models.dart';
 import 'progress_trends.dart';
 import 'quran_reading.dart';
@@ -525,65 +524,16 @@ class AppRepository {
     required DateTime start,
     required DateTime end,
   }) async {
-    if (!canSync) {
-      return ReportSummary.empty;
+    // Count calendar dates rather than elapsed 24-hour periods across DST.
+    final first = DateTime.utc(start.year, start.month, start.day);
+    final last = DateTime.utc(end.year, end.month, end.day);
+    final dayCount = last.difference(first).inDays + 1;
+    if (dayCount < 1 || dayCount > 366) {
+      throw ArgumentError('Reports require 1 to 366 calendar days.');
     }
-
-    var days = 0;
-    var prayerLoggedDays = 0;
-    var totalPrayed = 0;
-    var totalJamaat = 0;
-    var totalMissed = 0;
-    var totalMadeUp = 0;
-    var totalUnlogged = 0;
-    final imanScores = <int>[];
-    final lifeScores = <int>[];
-    final overallScores = <int>[];
-
-    for (final date in datesBetween(start, end)) {
-      days++;
-      final key = dateKey(date);
-
-      final prayerSnap = await _prayerRef(key).get();
-      final prayerDoc = prayerSnap.data();
-      final prayerSummary = PrayerSummary.fromDocument(prayerDoc);
-      if (prayerSummary.anyLogged) {
-        prayerLoggedDays++;
-        totalPrayed += prayerSummary.prayed;
-        totalJamaat += prayerSummary.jamaat;
-        totalMissed += prayerSummary.missed;
-        totalMadeUp += prayerSummary.madeUp;
-        totalUnlogged += prayerSummary.unlogged;
-      }
-
-      final growthSnap = await _growthRef(key).get();
-      final growthDoc = growthSnap.data();
-      final growthData = asStringMap(growthDoc?['growthData']);
-      if (growthData.isNotEmpty) {
-        final iman = imanValuesForDocuments(growthDoc, prayerDoc);
-        final life = parseBoolMap(growthData['life']);
-        final snapshot = GrowthChecklistSnapshot.fromDocument(growthDoc);
-        final imanScore = checklistScore(iman, snapshot.iman);
-        final lifeScore = checklistScore(life, snapshot.life);
-        imanScores.add(imanScore);
-        lifeScores.add(lifeScore);
-        overallScores.add(((imanScore + lifeScore) / 2).round());
-      }
-    }
-
-    return ReportSummary(
-      days: days,
-      prayerLoggedDays: prayerLoggedDays,
-      totalPrayed: totalPrayed,
-      totalJamaat: totalJamaat,
-      totalMissed: totalMissed,
-      totalMadeUp: totalMadeUp,
-      totalUnlogged: totalUnlogged,
-      growthLoggedDays: overallScores.length,
-      averageIman: _average(imanScores),
-      averageLife: _average(lifeScores),
-      averageOverall: _average(overallScores),
-    );
+    if (!canSync) return ReportSummary.empty;
+    final trends = await loadProgressTrends(end: end, dayCount: dayCount);
+    return trends.toReportSummary();
   }
 
   Future<ProgressTrends> loadProgressTrends({
@@ -689,12 +639,5 @@ class AppRepository {
     }
 
     return {'message': parse(map['message']), 'call': parse(map['call'])};
-  }
-
-  int _average(List<int> values) {
-    if (values.isEmpty) {
-      return 0;
-    }
-    return (values.reduce((a, b) => a + b) / values.length).round();
   }
 }

@@ -30,7 +30,7 @@ TalkBack or behavior on a physical device.
 To reproduce on an isolated emulator with no signed-in app account:
 
 ```sh
-flutter drive --profile \
+flutter drive --profile --no-dds \
   --dart-define-from-file=.local/play-reviewer-credentials.json \
   --driver=test_driver/native_audit.dart \
   --target=integration_test/native_audit_test.dart \

@@ -9,6 +9,7 @@ import '../models.dart';
 import '../widgets/page_frame.dart';
 import '../widgets/load_failure_state.dart';
 import '../widgets/status_badge.dart';
+import 'task_entry_dialog.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key, required this.repository, required this.day});
@@ -181,144 +182,64 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Future<void> _showAddTaskDialog() async {
-    var draftText = '';
-    TaskRepeat? repeat;
-    var selectedDate = dateOnly(widget.day);
-    final result =
-        await showDialog<({String text, TaskRepeat? repeat, DateTime date})>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-            builder: (context, updateDialog) => AlertDialog(
-                  title: const Text('নতুন কাজ যোগ করুন'),
-                  content: SingleChildScrollView(
-                      child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        autofocus: true,
-                        minLines: 1,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: _activeList == 'mustDo'
-                              ? 'অবশ্যই করতে হবে'
-                              : 'করা ভালো',
-                        ),
-                        onChanged: (value) => draftText = value,
-                        onSubmitted: (value) => Navigator.of(context).pop(
-                            (text: value, repeat: repeat, date: selectedDate)),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<TaskRepeat?>(
-                        initialValue: repeat,
-                        decoration:
-                            const InputDecoration(labelText: 'পুনরাবৃত্তি'),
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('একবার')),
-                          DropdownMenuItem(
-                              value: TaskRepeat.daily, child: Text('প্রতিদিন')),
-                          DropdownMenuItem(
-                              value: TaskRepeat.weekly,
-                              child: Text('প্রতি সপ্তাহে')),
-                        ],
-                        onChanged: (value) =>
-                            updateDialog(() => repeat = value),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            calendarDelegate: AppCalendarDelegate(
-                                Localizations.localeOf(context)),
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: dateOnly(widget.day),
-                            lastDate: DateTime(widget.day.year + 10, 12, 31),
-                          );
-                          if (picked != null) {
-                            updateDialog(() => selectedDate = picked);
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_today_outlined),
-                        label: Text('তারিখ: ${compactDateLabel(selectedDate)}'),
-                      ),
-                      if (repeat == TaskRepeat.weekly)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                              '${compactDateLabel(selectedDate)} তারিখের বারেই প্রতি সপ্তাহে যোগ হবে'),
-                        ),
-                    ],
-                  )),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('বাতিল'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop((
-                        text: draftText,
-                        repeat: repeat,
-                        date: selectedDate
-                      )),
-                      child: const Text('যোগ করুন'),
-                    ),
-                  ],
-                ));
-      },
-    );
-
-    if (!mounted) return;
-
-    final text = result?.text.trim() ?? '';
-    if (text.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now();
-    final task = TaskItem(
-      id: '${now.microsecondsSinceEpoch}',
-      text: text,
-      completed: false,
-      createdAt: now.toIso8601String(),
-      dateCreated: dateKey(widget.day),
-      dueDate: dateKey(result!.date),
-      section: _activeList,
-    );
-
     final section = _activeList;
-    final isFuture = dateKey(result.date) != dateKey(widget.day);
-    await _runChange((today, missed, recurring, scheduled) {
-      if (result.repeat case final frequency?) {
-        if (!recurring.any((item) => item.id == task.id)) {
-          recurring.add(RecurringTask(
-            id: task.id,
-            text: text,
-            section: section,
-            repeat: frequency,
-            startDate: dateKey(result.date),
-          ));
-        }
-        if (isFuture &&
-            !scheduled.any((item) => item.id == '${task.id}:${task.dueDate}')) {
-          scheduled.add(TaskItem(
-            id: '${task.id}:${task.dueDate}',
+    // Reuse the same identity if the server commits but the response is lost.
+    // The repository transaction can then recognize a retry as the same task.
+    final createdAt = DateTime.now();
+    final taskId = '${createdAt.microsecondsSinceEpoch}';
+    await showDialog<void>(
+      context: context,
+      builder: (_) => TaskEntryDialog(
+        section: section,
+        day: widget.day,
+        onSave: (text, repeat, dueDate) async {
+          if (!mounted) throw StateError('The task page was closed.');
+          final task = TaskItem(
+            id: taskId,
             text: text,
             completed: false,
-            createdAt: task.createdAt,
-            dateCreated: task.dueDate,
-            dueDate: task.dueDate,
+            createdAt: createdAt.toIso8601String(),
+            dateCreated: dateKey(widget.day),
+            dueDate: dateKey(dueDate),
             section: section,
-            recurrenceId: task.id,
-          ));
-        }
-      } else if (isFuture && !scheduled.any((item) => item.id == task.id)) {
-        scheduled.add(task);
-      } else if (!isFuture &&
-          !today[section]!.any((item) => item.id == task.id)) {
-        today[section]!.add(task);
-      }
-    });
+          );
+          final isFuture = dateKey(dueDate) != dateKey(widget.day);
+          await _runChange((today, missed, recurring, scheduled) {
+            if (repeat case final frequency?) {
+              if (!recurring.any((item) => item.id == task.id)) {
+                recurring.add(RecurringTask(
+                  id: task.id,
+                  text: text,
+                  section: section,
+                  repeat: frequency,
+                  startDate: dateKey(dueDate),
+                ));
+              }
+              if (isFuture &&
+                  !scheduled
+                      .any((item) => item.id == '${task.id}:${task.dueDate}')) {
+                scheduled.add(TaskItem(
+                  id: '${task.id}:${task.dueDate}',
+                  text: text,
+                  completed: false,
+                  createdAt: task.createdAt,
+                  dateCreated: task.dueDate,
+                  dueDate: task.dueDate,
+                  section: section,
+                  recurrenceId: task.id,
+                ));
+              }
+            } else if (isFuture &&
+                !scheduled.any((item) => item.id == task.id)) {
+              scheduled.add(task);
+            } else if (!isFuture &&
+                !today[section]!.any((item) => item.id == task.id)) {
+              today[section]!.add(task);
+            }
+          }, propagateError: true);
+        },
+      ),
+    );
   }
 
   Future<void> _toggleTask(String id) async {
@@ -431,8 +352,9 @@ class _TasksPageState extends State<TasksPage> {
       Map<String, List<TaskItem>> missed,
       List<RecurringTask> recurring,
       List<TaskItem> scheduled,
-    ) apply,
-  ) {
+    ) apply, {
+    bool propagateError = false,
+  }) {
     if (!widget.repository.canSync) {
       setState(() {
         apply(_todayTasks, _missedTasks, _recurringTasks, _scheduledTasks);
@@ -464,9 +386,9 @@ class _TasksPageState extends State<TasksPage> {
       }
     });
     _writeQueue = operation.catchError((Object _) {
-      _showMessage('সিঙ্ক করতে সমস্যা হয়েছে');
+      if (!propagateError) _showMessage('সিঙ্ক করতে সমস্যা হয়েছে');
     });
-    return _writeQueue;
+    return propagateError ? operation : _writeQueue;
   }
 
   Map<String, List<TaskItem>> _parseTaskBuckets(Object? raw) {

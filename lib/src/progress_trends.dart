@@ -86,6 +86,32 @@ class ProgressTrends {
     return ProgressTrends._(days);
   }
 
+  ReportSummary toReportSummary() {
+    final loggedPrayers = days.where((day) => day.prayerLogged);
+    final loggedGrowth = days.where((day) => day.growthLogged);
+    int average(Iterable<int> values) {
+      final scores = values.toList();
+      return scores.isEmpty
+          ? 0
+          : (scores.reduce((a, b) => a + b) / scores.length).round();
+    }
+
+    return ReportSummary(
+      days: days.length,
+      prayerLoggedDays: loggedPrayers.length,
+      totalPrayed: loggedPrayers.fold(0, (sum, day) => sum + day.prayer.prayed),
+      totalJamaat: loggedPrayers.fold(0, (sum, day) => sum + day.prayer.jamaat),
+      totalMissed: loggedPrayers.fold(0, (sum, day) => sum + day.prayer.missed),
+      totalMadeUp: loggedPrayers.fold(0, (sum, day) => sum + day.prayer.madeUp),
+      totalUnlogged:
+          loggedPrayers.fold(0, (sum, day) => sum + day.prayer.unlogged),
+      growthLoggedDays: loggedGrowth.length,
+      averageIman: average(loggedGrowth.map((day) => day.imanScore!)),
+      averageLife: average(loggedGrowth.map((day) => day.lifeScore!)),
+      averageOverall: average(loggedGrowth.map((day) => day.overallScore!)),
+    );
+  }
+
   TrendWindow window(int startIndex, int length) {
     if (startIndex < 0 || length < 0 || startIndex + length > days.length) {
       throw RangeError('Invalid trend window');

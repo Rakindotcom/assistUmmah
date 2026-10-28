@@ -11,5 +11,5 @@
   "hardwareAcceleration": "KVM",
   "physicalDevice": false,
   "productionAppRuntimeVerified": true,
-  "productionRuntimeScope": "Signed universal APK startup smoke; full profile flow reported separately."
+  "productionRuntimeScope": "Fresh signed universal APK startup and login accessibility tree; full profile flow reported separately."
 }

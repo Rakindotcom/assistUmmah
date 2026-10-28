@@ -6,7 +6,6 @@ import '../account/account_service.dart';
 import '../account/delete_account_page.dart';
 import '../account/privacy_page.dart';
 import '../app_identity.dart';
-import '../display_formatters.dart';
 import '../diagnostics/diagnostics_service.dart';
 import '../date_helpers.dart';
 import '../models.dart';
@@ -15,6 +14,7 @@ import '../widgets/page_frame.dart';
 import '../widgets/load_failure_state.dart';
 import '../widgets/text_entry_dialog.dart';
 import 'trends_page.dart';
+import 'report_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -44,6 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
     'growth': false,
   };
   bool _diagnosticsBusy = false;
+  bool _notificationsBusy = false;
   bool _loading = true;
   bool _loadFailed = false;
 
@@ -84,11 +85,12 @@ class _SettingsPageState extends State<SettingsPage> {
         if (ReminderService.supported)
           SwitchListTile(
               value: _notifications.values.any((enabled) => enabled),
-              onChanged: _toggleNotifications,
+              onChanged: _notificationsBusy ? null : _toggleNotifications,
               secondary: const Icon(Icons.notifications_outlined),
               title: const Text('দৈনিক রিমাইন্ডার'),
-              subtitle: const Text(
-                  'কাজ সকাল ৮টা, নামাজের হিসাব রাত ৮টা, গ্রোথ রাত ৯টা'))
+              subtitle: Text(_notificationsBusy
+                  ? 'রিমাইন্ডার আপডেট হচ্ছে…'
+                  : 'কাজ সকাল ৮টা, নামাজের হিসাব রাত ৮টা, গ্রোথ রাত ৯টা'))
         else
           const ListTile(
               leading: Icon(Icons.notifications_off_outlined),
@@ -256,14 +258,6 @@ class _SettingsPageState extends State<SettingsPage> {
       if (data?['remindersConfigured'] == true && notifications.isNotEmpty) {
         _notifications = {..._notifications, ...notifications};
       }
-
-      if (ReminderService.supported) {
-        try {
-          await ReminderService.instance.sync(_notifications);
-        } catch (_) {
-          _showMessage('রিমাইন্ডার চালু করা যায়নি');
-        }
-      }
     } catch (_) {
       _loadFailed = true;
     } finally {
@@ -299,6 +293,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleNotifications(bool enabled) async {
+    if (_notificationsBusy) return;
+    setState(() => _notificationsBusy = true);
     final next = {'prayer': enabled, 'tasks': enabled, 'growth': enabled};
     try {
       final granted = await ReminderService.instance.sync(
@@ -309,105 +305,32 @@ class _SettingsPageState extends State<SettingsPage> {
         _showMessage('রিমাইন্ডার চালু করতে নোটিফিকেশন অনুমতি দিন');
         return;
       }
+      if (!mounted) return;
       await widget.repository.saveNotificationSettings(next);
       if (mounted) setState(() => _notifications = next);
     } catch (_) {
+      if (!mounted) return;
       try {
         await ReminderService.instance.sync(_notifications);
       } catch (_) {
         // Keep the saved preference unchanged even if the device is unavailable.
       }
       _showMessage('রিমাইন্ডার আপডেট করা যায়নি');
+    } finally {
+      if (mounted) setState(() => _notificationsBusy = false);
     }
   }
 
-  Future<void> _showReport(String title, DateTime start, DateTime end) async {
-    final future = widget.repository.buildReport(start: start, end: end);
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: FutureBuilder<ReportSummary>(
-            future: future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 120,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              if (snapshot.hasError) {
-                return const Text('রিপোর্ট লোড করা যায়নি। আবার চেষ্টা করুন।');
-              }
-
-              final summary = snapshot.data ?? ReportSummary.empty;
-              if (!widget.repository.canSync) {
-                return const Text(
-                  'রিপোর্ট দেখতে আপনার অ্যাকাউন্টে সাইন ইন করুন।',
-                );
-              }
-
-              return SingleChildScrollView(
-                  child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${compactDateLabel(start)} - ${compactDateLabel(end)}'),
-                  const SizedBox(height: 14),
-                  _ReportRow(
-                      label: 'নির্বাচিত দিন',
-                      value: banglaNumber(summary.days)),
-                  _ReportRow(
-                    label: 'নামাজ লগড দিন',
-                    value: banglaNumber(summary.prayerLoggedDays),
-                  ),
-                  _ReportRow(
-                    label: 'পড়া হয়েছে',
-                    value: banglaNumber(summary.totalPrayed),
-                  ),
-                  _ReportRow(
-                      label: 'জামাত', value: banglaNumber(summary.totalJamaat)),
-                  _ReportRow(
-                    label: 'মিসড (চিহ্নিত)',
-                    value: banglaNumber(summary.totalMissed),
-                  ),
-                  _ReportRow(
-                    label: 'কাযা আদায়',
-                    value: banglaNumber(summary.totalMadeUp),
-                  ),
-                  _ReportRow(
-                    label: 'হিসাব নেই (লগড দিনে)',
-                    value: banglaNumber(summary.totalUnlogged),
-                  ),
-                  const Divider(),
-                  _ReportRow(
-                    label: 'ইমান গড়',
-                    value: '${banglaNumber(summary.averageIman)}%',
-                  ),
-                  _ReportRow(
-                    label: 'লাইফ গড়',
-                    value: '${banglaNumber(summary.averageLife)}%',
-                  ),
-                  _ReportRow(
-                    label: 'ওভারঅল গড়',
-                    value: '${banglaNumber(summary.averageOverall)}%',
-                  ),
-                ],
-              ));
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('বন্ধ'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  Future<void> _showReport(String title, DateTime start, DateTime end) =>
+      showDialog<void>(
+        context: context,
+        builder: (_) => ReportDialog(
+          repository: widget.repository,
+          title: title,
+          start: start,
+          end: end,
+        ),
+      );
 
   Future<void> _openTrends() async {
     await Navigator.of(context).push<void>(
@@ -503,26 +426,6 @@ class _SettingsTile extends StatelessWidget {
       subtitle: subtitle.isEmpty ? null : Text(subtitle),
       trailing: onTap == null ? null : const Icon(Icons.chevron_right),
       onTap: onTap,
-    );
-  }
-}
-
-class _ReportRow extends StatelessWidget {
-  const _ReportRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
     );
   }
 }
