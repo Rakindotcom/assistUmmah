@@ -111,12 +111,14 @@ class _ContactsPageState extends State<ContactsPage>
                 runSpacing: 10,
                 children: [
                   ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
                     label: const Text('মেসেজ দিলেও হবে'),
                     selected: _activeSection == 'message',
                     onSelected: (_) =>
                         setState(() => _activeSection = 'message'),
                   ),
                   ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
                     label: const Text('কল করতে হবে'),
                     selected: _activeSection == 'call',
                     onSelected: (_) => setState(() => _activeSection = 'call'),

@@ -75,6 +75,91 @@ void main() {
     }
   }, variant: platform);
 
+  testWidgets('mobile task prayer growth and contact controls are accessible',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final semantics = tester.ensureSemantics();
+    try {
+      final day = DateTime(2026, 10, 26);
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        locale: AppLocalization.locale,
+        supportedLocales: AppLocalization.supportedLocales,
+        localizationsDelegates: AppLocalization.delegates,
+        home: HomeShell(
+          firebaseReady: false,
+          repository: UiPreviewRepository(today: day),
+          user: null,
+          clock: () => day,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      for (final tab in ['কাজ', 'নামাজ', 'গ্রোথ', 'আরও']) {
+        await tester.tap(find.text(tab).last);
+        await tester.pumpAndSettle();
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      }
+      await tester.ensureVisible(find.text('যোগাযোগ').last);
+      await tester.tap(find.text('যোগাযোগ').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(ContactsPage), findsOneWidget);
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    } finally {
+      semantics.dispose();
+    }
+  }, variant: platform);
+
+  testWidgets('small phone controls remain accessible at 1.6x text',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final semantics = tester.ensureSemantics();
+    try {
+      final day = DateTime(2026, 10, 26);
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        locale: AppLocalization.locale,
+        supportedLocales: AppLocalization.supportedLocales,
+        localizationsDelegates: AppLocalization.delegates,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.6)),
+          child: child!,
+        ),
+        home: HomeShell(
+          firebaseReady: false,
+          repository: UiPreviewRepository(today: day),
+          user: null,
+          clock: () => day,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      for (final tab in ['কাজ', 'নামাজ', 'গ্রোথ', 'আরও']) {
+        await tester.tap(find.text(tab).last);
+        await tester.pumpAndSettle();
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      }
+      await tester.drag(find.byType(ListView).last, const Offset(0, -350));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('যোগাযোগ').last);
+      await tester.tap(find.text('যোগাযোগ').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(ContactsPage), findsOneWidget);
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    } finally {
+      semantics.dispose();
+    }
+  }, variant: platform);
+
   testWidgets('sign-in keyboard order starts with email then password',
       (tester) async {
     await tester.pumpWidget(

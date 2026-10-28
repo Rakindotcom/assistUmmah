@@ -16,7 +16,7 @@ smoke passes.
 
 Verified locally through 28 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **294 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **296 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
@@ -75,6 +75,10 @@ Verified locally through 28 October 2026:
   the phone view is pulled down. Refresh waits for pending saves and keeps the
   last known status on failure. A visible pending message accompanies prayer
   edits, and Calendar still receives save results after its editor closes.
+- Tasks, Growth and Contacts filter chips meet the 48 px Android tap-target
+  guideline in widget semantics checks. The main mobile tabs and Contacts pass
+  labeled-target and target-size checks at 390 px, and at 320 px with 1.6×
+  Bengali text. Actual TalkBack traversal remains a device check.
 - Growth checklist edits show pending or failed save status. A tab refresh
   preserves an unsaved draft, and failed changes can be retried in place.
 

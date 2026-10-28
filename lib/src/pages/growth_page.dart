@@ -113,6 +113,7 @@ class _GrowthPageState extends State<GrowthPage> {
                   runSpacing: 10,
                   children: userTypeLabels.entries.map((entry) {
                     return ChoiceChip(
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
                       label: Text(entry.value),
                       selected: _userType == entry.key,
                       onSelected:

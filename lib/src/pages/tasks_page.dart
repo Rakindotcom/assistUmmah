@@ -542,18 +542,21 @@ class _FilterBar extends StatelessWidget {
         child: Row(
           children: [
             ChoiceChip(
+              materialTapTargetSize: MaterialTapTargetSize.padded,
               label: const Text('আজকের কাজ'),
               selected: activeTab == 'today',
               onSelected: (_) => onTabChanged('today'),
             ),
             const SizedBox(width: 10),
             ChoiceChip(
+              materialTapTargetSize: MaterialTapTargetSize.padded,
               label: const Text('মিসড কাজ'),
               selected: activeTab == 'missed',
               onSelected: (_) => onTabChanged('missed'),
             ),
             const SizedBox(width: 10),
             ChoiceChip(
+              materialTapTargetSize: MaterialTapTargetSize.padded,
               label: const Text('নির্ধারিত কাজ'),
               selected: activeTab == 'scheduled',
               onSelected: (_) => onTabChanged('scheduled'),
@@ -572,11 +575,13 @@ class _FilterBar extends StatelessWidget {
         runSpacing: 8,
         children: [
           ChoiceChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             label: const Text('অবশ্যই করতে হবে'),
             selected: activeList == 'mustDo',
             onSelected: (_) => onListChanged('mustDo'),
           ),
           ChoiceChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             label: const Text('করা ভালো'),
             selected: activeList == 'goodToDo',
             onSelected: (_) => onListChanged('goodToDo'),

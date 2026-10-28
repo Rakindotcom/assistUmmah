@@ -14,7 +14,7 @@ the app. They describe the verified product, including the limits of the tests.
 | Performance | 7.5/10 | Unopened tabs now load on demand and monthly reports use two parallel bounded range queries, replacing up to 62 sequential document reads. The single API 36 emulator sample took 6.46 s from sign-in tap to ready dashboard and 0.83 s for a seven-day live report. It recorded 9 raster frames over budget out of 50 navigation frames. A low-end ARM device and repeated measurements remain outstanding. |
 | Reliability | 8/10 | Flutter unit/widget tests and Firebase rules emulator tests cover core flows. Reminder operations are serialized across sign-out and explicit preference changes. Tasks, contacts and prayer statuses refresh on return/resume while retaining the last loaded data on failure. Long offline operation, OS kill/restart and notification delivery still need device exercises. |
 | Privacy and security | 8/10 | Owner-scoped rules, account deletion, disabled-by-default diagnostics, private release credentials and account-scoped navigation are in place. A Play-installed sign-in check, privacy declaration review and abuse testing remain outstanding. |
-| Accessibility | 7.5/10 | Contrast, labels, target size and large-text widget checks exist. Actual TalkBack/VoiceOver traversal and Bengali comprehension need testing with people. |
+| Accessibility | 7.5/10 | Contrast and labeled-target checks cover the main mobile tabs and Contacts at 390 px and 320 px with 1.6× Bengali text; filter chips now meet the 48 px tap-target guideline. Actual TalkBack/VoiceOver traversal and Bengali comprehension need testing with people. |
 | Release readiness | 7/10 | The current signed Android bundle passes signature and 16 KB alignment checks. Fresh startup/login verification of this exact bundle is pending after a timeout on the dedicated emulator. Physical ARM64 devices, a Play-installed build, Play Console declarations and any closed-test requirement remain outstanding. |
 
 **Overall: 8/10, provisionally.** This is a weighted engineering assessment of
@@ -49,6 +49,9 @@ change the Play Store status by themselves.
   It waits for pending saves, retains the prior status on failed refresh, and
   shows when an edit is still saving. Calendar receives late save results even
   after its editor route closes, with account-scoped callback guards.
+- Mobile semantics checks found 38 px filter targets in Tasks, Growth and
+  Contacts. Their targets now meet the 48 px Android guideline in tests at
+  390 px and at 320 px with 1.6× Bengali text.
 - Growth edits now retain their optimistic state and visible save status when a
   tab refresh arrives before the write finishes or after it fails. The failed
   state offers an inline retry, preserving the latest checklist values instead
@@ -58,7 +61,7 @@ change the Play Store status by themselves.
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 294 unit/widget tests passed
+The final Flutter analyzer found no issues and all 296 unit/widget tests passed
 on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was
