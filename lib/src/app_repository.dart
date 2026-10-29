@@ -350,6 +350,46 @@ class AppRepository {
     return (await _dhikrCollection.doc(date).get()).data();
   }
 
+  Future<DhikrDay> saveDhikrGoalsForDay({
+    required String date,
+    required DhikrGoals goals,
+    required DhikrGoals fallback,
+  }) async {
+    final parsed = DateTime.tryParse(date);
+    if (!goals.valid ||
+        !fallback.valid ||
+        parsed == null ||
+        dateKey(parsed) != date ||
+        date.compareTo(dateKey()) > 0) {
+      throw ArgumentError('Invalid dhikr goals');
+    }
+    if (!canSync) {
+      return DhikrDay.fromDocument(date, null, fallback: fallback)
+          .includeGoals(goals);
+    }
+    final ref = _dhikrCollection.doc(date);
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final day =
+          DhikrDay.fromDocument(date, snapshot.data(), fallback: fallback)
+              .includeGoals(goals);
+      transaction.set(
+          _preferencesRef,
+          {
+            'dhikrGoals': goals.toList(),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+      if (snapshot.exists) {
+        transaction.set(
+            ref,
+            {...day.toMap(), 'lastUpdated': FieldValue.serverTimestamp()},
+            SetOptions(merge: true));
+      }
+      return day;
+    });
+  }
+
   /// Apply a relative change so another device's increments are preserved.
   /// The first count saves the goal snapshot for this date.
   Future<DhikrDay> changeDhikrCount({
@@ -358,25 +398,54 @@ class AppRepository {
     required int delta,
     required DhikrGoals fallback,
   }) async {
+    if (delta == 0 || delta.abs() > 100000) {
+      throw ArgumentError('Invalid dhikr count change');
+    }
+    return _editDhikrDay(
+        date: date,
+        fallback: fallback,
+        apply: (day) => day.change(goalId, delta));
+  }
+
+  Future<DhikrDay> setDhikrTarget({
+    required String date,
+    required String goalId,
+    required int target,
+    required DhikrGoals fallback,
+  }) =>
+      _editDhikrDay(
+          date: date,
+          fallback: fallback,
+          apply: (day) => day.withTarget(goalId, target));
+
+  Future<DhikrDay> resetDhikrCount({
+    required String date,
+    required String goalId,
+    required DhikrGoals fallback,
+  }) =>
+      _editDhikrDay(
+          date: date, fallback: fallback, apply: (day) => day.reset(goalId));
+
+  Future<DhikrDay> _editDhikrDay({
+    required String date,
+    required DhikrGoals fallback,
+    required DhikrDay Function(DhikrDay) apply,
+  }) async {
     final parsed = DateTime.tryParse(date);
     if (parsed == null ||
         dateKey(parsed) != date ||
         date.compareTo(dateKey()) > 0 ||
-        !fallback.valid ||
-        delta == 0 ||
-        delta.abs() > 100000) {
-      throw ArgumentError('Invalid dhikr count change');
+        !fallback.valid) {
+      throw ArgumentError('Invalid dhikr day');
     }
     if (!canSync) {
-      return DhikrDay.fromDocument(date, null, fallback: fallback)
-          .change(goalId, delta);
+      return apply(DhikrDay.fromDocument(date, null, fallback: fallback));
     }
     final ref = _dhikrCollection.doc(date);
     return _db.runTransaction((transaction) async {
       final snapshot = await transaction.get(ref);
-      final day =
-          DhikrDay.fromDocument(date, snapshot.data(), fallback: fallback)
-              .change(goalId, delta);
+      final day = apply(
+          DhikrDay.fromDocument(date, snapshot.data(), fallback: fallback));
       transaction.set(
           ref,
           {

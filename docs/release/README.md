@@ -1,6 +1,6 @@
 # Release preparation — রবের পথে
 
-Updated 28 October 2026 (Asia/Dhaka).
+Updated 29 October 2026 (Asia/Dhaka).
 
 ## Current decision
 
@@ -14,15 +14,15 @@ The older generated upload packet has been moved into the ignored `.local`
 archive; no packet for the current bundle will be issued until its runtime
 smoke passes.
 
-Verified locally through 28 October 2026:
+Verified locally through 29 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **301 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **310 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
 - Release input checks: 45 brand exports, store graphics, support contact,
   Spark configuration, deletion inventory, OAuth and signing inputs pass.
-- Signed AAB: `1.0.0+1`, API 36, minimum API 24, ARM64 present. Bundletool and
+- Signed AAB: `1.0.0+2`, API 36, minimum API 24, ARM64 present. Bundletool and
   upload signature validation pass; all nine native libraries were inspected.
 - Generated universal APK: signature and `zipalign -c -P 16 -v 4` pass. All
   64-bit native ELF load segments have at least 16 KB alignment. Startup of
@@ -88,6 +88,10 @@ Verified locally through 28 October 2026:
   cannot discard the draft during a write; a failed write stays retryable.
 - A failed Qaza refresh keeps the previously loaded backlog visible with a
   retry action. Completion controls pause during the refresh.
+- The tasbih screen now shows Arabic phrases, Bengali reading and meaning,
+  a large tap ring and a phrase picker. It supports per-day targets, confirmed
+  reset and immediate custom phrases while preserving other counts. Anek Bangla
+  remains the Bengali font; Noto Naskh Arabic and its SIL license are bundled.
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at

@@ -193,7 +193,7 @@ void main() {
     await tester.tap(find.text('যিকিরের লক্ষ্য'));
     await tester.pump();
     await tester.pump();
-    expect(find.text('লক্ষ্য সম্পাদনা'), findsOneWidget);
+    expect(find.byTooltip('লক্ষ্য সম্পাদনা'), findsOneWidget);
     await tester
         .ensureVisible(find.byKey(const ValueKey('dhikr-plus-subhanallah')));
     await tester.pump(const Duration(milliseconds: 300));

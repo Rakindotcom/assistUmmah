@@ -1,7 +1,7 @@
 name: ummah_assist
 description: A Flutter self-accountability app for Muslim daily tasks, prayers, growth, and contacts.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -41,7 +41,11 @@ flutter:
     - assets/legal/privacy.bn.json
     - assets/legal/account-data-paths.json
     - assets/fonts/AnekBangla-OFL.txt
+    - assets/fonts/NotoNaskhArabic-OFL.txt
   fonts:
     - family: AnekBangla
       fonts:
         - asset: assets/fonts/AnekBangla.ttf
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic.ttf

@@ -32,6 +32,9 @@ void main() {
     final loader = FontLoader('AnekBangla')
       ..addFont(rootBundle.load('assets/fonts/AnekBangla.ttf'));
     await loader.load();
+    final arabic = FontLoader('NotoNaskhArabic')
+      ..addFont(rootBundle.load('assets/fonts/NotoNaskhArabic.ttf'));
+    await arabic.load();
     final icons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
@@ -220,9 +223,28 @@ void main() {
     await _tap(tester, find.text('বাতিল'));
     tester.view.resetViewInsets();
     await tester.pump();
-    await _tap(tester, find.text('লক্ষ্য সম্পাদনা'));
+    await _tap(tester, find.byTooltip('লক্ষ্য সম্পাদনা'));
     await _capture(tester, 'dhikr-goals-large');
     expect(find.text('যিকিরের লক্ষ্য সম্পাদনা'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: platform);
+
+  _mobileFlow('tasbih picker and target fit a small phone and keyboard',
+      (tester) async {
+    await _mount(tester,
+        DhikrPage(repository: UiPreviewRepository(today: day), today: day));
+    await _tap(tester, find.text('যিকিরসমূহ'));
+    expect(find.text('আল্লাহু আকবার'), findsOneWidget);
+    await _capture(tester, 'tasbih-phrases-large');
+    await _tap(tester, find.text('আল্লাহু আকবার'));
+    await _tap(tester, find.byKey(const Key('dhikr-target')));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 240);
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '100');
+    await _capture(tester, 'tasbih-target-keyboard-large');
+    expect(tester.takeException(), isNull);
+    await _tap(tester, find.text('সংরক্ষণ'));
+    expect(find.text('লক্ষ্য ১০০'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: platform);
 

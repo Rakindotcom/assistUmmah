@@ -1,6 +1,6 @@
 # Product quality assessment
 
-**Date:** 28 October 2026 (Asia/Dhaka)
+**Date:** 29 October 2026 (Asia/Dhaka)
 
 **Scope:** `রবের পথে` Android and Flutter source at this checkout. Scores are
 engineering judgments, not ratings from users or a claim that Play has approved
@@ -66,13 +66,19 @@ change the Play Store status by themselves.
 - Qaza refreshes retain the last loaded backlog while waiting or after a read
   failure. A phone-sized regression test covers the stale-list warning, retry
   and disabled completion controls during the pending refresh.
+- Dhikr now has a focused tasbih screen with Arabic phrases, Bengali reading
+  and meaning, a large tap ring and a phrase picker. Daily target changes retain
+  all counts; confirmed reset affects only the selected phrase. A custom phrase
+  can join an already logged day while preserving its other goals and counts.
+  These changes use Firestore transactions and remain compatible with existing
+  records. New phone renders are linked in the UI review.
 - A profile-mode Android integration audit measures sign-in, first tab loads,
   a live seven-day report and navigation frames. The prior-build audit passes with
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 301 unit/widget tests passed
-on 28 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
+The final Flutter analyzer found no issues and all 310 unit/widget tests passed
+on 29 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was
 made after that profile APK was built, so its mobile coverage currently comes

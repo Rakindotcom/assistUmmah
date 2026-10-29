@@ -45,7 +45,13 @@ All 14 groups received visual review. Browser captures use synthetic data at
 | Settings, profile, reports | [Desktop](ui-screenshots/settings-desktop.jpg), [phone](ui-screenshots/settings-mobile.jpg), [report](ui-screenshots/report-large.png). Profile, load retry, and scrolling checked. |
 | Trends and details | [Desktop](ui-screenshots/trends-desktop.jpg), [phone](ui-screenshots/trends-mobile.jpg), [day sheet](ui-screenshots/trend-day-large.png). Grid adapts to enlarged text; missing records remain distinct from zero progress. |
 | Quran and reading goals | [Desktop](ui-screenshots/quran-desktop.jpg), [phone](ui-screenshots/quran-mobile.jpg), [goal editor](ui-screenshots/quran-goal-keyboard-large.png). Goal and reading edits covered. |
-| Dhikr and goals | [Desktop](ui-screenshots/dhikr-desktop.jpg), [phone](ui-screenshots/dhikr-mobile.jpg), [goals](ui-screenshots/dhikr-goals-large.png). Single, bulk, undo, and goal-edit behavior covered. |
+| Dhikr and goals | [Tasbih phone](ui-screenshots/tasbih-phone.png), [phrase picker](ui-screenshots/tasbih-picker-phone.png). Arabic, Bengali reading and meaning, a large tap ring, per-day target changes, confirmed reset and immediate custom phrases. Rapid taps, remote increments, failure/retry and account/day boundaries are covered. |
+
+The tasbih captures were rendered on 29 October 2026 with production Flutter
+widgets at 390×844 logical pixels and fabricated preview data. They are widget
+renders, not physical-device captures. Reproduce with
+`flutter test tool/tasbih_preview_test.dart`; images are written to `.local/previews`.
+The picker and target dialog also have 320 px / 1.6× text / keyboard-inset tests.
 
 ## Defects fixed during review
 

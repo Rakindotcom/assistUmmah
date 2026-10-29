@@ -8,8 +8,7 @@ import '../display_formatters.dart';
 import '../app_calendar_delegate.dart';
 import '../date_helpers.dart';
 import '../dhikr_progress.dart';
-import '../widgets/page_frame.dart';
-import '../widgets/responsive_cards.dart';
+import '../widgets/tasbih_counter.dart';
 
 class DhikrPage extends StatefulWidget {
   const DhikrPage(
@@ -47,8 +46,11 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
   int _requestId = 0;
   int _accountEpoch = 0;
   DateTime? _rolloverDay;
+  String? _selectedGoalId;
+  bool _editingDetails = false;
 
-  bool get _canLeaveDay => _pending.isEmpty && _failedChanges.isEmpty;
+  bool get _canLeaveDay =>
+      _pending.isEmpty && _failedChanges.isEmpty && !_editingDetails;
 
   DhikrDay get _visible {
     var record = _confirmed!;
@@ -85,6 +87,8 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
       _writes = Future.value();
       _selected = dateOnly(widget.today);
       _rolloverDay = null;
+      _selectedGoalId = null;
+      _editingDetails = false;
       _load();
     } else if (dateKey(oldWidget.today) != dateKey(widget.today)) {
       _rolloverDay = dateOnly(widget.today);
@@ -106,6 +110,7 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
   }
 
   Future<void> _load() async {
+    if (_editingDetails) return;
     final request = ++_requestId;
     setState(() {
       _loading = true;
@@ -144,7 +149,7 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
   }
 
   void _enqueue(_CountChange change) {
-    if (_loading || _confirmed == null) return;
+    if (_loading || _editingDetails || _confirmed == null) return;
     // Check the optimistic result before accepting a tap at the count limit.
     try {
       _visible.change(change.goalId, change.delta);
@@ -169,17 +174,9 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
                     fallback: fallback)
                 .change(change.goalId, change.delta);
         if (!mounted || epoch != _accountEpoch) return;
-        if (!repository.canSync) _localDocuments[date] = record.toMap();
         setState(() {
-          _confirmed = record;
           _pending.remove(change);
-          final documents = {
-            for (final day in _history!.days)
-              if (day.logged) day.date: day.toMap(),
-            date: record.toMap(),
-          };
-          _history = DhikrHistory(
-              end: widget.today, documents: documents, fallback: _goals);
+          _storeRecord(record);
         });
         _advanceAfterRollover();
       } catch (_) {
@@ -190,6 +187,151 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
         });
       }
     });
+  }
+
+  void _storeRecord(DhikrDay record) {
+    if (!widget.repository.canSync) {
+      if (record.logged) {
+        _localDocuments[record.date] = record.toMap();
+      } else {
+        _localDocuments.remove(record.date);
+      }
+    }
+    _confirmed = record;
+    _history = DhikrHistory(
+      end: widget.today,
+      documents: {
+        for (final day in _history!.days)
+          if (day.logged && day.date != record.date) day.date: day.toMap(),
+        if (record.logged) record.date: record.toMap(),
+      },
+      fallback: _goals,
+    );
+  }
+
+  Future<void> _chooseGoal() async {
+    final epoch = _accountEpoch;
+    final record = _visible;
+    final selected = await showModalBottomSheet<DhikrGoal>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (context) => ConstrainedBox(
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
+        child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            children: [
+              Text('যিকিরসমূহ',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 8),
+              const Text('যে যিকিরটি গণনা করতে চান, সেটি বেছে নিন'),
+              const SizedBox(height: 16),
+              for (final goal in record.goals.items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Card(
+                    color: goal.id ==
+                            (_selectedGoalId ?? record.goals.items.first.id)
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : null,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => Navigator.pop(context, goal),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(children: [
+                          DhikrPhraseText(goal: goal, compact: true),
+                          const SizedBox(height: 6),
+                          Text(
+                              '${banglaNumber(record.count(goal.id))} বার পড়া হয়েছে',
+                              style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.primary)),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
+            ]),
+      ),
+    );
+    if (!mounted || epoch != _accountEpoch || selected == null) return;
+    setState(() => _selectedGoalId = selected.id);
+  }
+
+  Future<void> _editTarget(DhikrGoal goal) async {
+    final epoch = _accountEpoch;
+    final record = _confirmed!;
+    final repository = widget.repository;
+    setState(() => _editingDetails = true);
+    try {
+      final updated = await showDialog<DhikrDay>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _DhikrTargetDialog(
+          goal: goal,
+          onSave: (target) => repository.canSync
+              ? repository.setDhikrTarget(
+                  date: record.date,
+                  goalId: goal.id,
+                  target: target,
+                  fallback: record.goals)
+              : Future.value(record.withTarget(goal.id, target)),
+        ),
+      );
+      if (!mounted || epoch != _accountEpoch || updated == null) return;
+      setState(() => _storeRecord(updated));
+    } finally {
+      if (mounted && epoch == _accountEpoch) {
+        setState(() => _editingDetails = false);
+        _advanceAfterRollover();
+      }
+    }
+  }
+
+  Future<void> _resetCount(DhikrGoal goal) async {
+    final epoch = _accountEpoch;
+    final record = _confirmed!;
+    final repository = widget.repository;
+    setState(() => _editingDetails = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('গণনা রিসেট করবেন?'),
+          content: Text(
+              '${compactDateLabel(DateTime.parse(record.date))} দিনের ${goal.name}-এর গণনা শূন্য হবে।'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('বাতিল')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('রিসেট করুন')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted || epoch != _accountEpoch) return;
+      final updated = repository.canSync
+          ? await repository.resetDhikrCount(
+              date: record.date, goalId: goal.id, fallback: record.goals)
+          : record.reset(goal.id);
+      if (!mounted || epoch != _accountEpoch) return;
+      setState(() => _storeRecord(updated));
+    } catch (_) {
+      if (mounted && epoch == _accountEpoch) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('গণনা রিসেট করা যায়নি। আবার চেষ্টা করুন।')));
+      }
+    } finally {
+      if (mounted && epoch == _accountEpoch) {
+        setState(() => _editingDetails = false);
+        _advanceAfterRollover();
+      }
+    }
   }
 
   Future<void> _selectDay(DateTime day) async {
@@ -220,14 +362,35 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
 
   Future<void> _editGoals() async {
     final epoch = _accountEpoch;
-    final result =
-        await Navigator.of(context).push<DhikrGoals>(MaterialPageRoute(
-      builder: (_) => _DhikrGoalsEditor(
-          initial: _goals, onSave: widget.repository.saveDhikrGoals),
-    ));
-    if (!mounted || epoch != _accountEpoch || result == null) return;
-    if (!widget.repository.canSync) _localGoals = result;
-    await _load();
+    final repository = widget.repository;
+    final original = _confirmed!;
+    DhikrDay? savedDay;
+    setState(() => _editingDetails = true);
+    try {
+      final result =
+          await Navigator.of(context).push<DhikrGoals>(MaterialPageRoute(
+        builder: (_) => _DhikrGoalsEditor(
+          initial: _goals,
+          onSave: (goals) async {
+            savedDay = repository.canSync
+                ? await repository.saveDhikrGoalsForDay(
+                    date: original.date, goals: goals, fallback: original.goals)
+                : original.includeGoals(goals);
+          },
+        ),
+      ));
+      if (!mounted || epoch != _accountEpoch || result == null) return;
+      setState(() {
+        _goals = result;
+        if (!repository.canSync) _localGoals = result;
+        _storeRecord(savedDay!);
+      });
+    } finally {
+      if (mounted && epoch == _accountEpoch) {
+        setState(() => _editingDetails = false);
+        _advanceAfterRollover();
+      }
+    }
   }
 
   Future<void> _addCount(DhikrGoal goal) async {
@@ -264,12 +427,33 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
     }
     final record = _visible;
     final isToday = record.date == dateKey(widget.today);
+    final goal = record.goals.items.firstWhere(
+        (goal) => goal.id == _selectedGoalId,
+        orElse: () => record.goals.items.first);
+    final count = record.count(goal.id);
+    final controlsReady = !_loading && !_editingDetails;
     return RefreshIndicator(
         onRefresh: _load,
-        child: PageFrame(
-          title: 'যিকিরের লক্ষ্য',
-          subtitle: 'নিজের লক্ষ্য ঠিক করুন, গণনা করুন ও দিনের অগ্রগতি দেখুন',
+        child: TasbihFrame(
           children: [
+            Row(children: [
+              Expanded(
+                  child: Semantics(
+                      header: true,
+                      child: Text('তসবিহ',
+                          style: Theme.of(context).textTheme.headlineSmall))),
+              IconButton(
+                  tooltip: 'লক্ষ্য সম্পাদনা',
+                  onPressed: _canLeaveDay && !_loading ? _editGoals : null,
+                  icon: const Icon(Icons.tune)),
+              IconButton(
+                  tooltip: 'গণনা রিসেট করুন',
+                  onPressed: _canLeaveDay && !_loading && count > 0
+                      ? () => _resetCount(goal)
+                      : null,
+                  icon: const Icon(Icons.restart_alt)),
+            ]),
+            const SizedBox(height: 12),
             if (!widget.repository.canSync)
               const Card(
                   margin: EdgeInsets.only(bottom: 12),
@@ -317,6 +501,110 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
                         ],
                       ))),
             Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DhikrPhraseText(goal: goal),
+                      const SizedBox(height: 12),
+                      Text('${banglaNumber(count)} বার পড়া হয়েছে',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary)),
+                      const SizedBox(height: 20),
+                      LayoutBuilder(builder: (context, constraints) {
+                        final target = OutlinedButton.icon(
+                            key: const Key('dhikr-target'),
+                            onPressed: _canLeaveDay && !_loading
+                                ? () => _editTarget(goal)
+                                : null,
+                            icon: const Icon(Icons.flag_outlined, size: 18),
+                            label: Text('লক্ষ্য ${banglaNumber(goal.target)}'));
+                        final choices = FilledButton.icon(
+                            onPressed:
+                                _canLeaveDay && !_loading ? _chooseGoal : null,
+                            icon: const Icon(Icons.format_list_bulleted,
+                                size: 18),
+                            label: const Text('যিকিরসমূহ'));
+                        if (constraints.maxWidth < 300 ||
+                            MediaQuery.textScalerOf(context).scale(14) > 20) {
+                          return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                target,
+                                const SizedBox(height: 10),
+                                choices
+                              ]);
+                        }
+                        return Row(children: [
+                          Expanded(child: target),
+                          const SizedBox(width: 10),
+                          Expanded(child: choices)
+                        ]);
+                      }),
+                      const SizedBox(height: 28),
+                      TasbihCounter(
+                        goal: goal,
+                        count: count,
+                        onTap: controlsReady && count < DhikrDay.maxCount
+                            ? () {
+                                unawaited(HapticFeedback.selectionClick());
+                                _enqueue(_CountChange(goal.id, 1));
+                              }
+                            : null,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                          '${banglaNumber(count)} / ${banglaNumber(goal.target)}',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                          count >= goal.target
+                              ? 'লক্ষ্য পূরণ হয়েছে'
+                              : 'আরও ${banglaNumber(goal.target - count)} বার বাকি',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary)),
+                      if (_pending.isNotEmpty || _editingDetails) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                            _editingDetails
+                                ? 'পরিবর্তন সংরক্ষণ হচ্ছে…'
+                                : 'গণনা সংরক্ষণ হচ্ছে…',
+                            textAlign: TextAlign.center),
+                      ],
+                      const SizedBox(height: 12),
+                      Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                                onPressed: controlsReady && count > 0
+                                    ? () => _enqueue(_CountChange(goal.id, -1))
+                                    : null,
+                                icon: const Icon(Icons.remove, size: 18),
+                                label: const Text('এক কমান')),
+                            TextButton(
+                                onPressed: controlsReady
+                                    ? () => _addCount(goal)
+                                    : null,
+                                child: const Text('সংখ্যা যোগ করুন')),
+                          ]),
+                    ]),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+                '${banglaNumber(record.goalsMet)} / ${banglaNumber(record.goals.items.length)} লক্ষ্য পূরণ',
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            const Text(
+                'এগুলো আপনার ব্যক্তিগত লক্ষ্য। লক্ষ্য বাটনে এই দিনের সংখ্যা বদলান। উপরের সেটিংস থেকে নিজের যিকির যোগ করুন।',
+                textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            Card(
                 child: Row(children: [
               IconButton(
                   tooltip: 'আগের দিন',
@@ -340,80 +628,7 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
                       : null,
                   icon: const Icon(Icons.chevron_right)),
             ])),
-            const SizedBox(height: 12),
-            Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 12,
-                children: [
-                  Text(
-                      '${banglaNumber(record.goalsMet)} / ${banglaNumber(record.goals.items.length)} লক্ষ্য পূরণ'),
-                  TextButton.icon(
-                      onPressed: _canLeaveDay && !_loading ? _editGoals : null,
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('লক্ষ্য সম্পাদনা')),
-                ]),
-            if (_pending.isNotEmpty)
-              const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text('গণনা সংরক্ষণ হচ্ছে…')),
-            ResponsiveCards(maxColumns: 3, minColumnWidth: 280, children: [
-              for (final goal in record.goals.items)
-                Card(
-                    child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(goal.name,
-                                style: Theme.of(context).textTheme.titleLarge),
-                            const SizedBox(height: 8),
-                            Text(
-                                '${banglaNumber(record.count(goal.id))} / ${banglaNumber(goal.target)}',
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall),
-                            const SizedBox(height: 10),
-                            LinearProgressIndicator(
-                                borderRadius: BorderRadius.circular(8),
-                                value: (record.count(goal.id) / goal.target)
-                                    .clamp(0.0, 1.0)),
-                            const SizedBox(height: 10),
-                            Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.center,
-                                children: [
-                                  IconButton(
-                                      tooltip: '${goal.name}: এক কমান',
-                                      onPressed:
-                                          _loading || record.count(goal.id) == 0
-                                              ? null
-                                              : () => _enqueue(
-                                                  _CountChange(goal.id, -1)),
-                                      icon: const Icon(Icons.remove)),
-                                  FilledButton.icon(
-                                      key: ValueKey('dhikr-plus-${goal.id}'),
-                                      onPressed: _loading ||
-                                              record.count(goal.id) >=
-                                                  DhikrDay.maxCount
-                                          ? null
-                                          : () => _enqueue(
-                                              _CountChange(goal.id, 1)),
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('এক যোগ করুন')),
-                                  TextButton(
-                                      onPressed: _loading
-                                          ? null
-                                          : () => _addCount(goal),
-                                      child: const Text('সংখ্যা যোগ করুন')),
-                                ]),
-                          ],
-                        ))),
-            ]),
             const SizedBox(height: 16),
-            const Text(
-                'প্রথম গণনার সঙ্গে ওই দিনের লক্ষ্য সংরক্ষিত হয়। লক্ষ্য সম্পাদনা করলে পরবর্তী নতুন দিনের হিসাবে তা ব্যবহৃত হবে। সংখ্যাগুলো আপনার ব্যক্তিগত লক্ষ্য।'),
-            const SizedBox(height: 20),
             Text('গত ৭ দিন', style: Theme.of(context).textTheme.titleLarge),
             Text(
                 '${banglaNumber(_history!.loggedDays)} দিন হিসাব • মোট ${banglaNumber(_history!.total)} বার'),
@@ -435,6 +650,102 @@ class _DhikrPageState extends State<DhikrPage> with WidgetsBindingObserver {
           ],
         ));
   }
+}
+
+class _DhikrTargetDialog extends StatefulWidget {
+  const _DhikrTargetDialog({required this.goal, required this.onSave});
+  final DhikrGoal goal;
+  final Future<DhikrDay> Function(int) onSave;
+
+  @override
+  State<_DhikrTargetDialog> createState() => _DhikrTargetDialogState();
+}
+
+class _DhikrTargetDialogState extends State<_DhikrTargetDialog> {
+  late final _target = TextEditingController(text: '${widget.goal.target}');
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _target.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final target = int.tryParse(_target.text) ?? 0;
+    if (target < 1 || target > 100000) {
+      setState(() => _error = '১ থেকে ১০০০০০ এর মধ্যে লক্ষ্য লিখুন');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final record = await widget.onSave(target);
+      if (mounted) Navigator.pop(context, record);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'লক্ষ্য সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+        canPop: !_saving,
+        child: AlertDialog(
+          title: const Text('লক্ষ্য নির্ধারণ'),
+          content: SingleChildScrollView(
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(widget.goal.name),
+                  const SizedBox(height: 8),
+                  const Text(
+                      'এই দিনের ব্যক্তিগত লক্ষ্য ঠিক করুন। আগের গণনা ঠিক থাকবে।'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _target,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                        labelText: 'কতবার পড়বেন?',
+                        errorText: _error,
+                        counterText: ''),
+                    onSubmitted: (_) => _save(),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final value in [33, 34, 100, 1000])
+                      OutlinedButton(
+                          onPressed: _saving
+                              ? null
+                              : () {
+                                  _target.text = '$value';
+                                },
+                          child: Text(banglaNumber(value))),
+                  ]),
+                ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: const Text('বাতিল')),
+            FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(_saving ? 'সংরক্ষণ হচ্ছে…' : 'সংরক্ষণ')),
+          ],
+        ),
+      );
 }
 
 class _AddCountDialog extends StatefulWidget {
@@ -557,7 +868,7 @@ class _DhikrGoalsEditorState extends State<_DhikrGoalsEditor> {
             key: _form,
             child: ListView(padding: const EdgeInsets.all(20), children: [
               const Text(
-                  '১ থেকে ২০টি ব্যক্তিগত লক্ষ্য রাখুন। আগে গণনা করা দিনের লক্ষ্য অপরিবর্তিত থাকবে।'),
+                  '১ থেকে ২০টি ব্যক্তিগত লক্ষ্য রাখুন। নতুন যিকির আজই গণনা করতে পারবেন। আগে গণনা করা যিকিরের লক্ষ্য ঠিক থাকবে।'),
               const SizedBox(height: 12),
               for (final draft in _drafts)
                 Card(

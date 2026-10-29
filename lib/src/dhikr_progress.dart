@@ -31,6 +31,32 @@ class DhikrGoal {
   }
 }
 
+/// Display text for the built-in phrases. User-renamed goals keep their own text.
+class DhikrPhrase {
+  const DhikrPhrase(this.id, this.name, this.arabic, this.meaning);
+
+  final String id;
+  final String name;
+  final String arabic;
+  final String meaning;
+
+  static const builtIn = [
+    DhikrPhrase('subhanallah', 'সুবহানাল্লাহ', 'سُبْحَانَ اللَّهِ',
+        'আল্লাহ সকল ত্রুটি থেকে পবিত্র'),
+    DhikrPhrase('alhamdulillah', 'আলহামদুলিল্লাহ', 'الْحَمْدُ لِلَّهِ',
+        'সমস্ত প্রশংসা আল্লাহর জন্য'),
+    DhikrPhrase('allahu_akbar', 'আল্লাহু আকবার', 'اللَّهُ أَكْبَرُ',
+        'আল্লাহ সর্বশ্রেষ্ঠ'),
+  ];
+
+  static DhikrPhrase? forGoal(DhikrGoal goal) {
+    for (final phrase in builtIn) {
+      if (phrase.id == goal.id && phrase.name == goal.name) return phrase;
+    }
+    return null;
+  }
+}
+
 class DhikrGoals {
   DhikrGoals(Iterable<DhikrGoal> goals) : items = List.unmodifiable(goals);
 
@@ -107,6 +133,52 @@ class DhikrDay {
       logged: true,
       goals: goals,
       counts: {...counts, id: next.clamp(0, maxCount)},
+    );
+  }
+
+  DhikrDay withTarget(String id, int target) {
+    if (target < 1 ||
+        target > 100000 ||
+        !goals.items.any((goal) => goal.id == id)) {
+      throw ArgumentError('Invalid dhikr target');
+    }
+    return DhikrDay(
+      date: date,
+      logged: true,
+      goals: DhikrGoals([
+        for (final goal in goals.items)
+          goal.id == id
+              ? DhikrGoal(id: id, name: goal.name, target: target)
+              : goal,
+      ]),
+      counts: counts,
+    );
+  }
+
+  /// Keep a counted day's snapshot, while making newly added phrases usable now.
+  DhikrDay includeGoals(DhikrGoals template) {
+    if (!template.valid) throw ArgumentError('Invalid dhikr template');
+    final combined = logged
+        ? DhikrGoals([
+            ...goals.items,
+            for (final goal in template.items)
+              if (!goals.items.any((existing) => existing.id == goal.id)) goal,
+          ])
+        : template;
+    if (!combined.valid) throw ArgumentError('Too many goals for this day');
+    return DhikrDay(
+        date: date, logged: logged, goals: combined, counts: counts);
+  }
+
+  DhikrDay reset(String id) {
+    if (!goals.items.any((goal) => goal.id == id)) {
+      throw ArgumentError.value(id, 'id');
+    }
+    return DhikrDay(
+      date: date,
+      logged: true,
+      goals: goals,
+      counts: {...counts, id: 0},
     );
   }
 

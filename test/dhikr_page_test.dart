@@ -8,6 +8,119 @@ import 'package:ummah_assist/src/dhikr_progress.dart';
 import 'package:ummah_assist/src/pages/dhikr_page.dart';
 
 void main() {
+  testWidgets('new custom dhikr can be counted on an already logged day',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _DhikrRepository();
+    repository.documents['2026-10-26'] =
+        DhikrDay.fromDocument('2026-10-26', null, fallback: repository.goals)
+            .change('one', 7)
+            .toMap();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('লক্ষ্য সম্পাদনা'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন লক্ষ্য'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(2), 'আমার যিকির');
+    await tester.enterText(find.byType(TextFormField).at(3), '50');
+    await tester.ensureVisible(find.text('লক্ষ্য সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('লক্ষ্য সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('যিকিরসমূহ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('আমার যিকির'));
+    await tester.pumpAndSettle();
+    final id = repository.goals.items.last.id;
+    await tester.tap(find.byKey(ValueKey('dhikr-plus-$id')));
+    await tester.pumpAndSettle();
+    final counts = repository.documents['2026-10-26']!['counts'] as Map;
+    expect(counts['one'], 7);
+    expect(counts[id], 1);
+  });
+  testWidgets('phrase picker changes the active counter without moving counts',
+      (tester) async {
+    final repository = _DhikrRepository()..goals = DhikrGoals.standard;
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester
+        .ensureVisible(find.byKey(const ValueKey('dhikr-plus-subhanallah')));
+    await tester.tap(find.byKey(const ValueKey('dhikr-plus-subhanallah')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('যিকিরসমূহ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('যিকিরসমূহ'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('আল্লাহু আকবার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('আল্লাহু আকবার'));
+    await tester.pumpAndSettle();
+    expect(find.text('اللَّهُ أَكْبَرُ'), findsOneWidget);
+    await tester
+        .ensureVisible(find.byKey(const ValueKey('dhikr-plus-allahu_akbar')));
+    await tester.tap(find.byKey(const ValueKey('dhikr-plus-allahu_akbar')));
+    await tester.pumpAndSettle();
+    final counts = repository.documents['2026-10-26']!['counts'] as Map;
+    expect(counts['subhanallah'], 1);
+    expect(counts['allahu_akbar'], 1);
+  });
+
+  testWidgets('daily target retries a failed save and preserves existing count',
+      (tester) async {
+    final repository = _DhikrRepository()..failTargetSave = true;
+    repository.documents['2026-10-26'] =
+        DhikrDay.fromDocument('2026-10-26', null, fallback: repository.goals)
+            .change('one', 7)
+            .toMap();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('dhikr-target')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '20');
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    expect(find.text('লক্ষ্য সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'),
+        findsOneWidget);
+    repository.failTargetSave = false;
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+    expect(find.text('৭ / ২০'), findsOneWidget);
+    expect((repository.documents['2026-10-26']!['counts'] as Map)['one'], 7);
+  });
+
+  testWidgets('reset requires confirmation and failure keeps the saved count',
+      (tester) async {
+    final repository = _DhikrRepository()..failReset = true;
+    repository.documents['2026-10-26'] =
+        DhikrDay.fromDocument('2026-10-26', null, fallback: repository.goals)
+            .change('one', 7)
+            .toMap();
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('গণনা রিসেট করুন'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('বাতিল'));
+    await tester.pumpAndSettle();
+    expect(find.text('৭ / ১০'), findsOneWidget);
+    await tester.tap(find.byTooltip('গণনা রিসেট করুন'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রিসেট করুন'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('গণনা রিসেট করা যায়নি। আবার চেষ্টা করুন।'), findsOneWidget);
+    expect(find.text('৭ / ১০'), findsOneWidget);
+    repository.failReset = false;
+    await tester.tap(find.byTooltip('গণনা রিসেট করুন'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রিসেট করুন'));
+    await tester.pumpAndSettle();
+    expect(find.text('০ / ১০'), findsOneWidget);
+  });
+
   testWidgets(
       'rapid taps preserve remote increments and save to the original day',
       (tester) async {
@@ -114,7 +227,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('dhikr-plus-one')));
     await tester.pump();
-    await tester.tap(find.text('লক্ষ্য সম্পাদনা'));
+    await tester.tap(find.byTooltip('লক্ষ্য সম্পাদনা'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).last, '20');
     await tester.tap(find.text('লক্ষ্য সংরক্ষণ'));
@@ -176,6 +289,8 @@ class _DhikrRepository extends AppRepository {
   Completer<void>? gate;
   bool failNextChange = false;
   bool failGoalSave = false;
+  bool failTargetSave = false;
+  bool failReset = false;
 
   @override
   bool get canSync => true;
@@ -188,8 +303,45 @@ class _DhikrRepository extends AppRepository {
   }
 
   @override
+  Future<DhikrDay> saveDhikrGoalsForDay(
+      {required String date,
+      required DhikrGoals goals,
+      required DhikrGoals fallback}) async {
+    await saveDhikrGoals(goals);
+    final day = DhikrDay.fromDocument(date, documents[date], fallback: fallback)
+        .includeGoals(goals);
+    if (day.logged) documents[date] = day.toMap();
+    return day;
+  }
+
+  @override
   Future<Map<String, dynamic>?> loadDhikrDocument(String date) async =>
       documents[date];
+  @override
+  Future<DhikrDay> setDhikrTarget(
+      {required String date,
+      required String goalId,
+      required int target,
+      required DhikrGoals fallback}) async {
+    if (failTargetSave) throw StateError('Simulated target write failure');
+    final day = DhikrDay.fromDocument(date, documents[date], fallback: fallback)
+        .withTarget(goalId, target);
+    documents[date] = day.toMap();
+    return day;
+  }
+
+  @override
+  Future<DhikrDay> resetDhikrCount(
+      {required String date,
+      required String goalId,
+      required DhikrGoals fallback}) async {
+    if (failReset) throw StateError('Simulated reset failure');
+    final day = DhikrDay.fromDocument(date, documents[date], fallback: fallback)
+        .reset(goalId);
+    documents[date] = day.toMap();
+    return day;
+  }
+
   @override
   Future<DhikrDay> changeDhikrCount(
       {required String date,

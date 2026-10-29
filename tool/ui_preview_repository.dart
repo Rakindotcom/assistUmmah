@@ -22,7 +22,7 @@ class UiPreviewRepository extends AppRepository {
                           : i % 5 == 2 && p == 0
                               ? PrayerState.missed
                               : PrayerState.prayed,
-                    jamaat: (p == 0 || p == 1) && !(i % 5 == 2 && p == 0))
+                      jamaat: (p == 0 || p == 1) && !(i % 5 == 2 && p == 0))
                   .toMap(),
           }
         };
@@ -238,6 +238,41 @@ class UiPreviewRepository extends AppRepository {
   @override
   Future<Map<String, dynamic>?> loadDhikrDocument(String date) async =>
       dhikr[date];
+  @override
+  Future<DhikrDay> saveDhikrGoalsForDay(
+      {required String date,
+      required DhikrGoals goals,
+      required DhikrGoals fallback}) async {
+    dhikrGoals = goals;
+    final day = DhikrDay.fromDocument(date, dhikr[date], fallback: fallback)
+        .includeGoals(goals);
+    if (day.logged) dhikr[date] = day.toMap();
+    return day;
+  }
+
+  @override
+  Future<DhikrDay> setDhikrTarget(
+      {required String date,
+      required String goalId,
+      required int target,
+      required DhikrGoals fallback}) async {
+    final day = DhikrDay.fromDocument(date, dhikr[date], fallback: fallback)
+        .withTarget(goalId, target);
+    dhikr[date] = day.toMap();
+    return day;
+  }
+
+  @override
+  Future<DhikrDay> resetDhikrCount(
+      {required String date,
+      required String goalId,
+      required DhikrGoals fallback}) async {
+    final day = DhikrDay.fromDocument(date, dhikr[date], fallback: fallback)
+        .reset(goalId);
+    dhikr[date] = day.toMap();
+    return day;
+  }
+
   @override
   Future<DhikrDay> changeDhikrCount(
       {required String date,

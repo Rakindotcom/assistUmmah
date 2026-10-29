@@ -1,6 +1,6 @@
 {
-  "verifiedAtUtc": "2026-10-28T16:55:51+00:00",
-  "flutterTestsPassed": 301,
+  "verifiedAtUtc": "2026-10-29T03:39:57+00:00",
+  "flutterTestsPassed": 310,
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 7,
   "testToolingVulnerabilities": 0,
@@ -28,7 +28,7 @@
   "phoneCaptureCount": 6,
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
-  "bundleSha256": "4b8972ee3614d8b16fcfa7a4f1f48fdd0b40dc0243c0b14c207215354090615b",
+  "bundleSha256": "44e9a1071f0e1820b332201153f68397a2f487de1a3b19a6086035005a228d55",
   "signedReleaseLoginVisible": false,
   "firebaseRegistrarErrorsAbsent": false,
   "priorRuntimeEvidenceAvailable": true,
