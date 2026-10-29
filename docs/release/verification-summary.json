@@ -1,6 +1,6 @@
 {
-  "verifiedAtUtc": "2026-10-29T03:39:57+00:00",
-  "flutterTestsPassed": 310,
+  "verifiedAtUtc": "2026-10-29T11:07:44.854469+00:00",
+  "flutterTestsPassed": 322,
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 7,
   "testToolingVulnerabilities": 0,
@@ -16,7 +16,13 @@
     "deletion-web-proof.jpg",
     "native-verification.json",
     "signed-release-smoke.json",
-    "android-emulator-environment.json"
+    "android-emulator-environment.json",
+    "../ui-review.md",
+    "../dua-content-review.md",
+    "../ui-screenshots/home-phone.png",
+    "../ui-screenshots/home-daily-phone.png",
+    "../ui-screenshots/dua-library-phone.png",
+    "../ui-screenshots/fasting-phone.png"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": false,
@@ -28,10 +34,16 @@
   "phoneCaptureCount": 6,
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
-  "bundleSha256": "44e9a1071f0e1820b332201153f68397a2f487de1a3b19a6086035005a228d55",
+  "bundleSha256": "5e767f8db9078852558d0849dd75b0727c2758e9986035986aa74299c1a37f15",
   "signedReleaseLoginVisible": false,
   "firebaseRegistrarErrorsAbsent": false,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified."
+  "nativeEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
+  "releaseToolTestsPassed": 3,
+  "homeFontAndPreviewChecksPassed": 9,
+  "homeWidgetCaptureCount": 4,
+  "homeWidgetCaptureScope": "Production widgets at 390x844 logical pixels with fabricated preview data; not native-device captures.",
+  "universalApkSha256": "0640a9ea2738097d86661c20999569750f3fa1be3eba689490a66b4f810805f9",
+  "signingIdentityMatchesPriorTestApk": true
 }

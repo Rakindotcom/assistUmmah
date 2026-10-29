@@ -1,6 +1,40 @@
 # UI review
 
-## Assessment: 6/10 → 9/10
+## Current benchmark correction — 29 October 2026
+
+The earlier 9/10 assessment below over-weighted layout and engineering checks.
+It does not establish competitive product quality. The supplied competitor
+screens show clearer prayer-first utility and broader Islamic content. The old
+numeric score is withdrawn; no replacement usability score is claimed without
+user observation and physical-device review.
+
+The current home adds a local prayer countdown and five-prayer strip, nine
+working shortcuts, prayer status, a daily Quranic dua and compact personal
+progress. New offline screens include eight searchable duas with sources and
+copy, a location picker and today/tomorrow fasting times. Quran remains a reading
+tracker; a complete reader, hadith library and Qibla compass are not implemented.
+
+Current production-widget renders at 390×844 logical pixels with fabricated
+preview data:
+
+- [Home and shortcuts](ui-screenshots/home-phone.png)
+- [Prayer status and daily dua](ui-screenshots/home-daily-phone.png)
+- [Offline dua library](ui-screenshots/dua-library-phone.png)
+- [Fasting times](ui-screenshots/fasting-phone.png)
+
+These are widget renders, not physical-device or Play Store screenshots.
+Reproduce with `flutter test --no-pub tool/home_preview_test.dart`. The rendered
+home passed labeled-target and Android 48px target guidelines. Configured-home,
+fasting and dua-detail flows pass at 320px with 1.6× text. Countdown tests cover
+prayer boundaries, sunrise, midnight, inactive screens and unchanged account-read
+counts while the timer advances. Formal religious review and physical-device
+validation remain outstanding. See [dua content sources](dua-content-review.md).
+
+Verification for the current home: full Flutter suite **322 passed**, analyzer
+**no issues**, and release-tool Python suite **3 passed** on 29 October 2026.
+Native startup of this exact signed build remains unverified.
+
+## Historical interface assessment
 
 This is a design and engineering judgment of the implemented interface, not a
 user-research score or certification. The starting desktop view was constrained
@@ -34,7 +68,7 @@ All 14 groups received visual review. Browser captures use synthetic data at
 | --- | --- |
 | Navigation and shell | [Desktop](ui-screenshots/dashboard-desktop.jpg), [tablet](ui-screenshots/dashboard-tablet.jpg), [phone](ui-screenshots/dashboard-mobile.jpg). Real responsive shell replaces the fake phone frame. |
 | Sign in, sign up, reset | [Validation](ui-screenshots/auth-validation-mobile.jpg), [signup with keyboard inset](ui-screenshots/signup-keyboard-large.png), [reset feedback](ui-screenshots/password-reset-feedback-large.png). Keyboard order checked. |
-| Dashboard | [Desktop](ui-screenshots/dashboard-desktop.jpg), [phone](ui-screenshots/dashboard-mobile.jpg). Empty and populated states checked. |
+| Dashboard | [Current home](ui-screenshots/home-phone.png), [prayer status and daily dua](ui-screenshots/home-daily-phone.png). Earlier browser images below are historical. |
 | Tasks and scheduling | [Desktop](ui-screenshots/tasks-desktop.jpg), [phone](ui-screenshots/tasks-mobile.jpg), [add dialog](ui-screenshots/task-dialog-keyboard-large.png), [date picker](ui-screenshots/date-picker-large.png). Add, recurrence, scheduling, rescheduling regressions covered. |
 | Prayers, location, alerts | [Desktop](ui-screenshots/prayers-desktop.jpg), [phone](ui-screenshots/prayers-mobile.jpg), [location](ui-screenshots/prayer-location-keyboard-large.png), [native alert controls](ui-screenshots/prayer-alerts-large.png). |
 | Qaza backlog | [Desktop](ui-screenshots/qaza-desktop.jpg), [phone](ui-screenshots/qaza-mobile.jpg). Completion/retry covered by qaza tests; shell push/pop covered separately. |

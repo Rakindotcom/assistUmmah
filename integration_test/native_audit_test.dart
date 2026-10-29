@@ -163,7 +163,8 @@ void main() {
     // its normal Firestore network path. It does not mutate reviewer records.
     final reportWatch = Stopwatch()..start();
     final report =
-        await const AppRepository(uid: reviewUid, firebaseReady: true).buildReport(
+        await const AppRepository(uid: reviewUid, firebaseReady: true)
+            .buildReport(
       start: DateTime.now().subtract(const Duration(days: 6)),
       end: DateTime.now(),
     );
@@ -217,11 +218,14 @@ void main() {
 Future<void> waitForLoadedPage(WidgetTester tester) async {
   final watch = Stopwatch()..start();
   await tester.pump();
-  while (find.byType(CircularProgressIndicator).evaluate().isNotEmpty &&
-      watch.elapsed < const Duration(seconds: 60)) {
+  bool loading() =>
+      find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+      find.text('আপনার হিসাব লোড হচ্ছে…').evaluate().isNotEmpty;
+  while (loading() && watch.elapsed < const Duration(seconds: 60)) {
     await tester.pump(const Duration(milliseconds: 200));
   }
   expect(find.byType(CircularProgressIndicator), findsNothing);
+  expect(find.text('আপনার হিসাব লোড হচ্ছে…'), findsNothing);
   await tester.pumpAndSettle();
 }
 

@@ -109,9 +109,10 @@ class PrayerTimeEntry {
 }
 
 class PrayerSchedule {
-  const PrayerSchedule(this.entries);
+  const PrayerSchedule(this.entries, {this.sunrise});
 
   final List<PrayerTimeEntry> entries;
+  final tz.TZDateTime? sunrise;
 
   PrayerTimeEntry? nextAfter(DateTime now) {
     for (final entry in entries) {
@@ -148,7 +149,7 @@ class PrayerTimeService {
       PrayerTimeEntry('asr', tz.TZDateTime.from(times.asr, zone)),
       PrayerTimeEntry('maghrib', tz.TZDateTime.from(times.maghrib, zone)),
       PrayerTimeEntry('isha', tz.TZDateTime.from(times.isha, zone)),
-    ]);
+    ], sunrise: tz.TZDateTime.from(times.sunrise, zone));
   }
 
   static PrayerTimeEntry nextPrayer(PrayerTimeConfig config, DateTime now) {

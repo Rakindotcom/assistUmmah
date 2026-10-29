@@ -4,9 +4,10 @@
 
 **Scope:** `রবের পথে` Android and Flutter source at this checkout. Scores are
 engineering judgments, not ratings from users or a claim that Play has approved
-the app. They describe the verified product, including the limits of the tests.
+the app. The numeric table is retained as a historical assessment and is
+superseded by the benchmark correction below.
 
-| Area | Current rating | Evidence and main gap |
+| Area | Prior rating (superseded) | Evidence and main gap |
 | --- | ---: | --- |
 | Functionality | 8/10 | Tasks, prayers, growth, calendar, qaza, Quran, dhikr, contacts, reports and deletion are implemented. Long offline sessions and interrupted writes remain a data-loss risk for some flows. |
 | Mobile UI | 8.5/10 | Six captures from the signed-in Android app and 320–390 px widget layouts show consistent Anek Bangla, Bengali digits and phone navigation. Physical screens, keyboard and TalkBack have not been reviewed. |
@@ -17,10 +18,26 @@ the app. They describe the verified product, including the limits of the tests.
 | Accessibility | 7.5/10 | Contrast and labeled-target checks cover the main mobile tabs and Contacts at 390 px and 320 px with 1.6× Bengali text; filter chips now meet the 48 px tap-target guideline. Actual TalkBack/VoiceOver traversal and Bengali comprehension need testing with people. |
 | Release readiness | 7/10 | The current signed Android bundle passes signature and 16 KB alignment checks. Fresh startup/login verification of this exact bundle is pending after a timeout on the dedicated emulator. Physical ARM64 devices, a Play-installed build, Play Console declarations and any closed-test requirement remain outstanding. |
 
-**Overall: 8/10, provisionally.** This is a weighted engineering assessment of
-the shipping experience. Raising the score requires proof from the remaining
-device, user and release checks. Local changes in this pass do not
-change the Play Store status by themselves.
+**Prior overall 8/10 withdrawn.** The numeric table above records the earlier
+engineering assessment. It over-weighted code quality and test coverage compared
+with actual homepage usefulness and competitor feature breadth. It should not be
+read as a current competitive rating. The supplied competitor screens exposed
+that gap. A new numerical usability rating needs observation with users and
+physical-device evidence.
+
+### Homepage follow-up
+
+The revised home prioritizes offline prayer times, a live countdown, five-prayer
+starts, useful shortcuts, daily prayer status and a sourced daily dua. An offline
+dua collection supports search, categories, meanings, copy and source links.
+Today/tomorrow fasting times use the selected prayer calculation configuration.
+Personal account reads do not block access to these local utilities, and clock
+ticks do not repeat Firestore reads.
+
+This improves daily utility but does not establish competitor parity. Quran is
+still a reading tracker. A complete Quran reader, vetted hadith library, Qibla
+compass and Hijri calendar remain product gaps. Native release startup, physical
+phones, accessibility services and Play Console checks remain outstanding.
 
 ## Changes in this quality pass
 
@@ -77,7 +94,7 @@ change the Play Store status by themselves.
   dedicated synthetic reviewer records. The result is intended as a single-run
   baseline; it cannot establish device-wide percentiles.
 
-The final Flutter analyzer found no issues and all 310 unit/widget tests passed
+The final Flutter analyzer found no issues and all 322 unit/widget tests passed
 on 29 October 2026. The native audit uses an API 36 x86_64 emulator with 16 KB
 pages; its [timing and functional record](release/native-verification.json)
 includes a profile build from this quality pass. The task composer change was

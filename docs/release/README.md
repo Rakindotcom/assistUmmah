@@ -16,13 +16,13 @@ smoke passes.
 
 Verified locally through 29 October 2026:
 
-- Flutter analyzer: no issues; full Flutter suite: **310 passed**.
+- Flutter analyzer: no issues; full Flutter suite: **322 passed**.
 - Firebase emulator integration suite: **7 passed**, covering complete deletion,
   interrupted recovery, multiple batches, owner isolation, recent authentication,
   immutable markers, legacy records and anonymous denial.
 - Release input checks: 45 brand exports, store graphics, support contact,
   Spark configuration, deletion inventory, OAuth and signing inputs pass.
-- Signed AAB: `1.0.0+2`, API 36, minimum API 24, ARM64 present. Bundletool and
+- Signed AAB: `1.0.0+3`, API 36, minimum API 24, ARM64 present. Bundletool and
   upload signature validation pass; all nine native libraries were inspected.
 - Generated universal APK: signature and `zipalign -c -P 16 -v 4` pass. All
   64-bit native ELF load segments have at least 16 KB alignment. Startup of
@@ -93,6 +93,19 @@ Verified locally through 29 October 2026:
   reset and immediate custom phrases while preserving other counts. Anek Bangla
   remains the Bengali font; Noto Naskh Arabic and its SIL license are bundled.
 
+- New prayer-first home with live local countdown, five-prayer start times, nine
+  working shortcuts, prayer status, daily dua and compact personal progress.
+- Quick location selection and today/tomorrow fasting times are calculated
+  offline using the existing prayer configuration, including manual adjustments.
+- Eight Quranic dua excerpts include Arabic, Bengali paraphrases, category/search,
+  copy with source and external complete-ayah links. See
+  [content review](../dua-content-review.md). No new user data is stored.
+- The home remains usable while account reads wait; clock ticks do not repeat
+  Firestore reads and stop while the home is inactive.
+- [Current widget phone renders](../ui-review.md) show the new home, prayer status,
+  dua library and fasting sheet. They supersede the prior home UI; prior native
+  screenshots and profile timings still refer to the earlier build.
+
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at
 `build/app/outputs/bundle/release/app-release.aab`; a locally installable universal
@@ -121,9 +134,10 @@ APK is at `.local/app-release-universal.apk`.
   messages and attach no custom account/profile/activity content.
 - Store icon and feature graphic exported from the supplied artwork with Anek
   Bangla shaping. Native store screenshots remain an independent gate.
-- Quality and manually dispatched Android release workflows prepared locally.
-  They become active after the repository changes and required secrets are set
-  up on GitHub; no remote workflow run is claimed.
+- The GitHub quality workflow runs Flutter checks and Firebase account-lifecycle
+  emulator tests on pushes. A separate manually dispatched Android release
+  workflow requires the configured release secrets for remote signing. Local
+  release signing uses ignored private credentials.
 
 ## Published pages and contact
 

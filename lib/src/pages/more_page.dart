@@ -10,6 +10,7 @@ class MorePage extends StatelessWidget {
     required this.onOpenDhikr,
     required this.onOpenContacts,
     required this.onOpenSettings,
+    this.onOpenDuas,
   });
 
   final VoidCallback onOpenCalendar;
@@ -17,6 +18,7 @@ class MorePage extends StatelessWidget {
   final VoidCallback onOpenDhikr;
   final VoidCallback onOpenContacts;
   final VoidCallback onOpenSettings;
+  final VoidCallback? onOpenDuas;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,13 @@ class MorePage extends StatelessWidget {
         LayoutBuilder(builder: (context, constraints) {
           final wide = constraints.maxWidth >= 680;
           final destinations = [
+            if (onOpenDuas != null)
+              (
+                Icons.volunteer_activism_outlined,
+                'দোয়া সংগ্রহ',
+                'কুরআনের দোয়া, বাংলা অর্থ ও আয়াতের সূত্র',
+                onOpenDuas!
+              ),
             (
               Icons.menu_book_outlined,
               'কুরআন রিডিং',

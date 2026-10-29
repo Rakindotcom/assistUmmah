@@ -22,7 +22,7 @@ void main() {
     expect(find.byType(DashboardPage), findsOneWidget);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('আজকের সারাংশ'), findsOneWidget);
+    expect(find.text('আসসালামু আলাইকুম'), findsOneWidget);
     expect(find.text('এখনো লগ করা হয়নি'), findsWidgets);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -53,6 +53,8 @@ void main() {
     expect(find.text('দিন নির্বাচন করুন'), findsOneWidget);
     await tester.tap(find.byTooltip('আরও পৃষ্ঠায় ফিরুন'));
     await tester.pump();
+    await tester.ensureVisible(find.text('যোগাযোগ'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('যোগাযোগ'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
@@ -86,7 +88,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('আজকের সারাংশ'), findsOneWidget);
+    expect(find.text('আসসালামু আলাইকুম'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));

@@ -104,6 +104,7 @@ void main() {
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       }
       await tester.ensureVisible(find.text('যোগাযোগ').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('যোগাযোগ').last);
       await tester.pumpAndSettle();
       expect(find.byType(ContactsPage), findsOneWidget);
@@ -149,7 +150,9 @@ void main() {
       }
       await tester.drag(find.byType(ListView).last, const Offset(0, -350));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('যোগাযোগ').last);
+      await Scrollable.ensureVisible(tester.element(find.text('যোগাযোগ').last),
+          alignment: 0.3);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('যোগাযোগ').last);
       await tester.pumpAndSettle();
       expect(find.byType(ContactsPage), findsOneWidget);

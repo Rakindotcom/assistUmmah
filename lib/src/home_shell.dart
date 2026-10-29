@@ -9,6 +9,8 @@ import 'reminder_session.dart';
 import 'pages/contacts_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/dashboard_page.dart';
+import 'pages/dua_library_page.dart';
+import 'pages/report_dialog.dart';
 import 'pages/dhikr_page.dart';
 import 'pages/growth_page.dart';
 import 'pages/more_page.dart';
@@ -153,6 +155,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onOpenTasks: () => _selectPage(1),
         onOpenPrayer: () => _selectPage(2),
         onOpenGrowth: () => _selectPage(3),
+        onOpenQuran: () => _selectPage(8),
+        onOpenDhikr: () => _selectPage(9),
+        onOpenCalendar: () => _selectPage(5),
+        onOpenDuas: () => _selectPage(10),
+        onOpenReports: () => showDialog<void>(
+            context: context,
+            builder: (_) => ReportDialog(
+                repository: widget.repository,
+                title: 'গত ৭ দিনের রিপোর্ট',
+                start: DateTime(_day.year, _day.month, _day.day - 6),
+                end: _day)),
+        onPrayerConfigChanged: () => unawaited(_refreshReminders()),
+        clock: widget.clock,
+        active: _index == 0,
       ),
       TasksPage(
         key: ValueKey('tasks-${dateKey(_day)}'),
@@ -180,6 +196,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onOpenDhikr: () => _selectPage(9),
         onOpenContacts: () => _selectPage(6),
         onOpenSettings: () => _selectPage(7),
+        onOpenDuas: () => _selectPage(10),
       ),
       _openedPages.contains(5)
           ? CalendarPage(
@@ -211,6 +228,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               active: _index == 9,
             )
           : const SizedBox.shrink(),
+      _openedPages.contains(10)
+          ? const DuaLibraryPage()
+          : const SizedBox.shrink(),
     ];
 
     return LayoutBuilder(
@@ -228,9 +248,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               excludeHeaderSemantics: true,
               leading: _index >= 5
                   ? IconButton(
-                      tooltip: _detailReturnIndex == 3
-                          ? 'গ্রোথ পৃষ্ঠায় ফিরুন'
-                          : 'আরও পৃষ্ঠায় ফিরুন',
+                      tooltip: switch (_detailReturnIndex) {
+                        0 => 'হোমে ফিরুন',
+                        3 => 'গ্রোথ পৃষ্ঠায় ফিরুন',
+                        _ => 'আরও পৃষ্ঠায় ফিরুন',
+                      },
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => _selectPage(_detailReturnIndex),
                     )
@@ -253,7 +275,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               children: [
                 if (wide)
                   _DesktopNavigation(
-                      selectedIndex: _index.clamp(0, 4),
+                      selectedIndex: _index >= 5 ? _detailReturnIndex : _index,
                       onSelected: _selectPage,
                       extended: constraints.maxWidth >= 1100,
                       destinations: destinations),
@@ -290,7 +312,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                       height: MediaQuery.textScalerOf(context).scale(14) > 20
                           ? 96
                           : 80,
-                      selectedIndex: _index.clamp(0, 4),
+                      selectedIndex: _index >= 5 ? _detailReturnIndex : _index,
                       onDestinationSelected: _selectPage,
                       labelBehavior:
                           NavigationDestinationLabelBehavior.alwaysShow,
