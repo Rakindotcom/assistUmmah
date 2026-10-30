@@ -7,7 +7,7 @@ import { getFirestore as adminFirestore } from 'firebase-admin/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, doc, collection, query, where, limit,
-  getDocFromServer, getDocsFromServer, setDoc, deleteDoc, writeBatch, runTransaction, terminate } from 'firebase/firestore';
+  getDocFromServer, getDocsFromServer, setDoc, deleteDoc, writeBatch, runTransaction, terminate, serverTimestamp } from 'firebase/firestore';
 import { executeDeletion } from '../../hosting/public/deletion-plan.mjs';
 
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, 'Local Firestore emulator required');
@@ -46,6 +46,13 @@ async function seed(uid, count = 1) {
     await batch.commit();
     await db.doc(`${parent}/${uid}`).delete(); // orphaned parent must not hide records
   }
+  for (const path of plan.additionalCollections ?? []) {
+    const batch = db.batch();
+    for (let i = 0; i < count; i++) {
+      batch.set(db.doc(`${path.replace('{uid}',uid)}/item-${i}`), { synthetic: true });
+    }
+    await batch.commit();
+  }
   await db.doc(`userActivities/${uid}`).set({ userId: uid });
 }
 function operations(owner) {
@@ -82,6 +89,10 @@ test('Spark client deletes its own nested data and identity, preserving another 
     assert.equal((await db.collection(`${parent}/${owner.uid}/${child}`).get()).empty,true);
     assert.equal((await db.collection(`${parent}/${other}/${child}`).get()).size,1);
   }
+  for (const path of plan.additionalCollections ?? []) {
+    assert.equal((await db.collection(path.replace('{uid}',owner.uid)).get()).empty,true);
+    assert.equal((await db.collection(path.replace('{uid}',other)).get()).size,1);
+  }
   await assert.rejects(identities.getUser(owner.uid),{code:'auth/user-not-found'});
   assert.equal((await identities.getUser(other)).uid,other);
   assert.equal((await db.doc(`userActivities/${owner.uid}`).get()).exists,false);
@@ -105,13 +116,17 @@ test('more than one batch of daily records is fully removed', async () => {
   for (const [parent, child] of Object.entries(plan.subcollections)) {
     assert.equal((await db.collection(`${parent}/${owner.uid}/${child}`).get()).empty,true);
   }
+  for (const path of plan.additionalCollections ?? []) {
+    assert.equal((await db.collection(path.replace('{uid}',owner.uid)).get()).empty,true);
+  }
 });
 
 test('cross-user reads, writes, deletes and marker requests are denied', async () => {
   const owner = await client(`${prefix}-isolation`), victim = `${prefix}-victim`;
   await seed(victim);
   const paths=[...plan.documents.map(parent=>`${parent}/${victim}`),
-    ...Object.entries(plan.subcollections).map(([p,c])=>`${p}/${victim}/${c}/2025-01-01`)];
+    ...Object.entries(plan.subcollections).map(([p,c])=>`${p}/${victim}/${c}/2025-01-01`),
+    ...(plan.additionalCollections ?? []).map(path=>`${path.replace('{uid}',victim)}/item-0`)];
   for(const path of paths){
     await assert.rejects(getDocFromServer(doc(owner.db,path)),{code:'permission-denied'});
     await assert.rejects(setDoc(doc(owner.db,path),{overwrite:true}),{code:'permission-denied'});
@@ -146,4 +161,75 @@ test('anonymous access and stale-token marker creation are denied', async () => 
   const token=[encode({alg:'none',typ:'JWT'}),encode({aud:projectId,iss:`https://securetoken.google.com/${projectId}`,sub:`${prefix}-stale`,user_id:`${prefix}-stale`,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+3600,auth_time:Math.floor(Date.now()/1000)-600,firebase:{sign_in_provider:'password'}}),''].join('.');
   const response=await fetch(`${base}/accountDeletions/${prefix}-stale`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({fields:{}})});
   assert.equal(response.status,403);
+});
+
+function productivityRecord(uid, revision = 1) {
+  const stamp = {counter: revision, device: 'synthetic_device'};
+  return {schemaVersion:1, ownerId:uid, kind:'task', id:'proposal', workspaceId:'personal',
+    fields:{workspaceId:'personal',_deleted:false,title:'Synthetic proposal'},
+    clocks:{workspaceId:stamp,_deleted:stamp,title:stamp}, revision,
+    modifiedAtMillis:Date.now(), updatedAt:serverTimestamp()};
+}
+
+test('productivity records validate owner, schema and revision; deletion is a tombstone', async () => {
+  const owner = await client(`${prefix}-core`), other = await client(`${prefix}-core-other`);
+  const record = doc(owner.db,'users',owner.uid,'productivity','task--proposal');
+  await setDoc(record,productivityRecord(owner.uid));
+  assert.equal((await getDocFromServer(record)).data().revision,1);
+  const victim = doc(other.db,'users',owner.uid,'productivity','task--proposal');
+  await assert.rejects(getDocFromServer(victim),{code:'permission-denied'});
+  await assert.rejects(setDoc(victim,productivityRecord(other.uid,2)),{code:'permission-denied'});
+  await assert.rejects(setDoc(record,productivityRecord(owner.uid)),{code:'permission-denied'});
+  await assert.rejects(setDoc(record,{...productivityRecord(owner.uid,2),ownerId:other.uid}),{code:'permission-denied'});
+  await assert.rejects(setDoc(record,{...productivityRecord(owner.uid,2),schemaVersion:99}),{code:'permission-denied'});
+  await assert.rejects(setDoc(doc(owner.db,'users',owner.uid,'productivity','task--wrong'),productivityRecord(owner.uid)),{code:'permission-denied'});
+  await setDoc(record,productivityRecord(owner.uid,2));
+  await assert.rejects(deleteDoc(record),{code:'permission-denied'});
+  const tombstone=productivityRecord(owner.uid,3); tombstone.fields._deleted=true;
+  await setDoc(record,tombstone);
+  assert.equal((await getDocFromServer(record)).data().fields._deleted,true);
+  await operations(owner).recordRequest();
+  await assert.rejects(setDoc(record,productivityRecord(owner.uid,4)),{code:'permission-denied'});
+  await deleteDoc(record);
+});
+
+test('productivity receipts are account-owned, immutable and covered by deletion', async () => {
+  const owner = await client(`${prefix}-receipt`), other = await client(`${prefix}-receipt-other`);
+  const receipt=doc(owner.db,'users',owner.uid,'productivityChanges','operation_one');
+  const data={id:'operation_one',ownerId:owner.uid,kind:'task',recordId:'proposal',
+    patch:{title:'Synthetic proposal'},stamp:{counter:1,device:'device'},createdAtMillis:Date.now(),createOnly:false,
+    fingerprint:'a'.repeat(64),acceptedFields:['title'],rejectedFields:[],before:{title:null},updatedAt:serverTimestamp()};
+  await setDoc(receipt,data);
+  await assert.rejects(setDoc(receipt,data),{code:'permission-denied'});
+  await assert.rejects(deleteDoc(receipt),{code:'permission-denied'});
+  await assert.rejects(getDocFromServer(doc(other.db,'users',owner.uid,'productivityChanges','operation_one')),{code:'permission-denied'});
+  await operations(owner).recordRequest();
+  await assert.rejects(setDoc(doc(owner.db,'users',owner.uid,'productivityChanges','operation_two'),{...data,id:'operation_two'}),{code:'permission-denied'});
+  await deleteDoc(receipt);
+});
+
+test('additional deletion paths are validated before a deletion marker is requested', async () => {
+  let touched=false;
+  await assert.rejects(executeDeletion({...plan,additionalCollections:['users/{uid}/productivity/unsafe']},
+    {uid:'synthetic',recordRequest:async()=>{touched=true;}}),/Invalid account collection path/);
+  assert.equal(touched,false);
+});
+
+test('task cutover freezes the legacy source against stale writes and delete-recreate', async () => {
+  const owner = await client(`${prefix}-cutover`);
+  const legacy = doc(owner.db,'userTasks',owner.uid);
+  await setDoc(legacy,{todayTasks:{mustDo:[{id:'old',text:'Preserved'}]}});
+  await assert.rejects(setDoc(legacy,{productivityMigrationVersion:2},{merge:true}),{code:'permission-denied'});
+  await runTransaction(owner.db,async transaction=>{
+    const snapshot=await transaction.get(legacy);
+    assert.equal(snapshot.data().todayTasks.mustDo[0].text,'Preserved');
+    transaction.set(legacy,{productivityMigrationVersion:1},{merge:true});
+  });
+  await assert.rejects(setDoc(legacy,{todayTasks:{mustDo:[]}}),{code:'permission-denied'});
+  await assert.rejects(setDoc(legacy,{productivityMigrationVersion:1},{merge:true}),{code:'permission-denied'});
+  await assert.rejects(deleteDoc(legacy),{code:'permission-denied'});
+  assert.equal((await getDocFromServer(legacy)).data().todayTasks.mustDo[0].text,'Preserved');
+  await operations(owner).recordRequest();
+  await deleteDoc(legacy);
+  await assert.rejects(setDoc(legacy,{todayTasks:{mustDo:[]}}),{code:'permission-denied'});
 });

@@ -7,6 +7,24 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/accountDeletions/$(userId));
     }
     function activeOwner(userId) { return owns(userId) && !deleting(userId); }
+    function validProductivityRecord(userId, recordId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['schemaVersion', 'ownerId', 'kind', 'id',
+          'workspaceId', 'fields', 'clocks', 'revision', 'modifiedAtMillis', 'updatedAt'])
+        && d.schemaVersion == 1 && d.ownerId == userId
+        && d.id is string && d.id.matches('^[a-zA-Z0-9_-]{1,96}$')
+        && d.kind in ['workspace', 'task', 'taskOccurrence', 'project', 'milestone',
+          'goal', 'goalMetric', 'habit', 'habitLog', 'calendarEvent', 'timeBlock',
+          'focusSession', 'note', 'dailyReview', 'integrationConnection']
+        && recordId == d.kind + '--' + d.id
+        && d.workspaceId is string && d.workspaceId.matches('^[a-zA-Z0-9_-]{1,96}$')
+        && d.fields is map && d.clocks is map
+        && d.fields.keys().size() <= 128
+        && d.fields.keys().toSet() == d.clocks.keys().toSet()
+        && d.fields.workspaceId == d.workspaceId && d.fields._deleted is bool
+        && d.revision is int && d.revision >= 1
+        && d.modifiedAtMillis is int && d.updatedAt == request.time;
+    }
 
     // An empty marker freezes writes and makes interrupted deletion resumable.
     // It contains no profile or activity fields and cannot be removed by clients.
@@ -21,10 +39,68 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, delete: if owns(userId);
       allow create, update: if activeOwner(userId);
+      match /productivity/{recordId} {
+        allow read: if owns(userId);
+        allow create: if activeOwner(userId) && validProductivityRecord(userId, recordId)
+          && request.resource.data.revision == 1;
+        allow update: if activeOwner(userId) && validProductivityRecord(userId, recordId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.kind == resource.data.kind
+          && request.resource.data.revision == resource.data.revision + 1;
+        // Normal deletion is a versioned tombstone so offline edits cannot
+        // silently recreate deleted records. Physical cleanup belongs to account deletion.
+        allow delete: if owns(userId) && deleting(userId);
+      }
+      match /productivityChanges/{operationId} {
+        allow read: if owns(userId);
+        allow create: if activeOwner(userId)
+          && request.resource.data.keys().hasOnly(['id', 'ownerId', 'kind', 'recordId',
+            'patch', 'stamp', 'createdAtMillis', 'createOnly', 'fingerprint', 'acceptedFields',
+            'rejectedFields', 'before', 'updatedAt'])
+          && request.resource.data.id == operationId
+          && operationId.matches('^[a-zA-Z0-9_-]{1,96}$')
+          && request.resource.data.ownerId == userId
+          && request.resource.data.kind in ['workspace', 'task', 'taskOccurrence',
+            'project', 'milestone', 'goal', 'goalMetric', 'habit', 'habitLog',
+            'calendarEvent', 'timeBlock', 'focusSession', 'note', 'dailyReview', 'integrationConnection']
+          && request.resource.data.recordId is string
+          && request.resource.data.recordId.matches('^[a-zA-Z0-9_-]{1,96}$')
+          && request.resource.data.patch is map
+          && request.resource.data.patch.keys().size() <= 128
+          && request.resource.data.stamp is map
+          && request.resource.data.stamp.keys().hasOnly(['counter', 'device'])
+          && request.resource.data.stamp.counter is int
+          && request.resource.data.stamp.counter > 0
+          && request.resource.data.stamp.counter <= 9007199254740991
+          && request.resource.data.stamp.device is string
+          && request.resource.data.stamp.device.matches('^[a-zA-Z0-9_-]{1,96}$')
+          && request.resource.data.createdAtMillis is int
+          && (!('createOnly' in request.resource.data) || request.resource.data.createOnly is bool)
+          && request.resource.data.fingerprint is string
+          && request.resource.data.fingerprint.matches('^[a-f0-9]{64}$')
+          && request.resource.data.acceptedFields is list
+          && request.resource.data.acceptedFields.size() <= 128
+          && request.resource.data.rejectedFields is list
+          && request.resource.data.rejectedFields.size() <= 128
+          && request.resource.data.before is map
+          && request.resource.data.updatedAt == request.time;
+        allow update: if false;
+        allow delete: if owns(userId) && deleting(userId);
+      }
     }
     match /userTasks/{userId} {
-      allow read, delete: if owns(userId);
-      allow create, update: if activeOwner(userId);
+      allow read: if owns(userId);
+      // The new client freezes one immutable source before importing it. Older
+      // clients cannot overwrite or delete/recreate that source after cutover.
+      allow delete: if owns(userId) &&
+          (deleting(userId) || !('productivityMigrationVersion' in resource.data));
+      allow create: if activeOwner(userId) &&
+          (!('productivityMigrationVersion' in request.resource.data) ||
+            request.resource.data.productivityMigrationVersion == 1);
+      allow update: if activeOwner(userId) &&
+          !('productivityMigrationVersion' in resource.data) &&
+          (!('productivityMigrationVersion' in request.resource.data) ||
+            request.resource.data.productivityMigrationVersion == 1);
     }
     match /userPreferences/{userId} {
       allow read, delete: if owns(userId);
