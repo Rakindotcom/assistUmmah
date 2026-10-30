@@ -18,7 +18,7 @@ void main() {
         deleteIdentity: () async => calls.add('identity'));
     expect(calls.first, 'marker');
     expect(calls.last, 'identity');
-    expect(calls.where((path) => path.startsWith('user')), hasLength(14));
+    expect(calls.where((path) => path.startsWith('user')), hasLength(16));
     expect(
         calls,
         containsAll([
@@ -27,7 +27,9 @@ void main() {
           'userQuran/owner/dailyReading',
           'userDhikr/owner/dailyDhikr',
           'userActivities:userId=owner',
-          'users/owner'
+          'users/owner',
+          'users/owner/productivity',
+          'users/owner/productivityChanges'
         ]));
   });
   test('partial failure preserves the identity and permits safe resumption',
@@ -50,7 +52,7 @@ void main() {
     fail = false;
     await run();
     expect(identityDeleted, isTrue);
-    expect(removed, hasLength(13));
+    expect(removed, hasLength(15));
   });
   test('a failed request cannot delete data or identity', () async {
     var touched = false;

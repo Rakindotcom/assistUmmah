@@ -95,7 +95,7 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": false,
+  "runtime16KbVerified": true,
   "apkZipAlignmentVerified": true,
   "universalApkSignatureVerified": true,
   "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"

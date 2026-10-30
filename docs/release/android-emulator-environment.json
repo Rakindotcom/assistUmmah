@@ -10,7 +10,7 @@
   "screenHeight": 1280,
   "hardwareAcceleration": "KVM",
   "physicalDevice": false,
-  "productionAppRuntimeVerified": false,
-  "productionRuntimeBundleSha256": null,
-  "productionRuntimeScope": "Current signed bundle has no successful native runtime smoke."
+  "productionAppRuntimeVerified": true,
+  "productionRuntimeBundleSha256": "5e767f8db9078852558d0849dd75b0727c2758e9986035986aa74299c1a37f15",
+  "productionRuntimeScope": "Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator."
 }
