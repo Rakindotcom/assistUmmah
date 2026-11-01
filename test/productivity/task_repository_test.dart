@@ -38,12 +38,18 @@ void main() {
   Matcher failure(String code) =>
       isA<TaskEditFailure>().having((e) => e.code, 'code', code);
 
-  test('Bangla title limits count user-visible characters rather than code units', () async {
+  test(
+      'Bangla title limits count user-visible characters rather than code units',
+      () async {
     final title = List.filled(250, 'কাজ').join();
     expect(title.length, greaterThan(500));
-    await repository.createTask(ProductivityTask(id: 'bangla', workspaceId: 'personal', title: title));
+    await repository.createTask(
+        ProductivityTask(id: 'bangla', workspaceId: 'personal', title: title));
     expect((await db.get(RecordKind.task, 'bangla'))!.fields['title'], title);
-    final project = ProductivityProject(id: 'bangla-project', workspaceId: 'personal', name: List.filled(100, 'কাজ').join());
+    final project = ProductivityProject(
+        id: 'bangla-project',
+        workspaceId: 'personal',
+        name: List.filled(100, 'কাজ').join());
     await repository.createProject(project);
     final count = (await db.pending()).length;
     await repository.createProject(project);
@@ -97,7 +103,48 @@ void main() {
     expect(outcomes.whereType<bool>(), hasLength(1));
     expect(outcomes.whereType<TaskEditFailure>().single.code,
         'circular-reference');
-    expect(await db.pending(), hasLength(3));
+    expect(await db.queued(), hasLength(3));
+  });
+
+  test(
+      'reviewed graph conflict resubmits corrected fields without dropping audit',
+      () async {
+    await repository.createTask(task('a'));
+    await repository.createTask(task('b'));
+    for (final operation in await db.pending()) {
+      await db.acknowledge(
+          operation, applyRecordOperation(null, operation).record);
+    }
+    await repository.editTask('a', {
+      'dependencies': ['b']
+    });
+    final rejected = (await db.pending()).single;
+    await db.recordFailure(rejected, 'circular-reference', permanent: true);
+    await repository.editTask('a', {'dependencies': <String>[]});
+    expect(await db.pending(includeDelayed: true), isEmpty);
+    await repository.resubmitGraphConflict('a');
+    final replacement = (await db.pending()).single;
+    expect(replacement.id, isNot(rejected.id));
+    expect(replacement.patch, {'dependencies': <String>[]});
+    expect(await db.attention(), isEmpty);
+    expect(
+        (await db.history(RecordKind.task, 'a'))
+            .where((entry) => entry['supersededBy'] == replacement.id),
+        hasLength(2));
+    expect(
+        (await db.get(RecordKind.task, 'a'))!.fields['dependencies'], isEmpty);
+  });
+
+  test('a deleted conflicted task can resubmit its tombstone', () async {
+    await repository.createTask(task('gone'));
+    final rejected = (await db.pending()).single;
+    await db.recordFailure(rejected, 'circular-reference', permanent: true);
+    await repository.trash('gone');
+    await repository.resubmitGraphConflict('gone');
+    final retry = (await db.pending()).single;
+    expect(retry.patch['_deleted'], isTrue);
+    expect(retry.patch['title'], 'Task gone');
+    expect((await db.get(RecordKind.task, 'gone'))!.deleted, isTrue);
   });
 
   test('mixed hierarchy and dependency cycles are rejected', () async {

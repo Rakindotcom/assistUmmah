@@ -19,6 +19,7 @@ import '../domain/experience_options.dart';
 import 'experience_strings.dart';
 import 'onboarding_page.dart';
 import 'productivity_settings_page.dart';
+import 'sync_status_sheet.dart';
 import 'task_workspace_page.dart';
 
 /// The universal root is enabled only after route cutover and deployment gates
@@ -288,11 +289,21 @@ class _WorkspaceHomeState extends State<_WorkspaceHome> {
           ? null
           : AppBar(title: const AppBrand(compact: true), actions: [
               if (widget.session.sync != null)
-                IconButton(
-                    tooltip:
-                        strings.text('Sync workspace', 'কর্মপরিসর সিঙ্ক করুন'),
-                    onPressed: () => widget.session.sync!.sync(force: true),
-                    icon: const Icon(Icons.sync))
+                StreamBuilder<SyncSnapshot>(
+                    stream: widget.session.database.watchSync(),
+                    builder: (context, snapshot) => IconButton(
+                        tooltip: strings.text('Sync status', 'সিঙ্কের অবস্থা'),
+                        onPressed: () => showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) => ProductivitySyncStatusSheet(
+                                session: widget.session,
+                                repository: _tasks,
+                                options: options)),
+                        icon: (snapshot.data?.needsAttention ?? 0) > 0
+                            ? const Badge(
+                                child: Icon(Icons.sync_problem_outlined))
+                            : const Icon(Icons.sync)))
             ]),
       body: switch (page) {
         'settings' => ProductivitySettingsPage(

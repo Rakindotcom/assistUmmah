@@ -6,6 +6,7 @@ import '../core/records.dart';
 import '../domain/calendar_day.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
+import '../domain/task_graph.dart';
 import '../domain/task_occurrence.dart';
 import 'productivity_database.dart';
 
@@ -55,6 +56,27 @@ class TaskRepository {
           (records) => records
               .map(ProductivityProject.fromRecord)
               .toList(growable: false));
+
+  /// The caller presents the current local task for review before invoking
+  /// this. It replaces only rejected, unsent task fields with a fresh clock.
+  Future<void> resubmitGraphConflict(String taskId) async {
+    await database.resubmitTaskGraphConflict(taskId,
+        validate: (record, records) {
+      final task = ProductivityTask.fromRecord(record);
+      if (!record.deleted) {
+        _validateTask(task, records);
+      } else {
+        try {
+          TaskGraph(records
+              .where((value) => value.kind == RecordKind.task && !value.deleted)
+              .map((value) => TaskGraphNode.fromTask(
+                  ProductivityTask.fromRecord(value)))).validate();
+        } on TaskGraphConflict catch (error) {
+          throw TaskEditFailure(error.code);
+        }
+      }
+    });
+  }
 
   Future<ProductivityTask> createTask(ProductivityTask task) async {
     ProductivityTask? existing;
@@ -404,53 +426,11 @@ class TaskRepository {
         record.id: ProductivityTask.fromRecord(record),
       task.id: task,
     };
-    void rejectCycle(Iterable<String> initial,
-        Iterable<String> Function(ProductivityTask) edges) {
-      final pending = initial.toList(), seen = <String>{};
-      while (pending.isNotEmpty) {
-        final id = pending.removeLast();
-        if (id == task.id) throw const TaskEditFailure('circular-reference');
-        if (!seen.add(id)) continue;
-        final next = tasks[id];
-        if (next != null) pending.addAll(edges(next));
-      }
-    }
-
-    rejectCycle(task.parentId == null ? [] : [task.parentId!],
-        (value) => value.parentId == null ? [] : [value.parentId!]);
-    rejectCycle(task.dependencies, (value) => value.dependencies);
-    // Completion also requires children. Check that combined prerequisite graph:
-    // a child depending on its parent is circular even if each graph alone isn't.
-    final prerequisites = <String, Set<String>>{
-      for (final entry in tasks.entries)
-        entry.key: entry.value.dependencies.where(tasks.containsKey).toSet()
-    };
-    for (final entry in tasks.entries) {
-      final parent = entry.value.parentId;
-      if (parent != null && prerequisites.containsKey(parent)) {
-        prerequisites[parent]!.add(entry.key);
-      }
-    }
-    final dependents = <String, List<String>>{};
-    final remaining = <String, int>{};
-    for (final entry in prerequisites.entries) {
-      remaining[entry.key] = entry.value.length;
-      for (final dependency in entry.value) {
-        dependents.putIfAbsent(dependency, () => []).add(entry.key);
-      }
-    }
-    final ready = remaining.keys.where((id) => remaining[id] == 0).toList();
-    var resolved = 0;
-    while (ready.isNotEmpty) {
-      final id = ready.removeLast();
-      resolved++;
-      for (final dependent in dependents[id] ?? <String>[]) {
-        remaining[dependent] = remaining[dependent]! - 1;
-        if (remaining[dependent] == 0) ready.add(dependent);
-      }
-    }
-    if (resolved != tasks.length) {
-      throw const TaskEditFailure('circular-reference');
+    try {
+      TaskGraph(tasks.values.map((value) => TaskGraphNode.fromTask(value)))
+          .validate();
+    } on TaskGraphConflict catch (error) {
+      throw TaskEditFailure(error.code);
     }
     if (task.status == TaskStatus.completed) _assertUnblocked(task, records);
   }

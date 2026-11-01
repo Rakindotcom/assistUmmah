@@ -25,6 +25,64 @@ service cloud.firestore {
         && d.revision is int && d.revision >= 1
         && d.modifiedAtMillis is int && d.updatedAt == request.time;
     }
+    function taskPath(userId, taskId) {
+      return /databases/$(database)/documents/users/$(userId)/productivity/$("task--" + taskId);
+    }
+    function graphEdgePath(userId, taskId) {
+      return /databases/$(database)/documents/users/$(userId)/productivityGraph/$(taskId);
+    }
+    function graphControlPath(userId) {
+      return /databases/$(database)/documents/users/$(userId)/productivityControl/taskGraph;
+    }
+    function graphControlAfter(userId, taskId) {
+      let d = getAfter(graphControlPath(userId)).data;
+      return d.ownerId == userId && d.lastRecordId == taskId
+        && d.updatedAt == request.time
+        && d.revision == (exists(graphControlPath(userId))
+          ? get(graphControlPath(userId)).data.revision + 1 : 1);
+    }
+    function taskEdgeAfter(userId, taskId, taskData) {
+      let e = getAfter(graphEdgePath(userId, taskId)).data;
+      return e.keys().hasOnly(['ownerId', 'id', 'workspaceId', 'parentId',
+          'dependencies', 'deleted', 'taskRevision', 'updatedAt'])
+        && e.ownerId == userId && e.id == taskId
+        && e.workspaceId == taskData.workspaceId
+        && e.parentId == taskData.fields.get('parentId', null)
+        && e.dependencies == taskData.fields.get('dependencies', [])
+        && e.deleted == taskData.fields._deleted
+        && e.taskRevision == taskData.revision
+        && e.updatedAt == request.time;
+    }
+    function validGraphEdge(userId, taskId) {
+      let d = request.resource.data;
+      let task = getAfter(taskPath(userId, taskId)).data;
+      return d.keys().hasOnly(['ownerId', 'id', 'workspaceId', 'parentId',
+          'dependencies', 'deleted', 'taskRevision', 'updatedAt'])
+        && d.ownerId == userId && d.id == taskId
+        && d.workspaceId is string
+        && d.workspaceId.matches('^[a-zA-Z0-9_-]{1,96}$')
+        && (d.parentId == null || (d.parentId is string
+          && d.parentId.matches('^[a-zA-Z0-9_-]{1,96}$')))
+        && d.dependencies is list && d.dependencies.size() <= 200
+        && d.deleted is bool && d.taskRevision is int
+        && d.updatedAt == request.time
+        && task.ownerId == userId && task.kind == 'task' && task.id == taskId
+        && task.updatedAt == request.time
+        && taskEdgeAfter(userId, taskId, task)
+        && graphControlAfter(userId, taskId);
+    }
+    function validGraphControl(userId) {
+      let d = request.resource.data;
+      let task = getAfter(taskPath(userId, d.lastRecordId)).data;
+      return d.keys().hasOnly(['ownerId', 'revision', 'lastRecordId', 'updatedAt'])
+        && d.ownerId == userId && d.revision is int && d.revision > 0
+        && d.lastRecordId is string
+        && d.lastRecordId.matches('^[a-zA-Z0-9_-]{1,96}$')
+        && d.updatedAt == request.time
+        && task.ownerId == userId && task.kind == 'task'
+        && task.id == d.lastRecordId && task.updatedAt == request.time
+        && taskEdgeAfter(userId, d.lastRecordId, task);
+    }
 
     // An empty marker freezes writes and makes interrupted deletion resumable.
     // It contains no profile or activity fields and cannot be removed by clients.
@@ -42,13 +100,35 @@ service cloud.firestore {
       match /productivity/{recordId} {
         allow read: if owns(userId);
         allow create: if activeOwner(userId) && validProductivityRecord(userId, recordId)
-          && request.resource.data.revision == 1;
+          && request.resource.data.revision == 1
+          && (request.resource.data.kind != 'task' ||
+            (graphControlAfter(userId, request.resource.data.id) &&
+              taskEdgeAfter(userId, request.resource.data.id, request.resource.data)));
         allow update: if activeOwner(userId) && validProductivityRecord(userId, recordId)
           && request.resource.data.id == resource.data.id
           && request.resource.data.kind == resource.data.kind
-          && request.resource.data.revision == resource.data.revision + 1;
+          && request.resource.data.revision == resource.data.revision + 1
+          && (request.resource.data.kind != 'task' ||
+            (graphControlAfter(userId, request.resource.data.id) &&
+              taskEdgeAfter(userId, request.resource.data.id, request.resource.data)));
         // Normal deletion is a versioned tombstone so offline edits cannot
         // silently recreate deleted records. Physical cleanup belongs to account deletion.
+        allow delete: if owns(userId) && deleting(userId);
+      }
+      match /productivityGraph/{taskId} {
+        allow read: if owns(userId);
+        allow create, update: if activeOwner(userId)
+          && validGraphEdge(userId, taskId);
+        allow delete: if owns(userId) && deleting(userId);
+      }
+      match /productivityControl/{controlId} {
+        allow read: if owns(userId);
+        allow create: if controlId == 'taskGraph' && activeOwner(userId)
+          && request.resource.data.revision == 1
+          && validGraphControl(userId);
+        allow update: if controlId == 'taskGraph' && activeOwner(userId)
+          && request.resource.data.revision == resource.data.revision + 1
+          && validGraphControl(userId);
         allow delete: if owns(userId) && deleting(userId);
       }
       match /productivityChanges/{operationId} {

@@ -38,14 +38,30 @@ stores. An edit returns only after its local transaction commits.
 
 Each field carries a Lamport counter and device ID. Independent field edits
 merge; concurrent changes to the same field resolve deterministically. The
-losing fields remain recorded in the change receipt. A full conflict review UI
-is still required. This is not a text CRDT or an end-to-end encrypted database.
+losing fields remain recorded in the change receipt. General same-field conflict
+review is still required. This is not a text CRDT or an end-to-end encrypted
+database.
 
 Firestore stores canonical records at `users/{uid}/productivity/{kind--id}` and
 immutable receipts at `users/{uid}/productivityChanges/{operationId}`. A receipt
 fingerprint makes an ambiguous network retry idempotent. Server timestamps plus
 document IDs form the pull cursor. Acknowledging one operation never removes a
 later queued edit.
+
+Task writes also update `productivityGraph/{taskId}` and the single
+`productivityControl/taskGraph` revision in the same Firestore transaction.
+Security rules require the canonical task, graph projection and revision to
+match. The official client reads a stable paginated graph snapshot, validates
+the merged dependency/parent graph, then checks the revision inside its write
+transaction. A changed revision triggers bounded reload and retry. A graph
+conflict leaves its original outbox operation and later edits intact for review;
+other records can continue syncing. The user can edit the task and explicitly
+resubmit only its unsent fields. Superseded operations remain in local history.
+The graph guard relies on the official client for whole-graph cycle detection;
+Firestore rules cannot traverse a large graph. An Android emulator integration
+test verified two signed-in Dart clients, a merged cycle rejection, review and
+resubmission against local Auth and Firestore emulators. Larger graphs,
+interrupted retries and real-device reconnection still need verification.
 
 Generated/imported records use create-only operations. A stale device cannot
 overwrite an existing recurring completion with its initialization defaults.
@@ -66,11 +82,10 @@ execution and production telemetry remain to be implemented and verified.
   20,000 records. Larger archives and attachments need a separate streaming path.
 - On-device encryption, sensitive-note protection and key recovery are not
   implemented. The native application sandbox is not an encryption claim.
-- Local transactions reject cyclic task graphs, but concurrent graph edits from
-  different offline devices can still introduce a cycle after cloud merge. A
-  server-guarded graph revision and conflict/recovery UI are required before
-  enabling the new task engine for existing accounts. Independent-field sync
-  convergence tests do not prove this cross-record invariant.
+- The graph revision and rules pairing have emulator coverage, while merged
+  offline graph cases have pure Dart and Android emulator coverage. Physical
+  devices, long-running reconnection and larger graph behavior remain open.
+  General rejected-field conflict review remains open.
 
 See the [Sembast documentation](https://pub.dev/documentation/sembast/latest/index.html),
 [Sembast web package](https://pub.dev/packages/sembast_web), and Flutter's
@@ -151,6 +166,9 @@ platforms, but that package support is not app-level platform verification.
 - Firebase emulator tests use synthetic `demo-ummah` accounts only. They exercise
   owner rules, immutable receipts, deletion batches and the legacy write fence.
 - The signed build 3 APK passed startup/login on Android API 36 x86_64 with
-  16 KiB pages. That APK predates the productivity changes and added plugins.
+  16 KiB pages before the productivity changes. The later APK with the new
+  native plugin also passed signature, 16 KiB alignment and clean-start login
+  checks on that emulator (`docs/release/productivity-packaging-smoke.json`).
+  Its main entry still uses the legacy shell; this is a packaging check.
 - Physical Android and iOS testing is unavailable per the user. iOS/platform
   implementation and all release gates remain open where evidence is missing.

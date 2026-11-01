@@ -59,6 +59,9 @@ class ExperienceStrings {
         'different-workspace' => text(
             'Linked items must be in the same workspace.',
             'সংযুক্ত বিষয়গুলো একই কর্মপরিসরে থাকতে হবে।'),
+        'invalid-task' => text(
+            'This task needs a correction before it can sync.',
+            'সিঙ্কের আগে এই কাজটি সংশোধন করতে হবে।'),
         'in-trash' => text('Restore the linked task from trash first.',
             'আগে সংযুক্ত কাজটি ট্র্যাশ থেকে ফিরিয়ে আনুন।'),
         'not-scheduled' => text('This series does not run on that date.',

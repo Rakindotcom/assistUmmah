@@ -171,10 +171,39 @@ function productivityRecord(uid, revision = 1) {
     modifiedAtMillis:Date.now(), updatedAt:serverTimestamp()};
 }
 
+async function writeCoupledTask(owner, recordData) {
+  const record = doc(owner.db,'users',owner.uid,'productivity',`task--${recordData.id}`);
+  const edge = doc(owner.db,'users',owner.uid,'productivityGraph',recordData.id);
+  const control = doc(owner.db,'users',owner.uid,'productivityControl','taskGraph');
+  for (let attempt=0;attempt<3;attempt++) {
+    let seenRevision=0;
+    try {
+      await runTransaction(owner.db,async transaction=>{
+        const previous = await transaction.get(control);
+        seenRevision = previous.exists() ? previous.data().revision : 0;
+        transaction.set(record,recordData);
+        transaction.set(edge,{ownerId:owner.uid,id:recordData.id,
+          workspaceId:recordData.workspaceId,parentId:recordData.fields.parentId ?? null,
+          dependencies:recordData.fields.dependencies ?? [],deleted:recordData.fields._deleted,
+          taskRevision:recordData.revision,updatedAt:serverTimestamp()});
+        transaction.set(control,{ownerId:owner.uid,revision:seenRevision+1,
+          lastRecordId:recordData.id,updatedAt:serverTimestamp()});
+      });
+      return;
+    } catch (error) {
+      if (error.code !== 'permission-denied') throw error;
+      const latest=await getDocFromServer(control);
+      if ((latest.exists() ? latest.data().revision : 0) === seenRevision) throw error;
+    }
+  }
+  throw new Error('Task graph stayed busy after retries');
+}
+
 test('productivity records validate owner, schema and revision; deletion is a tombstone', async () => {
   const owner = await client(`${prefix}-core`), other = await client(`${prefix}-core-other`);
   const record = doc(owner.db,'users',owner.uid,'productivity','task--proposal');
-  await setDoc(record,productivityRecord(owner.uid));
+  await assert.rejects(setDoc(record,productivityRecord(owner.uid)),{code:'permission-denied'});
+  await writeCoupledTask(owner,productivityRecord(owner.uid));
   assert.equal((await getDocFromServer(record)).data().revision,1);
   const victim = doc(other.db,'users',owner.uid,'productivity','task--proposal');
   await assert.rejects(getDocFromServer(victim),{code:'permission-denied'});
@@ -183,14 +212,47 @@ test('productivity records validate owner, schema and revision; deletion is a to
   await assert.rejects(setDoc(record,{...productivityRecord(owner.uid,2),ownerId:other.uid}),{code:'permission-denied'});
   await assert.rejects(setDoc(record,{...productivityRecord(owner.uid,2),schemaVersion:99}),{code:'permission-denied'});
   await assert.rejects(setDoc(doc(owner.db,'users',owner.uid,'productivity','task--wrong'),productivityRecord(owner.uid)),{code:'permission-denied'});
-  await setDoc(record,productivityRecord(owner.uid,2));
+  await writeCoupledTask(owner,productivityRecord(owner.uid,2));
   await assert.rejects(deleteDoc(record),{code:'permission-denied'});
   const tombstone=productivityRecord(owner.uid,3); tombstone.fields._deleted=true;
-  await setDoc(record,tombstone);
+  await writeCoupledTask(owner,tombstone);
   assert.equal((await getDocFromServer(record)).data().fields._deleted,true);
   await operations(owner).recordRequest();
   await assert.rejects(setDoc(record,productivityRecord(owner.uid,4)),{code:'permission-denied'});
   await deleteDoc(record);
+});
+
+test('task graph edge and revision cannot be changed without the matching task', async () => {
+  const owner = await client(`${prefix}-graph-guard`);
+  await writeCoupledTask(owner,productivityRecord(owner.uid));
+  const edge = doc(owner.db,'users',owner.uid,'productivityGraph','proposal');
+  const control = doc(owner.db,'users',owner.uid,'productivityControl','taskGraph');
+  const record = doc(owner.db,'users',owner.uid,'productivity','task--proposal');
+  const currentEdge = (await getDocFromServer(edge)).data();
+  await assert.rejects(setDoc(edge,{...currentEdge,parentId:'other',updatedAt:serverTimestamp()}),
+    {code:'permission-denied'});
+  await assert.rejects(setDoc(control,{ownerId:owner.uid,revision:2,lastRecordId:'proposal',
+    updatedAt:serverTimestamp()}),{code:'permission-denied'});
+  const bad = writeBatch(owner.db);
+  bad.set(record,productivityRecord(owner.uid,2));
+  bad.set(edge,{...currentEdge,taskRevision:2,parentId:'forged',updatedAt:serverTimestamp()});
+  bad.set(control,{ownerId:owner.uid,revision:2,lastRecordId:'proposal',
+    updatedAt:serverTimestamp()});
+  await assert.rejects(bad.commit(),{code:'permission-denied'});
+  assert.equal((await getDocFromServer(record)).data().revision,1);
+});
+
+test('concurrent task writes serialize the shared graph revision', async () => {
+  const owner = await client(`${prefix}-graph-race`);
+  const first={...productivityRecord(owner.uid),id:'first'};
+  const second={...productivityRecord(owner.uid),id:'second'};
+  await Promise.all([writeCoupledTask(owner,first),writeCoupledTask(owner,second)]);
+  const control=doc(owner.db,'users',owner.uid,'productivityControl','taskGraph');
+  assert.equal((await getDocFromServer(control)).data().revision,2);
+  for (const id of ['first','second']) {
+    const edge=doc(owner.db,'users',owner.uid,'productivityGraph',id);
+    assert.equal((await getDocFromServer(edge)).data().taskRevision,1);
+  }
 });
 
 test('productivity receipts are account-owned, immutable and covered by deletion', async () => {

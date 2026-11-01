@@ -90,8 +90,9 @@ void main() {
             id: 'proposal',
             workspaceId: 'personal',
             patch: {'title': 'Draft $index'})));
-    final operations = await db.pending();
+    final operations = await db.queued();
     expect(operations, hasLength(31));
+    expect(await db.pending(), hasLength(1));
     expect(operations.map((o) => o.stamp.counter),
         orderedEquals(List.generate(31, (i) => i + 1)));
     expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
@@ -348,6 +349,33 @@ void main() {
         'Write proposal');
   });
 
+  test('a rejected create blocks later patches while unrelated work syncs',
+      () async {
+    final db = await memory();
+    addTearDown(db.close);
+    await task(db, 'conflicted');
+    await db.mutate(
+        kind: RecordKind.task,
+        id: 'conflicted',
+        workspaceId: 'personal',
+        patch: {'title': 'Edited offline'});
+    await task(db, 'independent');
+    final remote = _Remote()..rejectedRecordKeys.add('task--conflicted');
+    final coordinator = SyncCoordinator(database: db, remote: remote);
+    addTearDown(coordinator.dispose);
+    await coordinator.sync();
+    expect(remote.records.containsKey('task--conflicted'), isFalse);
+    expect(
+        remote.records['task--independent']!.fields['title'], 'Write proposal');
+    expect((await db.attention()).single.recordId, 'conflicted');
+    expect((await db.queued()).map((operation) => operation.recordId),
+        orderedEquals(['conflicted', 'conflicted']));
+    expect(await db.pending(includeDelayed: true), isEmpty);
+    expect((await db.syncSnapshot()).needsAttention, 1);
+    expect((await db.get(RecordKind.task, 'conflicted'))!.fields['title'],
+        'Edited offline');
+  });
+
   test(
       'a late invalid batch mutation rolls back earlier edits and all outbox entries',
       () async {
@@ -393,7 +421,8 @@ void main() {
         ifAbsent: true);
     expect(
         (await db.get(RecordKind.task, 'legacy'))!.fields['title'], 'Edited');
-    expect(await db.pending(), hasLength(2));
+    expect(await db.queued(), hasLength(2));
+    expect(await db.pending(), hasLength(1));
   });
 
   test(
@@ -725,11 +754,15 @@ class _Remote implements ProductivityRemote {
   bool loseNextResponse = false;
   Completer<void>? gate;
   SyncFailure? failure;
+  final rejectedRecordKeys = <String>{};
   @override
   Future<RemoteAcknowledgement> apply(SyncOperation operation) async {
     if (!started.isCompleted) started.complete();
     await gate?.future;
     if (failure != null) throw failure!;
+    if (rejectedRecordKeys.contains(operation.recordKey)) {
+      throw const SyncFailure('circular-reference', permanent: true);
+    }
     if (!receipts.containsKey(operation.id)) {
       final previous = records[operation.recordKey];
       final next = applyRecordOperation(previous, operation).record;

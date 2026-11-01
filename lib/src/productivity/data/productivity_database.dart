@@ -382,16 +382,133 @@ class ProductivityDatabase {
       {int limit = 50, bool includeDelayed = false}) async {
     final rows = await _outbox.find(_db,
         finder: Finder(
-          filter: includeDelayed
-              ? null
-              : Filter.lessThanOrEquals(
-                  'retryAtMillis', _clock().toUtc().millisecondsSinceEpoch),
           sortOrders: [SortOrder('stamp.counter'), SortOrder('id')],
-          limit: limit,
         ));
+    // The first operation for a record must be acknowledged before a later
+    // patch can be sent. A rejected create must never turn its next patch into
+    // an incomplete remote record. Other records remain independently usable.
+    final earliest = <String, SyncOperation>{};
+    final attention = <String>{};
+    for (final row in rows) {
+      final operation = SyncOperation.fromJson(row.value);
+      earliest.putIfAbsent(operation.recordKey, () => operation);
+      if (row.value['needsAttention'] == true) {
+        attention.add(operation.recordKey);
+      }
+    }
+    final now = _clock().toUtc().millisecondsSinceEpoch;
+    return earliest.entries
+        .where((entry) =>
+            !attention.contains(entry.key) &&
+            (includeDelayed || entry.value.retryAtMillis <= now))
+        .map((entry) => entry.value)
+        .take(limit)
+        .toList(growable: false);
+  }
+
+  Future<List<SyncOperation>> queued() async {
+    final rows = await _outbox.find(_db,
+        finder:
+            Finder(sortOrders: [SortOrder('stamp.counter'), SortOrder('id')]));
     return rows
         .map((row) => SyncOperation.fromJson(row.value))
         .toList(growable: false);
+  }
+
+  /// Explicitly rejected operations stay intact for a future conflict review.
+  Future<List<SyncOperation>> attention() async {
+    final rows = await _outbox.find(_db,
+        finder: Finder(filter: Filter.equals('needsAttention', true)));
+    return rows
+        .map((row) => SyncOperation.fromJson(row.value))
+        .toList(growable: false);
+  }
+
+  /// Called only after a user reviews and corrects a graph conflict. The old
+  /// operations were rejected before a server write; their immutable audit
+  /// entries remain, while one fresh patch includes every unsynced field.
+  Future<SyncOperation> resubmitTaskGraphConflict(
+    String taskId, {
+    required void Function(WorkspaceRecord, List<WorkspaceRecord>) validate,
+  }) {
+    validateRecordId(taskId);
+    final operationId = newRecordId();
+    final now = _clock().toUtc().millisecondsSinceEpoch;
+    return _db.transaction((transaction) async {
+      await _assertWritable(transaction);
+      final key = '${RecordKind.task.name}--$taskId';
+      final raw = await _records.record(key).get(transaction);
+      if (raw == null) throw StateError('Task no longer exists.');
+      final record = _decode(raw);
+      final rows = await _records.find(transaction);
+      validate(
+          record, List.unmodifiable(rows.map((row) => _decode(row.value))));
+      final outbox = await _outbox.find(transaction,
+          finder: Finder(sortOrders: [SortOrder('stamp.counter')]));
+      final operations = outbox
+          .map((row) => (row.value, SyncOperation.fromJson(row.value)))
+          .where((entry) => entry.$2.recordKey == key)
+          .toList(growable: false);
+      const recoverable = {
+        'circular-reference',
+        'different-workspace',
+        'invalid-task'
+      };
+      final rejected = operations
+          .where((entry) => entry.$1['needsAttention'] == true)
+          .toList(growable: false);
+      if (rejected.isEmpty ||
+          rejected.any((entry) => !recoverable.contains(entry.$2.errorCode))) {
+        throw StateError('This task has no reviewed graph conflict.');
+      }
+      final fields = <String>{
+        for (final entry in operations) ...entry.$2.patch.keys
+      };
+      final patch = {
+        for (final field in fields) field: record.fields[field],
+      };
+      final counter = max(
+              await _meta.record('clock').get(transaction) as int? ?? 0,
+              record.maxClock) +
+          1;
+      final stamp = VersionStamp(counter, deviceId);
+      final rebased = WorkspaceRecord(
+          ownerId: uid,
+          kind: record.kind,
+          id: record.id,
+          fields: record.fields,
+          clocks: {
+            ...record.clocks,
+            for (final field in fields) field: stamp,
+          },
+          revision: record.revision,
+          modifiedAtMillis: now);
+      final operation = SyncOperation(
+          id: operationId,
+          ownerId: uid,
+          kind: RecordKind.task,
+          recordId: taskId,
+          patch: patch,
+          stamp: stamp,
+          createdAtMillis: now);
+      for (final entry in operations) {
+        await _outbox.record(entry.$2.id).delete(transaction);
+        await _changes.record(entry.$2.id).update(transaction, {
+          'supersededBy': operationId,
+        });
+      }
+      await _records.record(key).put(transaction, rebased.toJson());
+      await _outbox.record(operationId).put(transaction, operation.toJson());
+      await _changes.record(operationId).put(transaction, {
+        ...operation.payload,
+        'before': record.toJson(),
+        'source': 'local',
+        'reason': 'graph-conflict-review',
+        'supersedes': operations.map((entry) => entry.$2.id).toList(),
+      });
+      await _meta.record('clock').put(transaction, counter);
+      return operation;
+    });
   }
 
   Future<void> _merge(

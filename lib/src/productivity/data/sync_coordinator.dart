@@ -101,6 +101,13 @@ class SyncCoordinator extends ChangeNotifier {
             await database.recordFailure(operation, failure.code,
                 permanent: failure.permanent);
             if (failure.code == 'account-deleting') await database.freeze();
+            if (const {
+              'circular-reference',
+              'different-workspace',
+              'invalid-task'
+            }.contains(failure.code)) {
+              continue;
+            }
             // Stop a failed network/auth batch rather than making one request
             // for each remaining operation against an unavailable backend.
             return;
@@ -115,7 +122,11 @@ class SyncCoordinator extends ChangeNotifier {
         cursor = page.cursor;
         if (!page.hasMore) break;
       }
-      if (current()) await database.recordSyncSuccess();
+      if (current() &&
+          errorCode == null &&
+          (await database.syncSnapshot()).needsAttention == 0) {
+        await database.recordSyncSuccess();
+      }
     } catch (error) {
       if (current()) errorCode = _failure(error).code;
     } finally {
