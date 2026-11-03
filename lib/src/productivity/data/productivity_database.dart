@@ -16,6 +16,7 @@ class ProductivityDatabase {
   static final _records = stringMapStoreFactory.store('records');
   static final _outbox = stringMapStoreFactory.store('outbox');
   static final _changes = stringMapStoreFactory.store('changes');
+  static final _conflicts = stringMapStoreFactory.store('conflicts');
   static final _meta = StoreRef<String, Object?>('metadata');
 
   /// Close the account's active session before deleting its local database.
@@ -243,6 +244,9 @@ class ProductivityDatabase {
         createOnly: mutation.ifAbsent && previous == null);
     await _records.record(key).put(transaction, record.toJson());
     await _outbox.record(operationId).put(transaction, operation.toJson());
+    for (final field in changes.keys) {
+      await _conflicts.record('$key--$field').delete(transaction);
+    }
     await _changes.record(operationId).put(transaction, {
       ...operation.payload,
       'before': previous?.toJson(),
@@ -259,13 +263,18 @@ class ProductivityDatabase {
             finder: Finder(sortOrders: [SortOrder(Field.key)]));
         final changes = await _changes.find(transaction,
             finder: Finder(sortOrders: [SortOrder(Field.key)]));
+        final conflicts = await _conflicts.find(transaction,
+            finder: Finder(sortOrders: [SortOrder(Field.key)]));
         final payload = <String, Object?>{
           'format': 'rober-pothe-workspace',
-          'formatVersion': 1,
+          'formatVersion': 2,
           'ownerId': uid,
           'exportedAt': _clock().toUtc().toIso8601String(),
           'records': records.map((row) => _decode(row.value).toJson()).toList(),
           'history': changes.map((row) => row.value).toList(),
+          'conflicts': conflicts
+              .map((row) => FieldConflict.fromJson(row.value).toJson())
+              .toList(),
         };
         return jsonEncode({
           ...payload,
@@ -284,10 +293,11 @@ class ProductivityDatabase {
     final data = jsonDecode(source);
     if (data is! Map<String, dynamic> ||
         data['format'] != 'rober-pothe-workspace' ||
-        data['formatVersion'] != 1 ||
+        (data['formatVersion'] != 1 && data['formatVersion'] != 2) ||
         data['ownerId'] != uid ||
         data['records'] is! List ||
-        data['history'] is! List) {
+        data['history'] is! List ||
+        (data['formatVersion'] == 2 && data['conflicts'] is! List)) {
       throw const FormatException('Unsupported backup or a different account.');
     }
     final payload = {...data}..remove('checksum');
@@ -309,6 +319,7 @@ class ProductivityDatabase {
           'Backup contains mixed owners or duplicate records.');
     }
     validateRecords?.call(List.unmodifiable(records));
+    final recordsByKey = {for (final record in records) record.key: record};
     final history = (data['history'] as List).map((raw) {
       final item = Map<String, Object?>.from(raw as Map);
       final operation = SyncOperation.fromJson(item);
@@ -330,6 +341,50 @@ class ProductivityDatabase {
       }
       return item;
     }).toList(growable: false);
+    final rawConflicts = data['formatVersion'] == 2
+        ? data['conflicts'] as List
+        : const <Object?>[];
+    if (rawConflicts.length > 20000) {
+      throw const FormatException('Too many conflicts in backup.');
+    }
+    final historyById = {for (final item in history) item['id']: item};
+    if (historyById.length != history.length) {
+      throw const FormatException('Duplicate change history in backup.');
+    }
+    final conflicts = rawConflicts.map((raw) {
+      try {
+        final conflict = FieldConflict.fromJson(
+            Map<String, dynamic>.from(raw as Map));
+        final source = recordsByKey[conflict.recordKey];
+        final origin = historyById[conflict.operationId];
+        final patch = origin?['patch'];
+        final rejected = origin?['rejectedFields'];
+        if (source == null ||
+            source.workspaceId != conflict.workspaceId ||
+            source.clocks[conflict.field] != conflict.cloudStamp ||
+            canonicalJson(source.fields[conflict.field]) !=
+                canonicalJson(conflict.cloudValue) ||
+            origin?['kind'] != conflict.kind.name ||
+            origin?['recordId'] != conflict.recordId ||
+            patch is! Map ||
+            !patch.containsKey(conflict.field) ||
+            canonicalJson(patch[conflict.field]) !=
+                canonicalJson(conflict.localValue) ||
+            rejected is! List ||
+            !rejected.contains(conflict.field)) {
+          throw const FormatException('Invalid conflict in backup.');
+        }
+        return conflict;
+      } on TypeError {
+        throw const FormatException('Invalid conflict in backup.');
+      } on ArgumentError {
+        throw const FormatException('Invalid conflict in backup.');
+      }
+    }).toList(growable: false);
+    if (conflicts.map((conflict) => conflict.key).toSet().length !=
+        conflicts.length) {
+      throw const FormatException('Duplicate conflict in backup.');
+    }
     final identifiers = List.generate(records.length, (_) => newRecordId());
     final now = _clock().toUtc().millisecondsSinceEpoch;
     return _db.transaction((transaction) async {
@@ -373,6 +428,31 @@ class ProductivityDatabase {
         if (!await _changes.record(key).exists(transaction)) {
           await _changes.record(key).put(transaction, entry);
         }
+      }
+      for (final conflict in conflicts) {
+        if (await _conflicts.record(conflict.key).exists(transaction)) continue;
+        final raw = await _records.record(conflict.recordKey).get(transaction);
+        if (raw == null) {
+          throw const FormatException('Conflict record is missing.');
+        }
+        final current = _decode(raw);
+        final stamp = current.clocks[conflict.field];
+        if (stamp == null) {
+          throw const FormatException('Conflict field is missing.');
+        }
+        await _conflicts.record(conflict.key).put(
+            transaction,
+            FieldConflict(
+                    kind: conflict.kind,
+                    recordId: conflict.recordId,
+                    workspaceId: current.workspaceId,
+                    field: conflict.field,
+                    localValue: conflict.localValue,
+                    cloudValue: current.fields[conflict.field],
+                    cloudStamp: stamp,
+                    operationId: conflict.operationId,
+                    createdAtMillis: conflict.createdAtMillis)
+                .toJson());
       }
       return changed;
     });
@@ -422,6 +502,92 @@ class ProductivityDatabase {
     return rows
         .map((row) => SyncOperation.fromJson(row.value))
         .toList(growable: false);
+  }
+
+  Future<List<FieldConflict>> fieldConflicts() async {
+    final rows = await _conflicts.find(_db,
+        finder: Finder(sortOrders: [SortOrder('createdAtMillis')]));
+    return rows
+        .map((row) => FieldConflict.fromJson(row.value))
+        .toList(growable: false);
+  }
+
+  Future<void> keepCloudValue(FieldConflict expected) =>
+      _db.transaction((transaction) async {
+        await _assertWritable(transaction);
+        final current = await _currentConflict(transaction, expected);
+        await _conflicts.record(current.key).delete(transaction);
+        await _changes.record(current.operationId).update(transaction, {
+          'conflictResolution': 'cloud',
+        });
+      });
+
+  /// Reapply an explicitly reviewed value with a fresh logical clock. A cloud
+  /// update during review invalidates the selection and requires a fresh look.
+  Future<SyncOperation> retryMyValue(
+    FieldConflict expected, {
+    required void Function(WorkspaceRecord, List<WorkspaceRecord>) validate,
+  }) {
+    final operationId = newRecordId();
+    final now = _clock().toUtc().millisecondsSinceEpoch;
+    return _db.transaction((transaction) async {
+      await _assertWritable(transaction);
+      final conflict = await _currentConflict(transaction, expected);
+      final raw = await _records.record(conflict.recordKey).get(transaction);
+      if (raw == null) throw StateError('Conflicted record is missing.');
+      final record = _decode(raw);
+      if (record.clocks[conflict.field] != conflict.cloudStamp ||
+          canonicalJson(record.fields[conflict.field]) !=
+              canonicalJson(conflict.cloudValue)) {
+        throw StateError('The record changed during conflict review.');
+      }
+      final candidate = WorkspaceRecord(
+          ownerId: uid,
+          kind: record.kind,
+          id: record.id,
+          fields: {
+            ...record.fields,
+            conflict.field: conflict.localValue,
+          },
+          clocks: record.clocks,
+          revision: record.revision,
+          modifiedAtMillis: now);
+      final rows = await _records.find(transaction);
+      validate(candidate,
+          List.unmodifiable(rows.map((row) => _decode(row.value))));
+      final mutation = RecordMutation(
+          kind: record.kind,
+          id: record.id,
+          workspaceId: candidate.workspaceId,
+          patch: conflict.field == '_deleted'
+              ? const {}
+              : {conflict.field: conflict.localValue},
+          deleted: conflict.field == '_deleted'
+              ? conflict.localValue as bool
+              : null);
+      await _commit(transaction, mutation, operationId, now);
+      await _changes.record(operationId).update(transaction, {
+        'reason': 'field-conflict-review',
+        'reviewedOperationId': conflict.operationId,
+      });
+      final queued = await _outbox.record(operationId).get(transaction);
+      return SyncOperation.fromJson(queued!);
+    });
+  }
+
+  Future<FieldConflict> _currentConflict(
+      DatabaseClient transaction, FieldConflict expected) async {
+    final raw = await _conflicts.record(expected.key).get(transaction);
+    if (raw == null) throw StateError('Conflict is already resolved.');
+    final current = FieldConflict.fromJson(raw);
+    if (current.operationId != expected.operationId ||
+        current.cloudStamp != expected.cloudStamp ||
+        current.workspaceId != expected.workspaceId ||
+        canonicalJson(current.cloudValue) != canonicalJson(expected.cloudValue) ||
+        canonicalJson(current.localValue) != canonicalJson(expected.localValue)) {
+      throw StateError('Conflict changed during review.');
+    }
+    return current;
   }
 
   /// Called only after a user reviews and corrects a graph conflict. The old
@@ -518,6 +684,27 @@ class ProductivityDatabase {
     final merged =
         old == null ? incoming : mergeRecords(_decode(old), incoming);
     await _records.record(merged.key).put(transaction, merged.toJson());
+    for (final entry in incoming.fields.entries) {
+      final conflictKey = '${incoming.key}--${entry.key}';
+      final rawConflict = await _conflicts.record(conflictKey).get(transaction);
+      if (rawConflict == null) continue;
+      final conflict = FieldConflict.fromJson(rawConflict);
+      final incomingStamp = incoming.clocks[entry.key]!;
+      if (incomingStamp.compareTo(conflict.cloudStamp) > 0) {
+        await _conflicts.record(conflictKey).put(transaction,
+            FieldConflict(
+              kind: conflict.kind,
+              recordId: conflict.recordId,
+              workspaceId: incoming.workspaceId,
+              field: conflict.field,
+              localValue: conflict.localValue,
+              cloudValue: entry.value,
+              cloudStamp: incomingStamp,
+              operationId: conflict.operationId,
+              createdAtMillis: conflict.createdAtMillis,
+            ).toJson());
+      }
+    }
     final current = await _meta.record('clock').get(transaction) as int? ?? 0;
     await _meta
         .record('clock')
@@ -531,6 +718,8 @@ class ProductivityDatabase {
         if (operation.ownerId != uid || operation.recordKey != canonical.key) {
           throw StateError('Sync acknowledgement identity mismatch.');
         }
+        final rawLocal = await _records.record(canonical.key).get(transaction);
+        final local = rawLocal == null ? null : _decode(rawLocal);
         if (operation.createOnly) {
           // Drop unaccepted initialization clocks while preserving real local
           // edits made after this generated record was first queued.
@@ -560,6 +749,26 @@ class ProductivityDatabase {
           }
         }
         await _merge(transaction, canonical);
+        for (final field in rejectedFields) {
+          if (!operation.patch.containsKey(field) ||
+              local?.clocks[field] != operation.stamp ||
+              !canonical.clocks.containsKey(field) ||
+              canonicalJson(operation.patch[field]) ==
+                  canonicalJson(canonical.fields[field])) {
+            continue;
+          }
+          final conflict = FieldConflict(
+              kind: operation.kind,
+              recordId: operation.recordId,
+              workspaceId: canonical.workspaceId,
+              field: field,
+              localValue: operation.patch[field],
+              cloudValue: canonical.fields[field],
+              cloudStamp: canonical.clocks[field]!,
+              operationId: operation.id,
+              createdAtMillis: _clock().toUtc().millisecondsSinceEpoch);
+          await _conflicts.record(conflict.key).put(transaction, conflict.toJson());
+        }
         await _outbox.record(operation.id).delete(transaction);
         await _changes.record(operation.id).update(transaction, {
           'acknowledged': true,
@@ -613,13 +822,15 @@ class ProductivityDatabase {
 
   Future<SyncSnapshot> syncSnapshot() async {
     final rows = await _outbox.find(_db);
+    final conflicts = await _conflicts.count(_db);
     return SyncSnapshot(
         pending: rows.length,
         failed: rows
             .where((row) => (row.value['attempts'] as int? ?? 0) > 0)
             .length,
         needsAttention:
-            rows.where((row) => row.value['needsAttention'] == true).length,
+            rows.where((row) => row.value['needsAttention'] == true).length +
+                conflicts,
         lastSuccessMillis: await _meta.record('lastSuccess').get(_db) as int?,
         lastErrorCode: await _meta.record('lastErrorCode').get(_db) as String?);
   }
@@ -645,10 +856,15 @@ class ProductivityDatabase {
             .query()
             .onSnapshots(_db)
             .listen((_) => unawaited(emit()), onError: controller.addError);
+        final conflicts = _conflicts
+            .query()
+            .onSnapshots(_db)
+            .listen((_) => unawaited(emit()), onError: controller.addError);
         controller.onCancel = () async {
           canceled = true;
           await outbox.cancel();
           await metadata.cancel();
+          await conflicts.cancel();
         };
       });
 

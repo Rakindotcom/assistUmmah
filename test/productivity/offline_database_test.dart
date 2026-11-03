@@ -10,6 +10,9 @@ import 'package:ummah_assist/src/productivity/core/records.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_remote.dart';
 import 'package:ummah_assist/src/productivity/data/sync_coordinator.dart';
+import 'package:ummah_assist/src/productivity/data/task_repository.dart';
+import 'package:ummah_assist/src/productivity/data/workspace_backup.dart';
+import 'package:ummah_assist/src/productivity/domain/task.dart';
 
 void main() {
   var sequence = 0;
@@ -25,6 +28,144 @@ void main() {
           id: id,
           workspaceId: 'personal',
           patch: {'title': title, 'status': 'open'});
+
+  Future<(WorkspaceRecord, FieldConflict)> createTitleConflict(
+      ProductivityDatabase db) async {
+    await TaskRepository(db).createTask(ProductivityTask(
+        id: 'proposal', workspaceId: 'personal', title: 'Write proposal'));
+    final created = (await db.get(RecordKind.task, 'proposal'))!;
+    final create = (await db.pending()).single;
+    final canonical = WorkspaceRecord(
+        ownerId: db.uid,
+        kind: RecordKind.task,
+        id: created.id,
+        fields: created.fields,
+        clocks: created.clocks,
+        revision: 1,
+        modifiedAtMillis: created.modifiedAtMillis);
+    await db.acknowledge(create, canonical);
+    await db.mutate(
+        kind: RecordKind.task,
+        id: 'proposal',
+        workspaceId: 'personal',
+        patch: {'title': 'My title'});
+    final edit = (await db.pending()).single;
+    final cloud = WorkspaceRecord(
+        ownerId: db.uid,
+        kind: RecordKind.task,
+        id: created.id,
+        fields: {...created.fields, 'title': 'Cloud title'},
+        clocks: {
+          ...created.clocks,
+          'title': VersionStamp(25, 'other_device')
+        },
+        revision: 2,
+        modifiedAtMillis: created.modifiedAtMillis);
+    await db.acknowledge(edit, cloud, rejectedFields: ['title']);
+    return (cloud, (await db.fieldConflicts()).single);
+  }
+
+  test('rejected same-field edit stays reviewable across a real file restart',
+      () async {
+    final directory =
+        await Directory.systemTemp.createTemp('productivity-conflict-');
+    addTearDown(() => directory.delete(recursive: true));
+    final path = '${directory.path}/account.db';
+    var db = await ProductivityDatabase.open(
+        uid: 'alice', factory: databaseFactoryIo, path: path);
+    final (_, conflict) = await createTitleConflict(db);
+    expect(conflict.localValue, 'My title');
+    expect(conflict.cloudValue, 'Cloud title');
+    expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'Cloud title');
+    expect((await db.syncSnapshot()).needsAttention, 1);
+    expect((await db.syncSnapshot()).synchronized, isFalse);
+    await db.close();
+    db = await ProductivityDatabase.open(
+        uid: 'alice', factory: databaseFactoryIo, path: path);
+    addTearDown(db.close);
+    expect((await db.fieldConflicts()).single.toJson(), conflict.toJson());
+    await db.keepCloudValue(conflict);
+    expect(await db.fieldConflicts(), isEmpty);
+    expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'Cloud title');
+    expect((await db.syncSnapshot()).needsAttention, 0);
+    expect((await db.history(RecordKind.task, 'proposal')).firstWhere(
+        (item) => item['id'] == conflict.operationId)['conflictResolution'],
+        'cloud');
+  });
+
+  test('reviewed local value gets a fresh clock and can win a later retry',
+      () async {
+    final db = await memory();
+    addTearDown(db.close);
+    final (cloud, conflict) = await createTitleConflict(db);
+    final retry = await db.retryMyValue(conflict, validate: (_, __) {});
+    expect(retry.patch, {'title': 'My title'});
+    expect(retry.stamp.counter, greaterThan(conflict.cloudStamp.counter));
+    expect(await db.fieldConflicts(), isEmpty);
+    expect((await db.pending()).single.id, retry.id);
+    final applied = applyRecordOperation(cloud, retry);
+    expect(applied.rejectedFields, isEmpty);
+    expect(applied.record.fields['title'], 'My title');
+    await db.acknowledge(retry, applied.record);
+    expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'My title');
+  });
+
+  test('a newer cloud value invalidates an old review selection', () async {
+    final db = await memory();
+    addTearDown(db.close);
+    final (cloud, conflict) = await createTitleConflict(db);
+    final newer = WorkspaceRecord(
+        ownerId: db.uid,
+        kind: cloud.kind,
+        id: cloud.id,
+        fields: {...cloud.fields, 'title': 'New cloud title'},
+        clocks: {
+          ...cloud.clocks,
+          'title': VersionStamp(30, 'other_device')
+        },
+        revision: 3,
+        modifiedAtMillis: cloud.modifiedAtMillis);
+    await db.acceptPage([newer], null);
+    await expectLater(
+        db.retryMyValue(conflict, validate: (_, __) {}), throwsStateError);
+    await expectLater(db.keepCloudValue(conflict), throwsStateError);
+    final refreshed = (await db.fieldConflicts()).single;
+    expect(refreshed.cloudValue, 'New cloud title');
+    await db.retryMyValue(refreshed, validate: (_, __) {});
+    expect((await db.pending()).single.stamp.counter, 31);
+  });
+
+  test('failed domain validation leaves the conflict and queue untouched',
+      () async {
+    final db = await memory();
+    addTearDown(db.close);
+    final (_, conflict) = await createTitleConflict(db);
+    await expectLater(
+        db.retryMyValue(conflict,
+            validate: (_, __) => throw const FormatException('invalid task')),
+        throwsFormatException);
+    expect((await db.fieldConflicts()).single.toJson(), conflict.toJson());
+    expect(await db.pending(), isEmpty);
+    expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'Cloud title');
+  });
+
+  test('a later intentional edit clears its old field conflict', () async {
+    final db = await memory();
+    addTearDown(db.close);
+    await createTitleConflict(db);
+    await db.mutate(
+        kind: RecordKind.task,
+        id: 'proposal',
+        workspaceId: 'personal',
+        patch: {'title': 'New intentional title'});
+    expect(await db.fieldConflicts(), isEmpty);
+    expect((await db.pending()).single.patch['title'],
+        'New intentional title');
+  });
 
   test('edit and outbox survive a real file-backed close and reopen', () async {
     final directory =
@@ -454,6 +595,68 @@ void main() {
     expect(await restored.pending(), hasLength(2));
   });
 
+  test('backup restores reviewable conflict and accepts old format', () async {
+    final original = await memory(), restored = await memory();
+    addTearDown(original.close);
+    addTearDown(restored.close);
+    await createTitleConflict(original);
+    final archive = await original.exportArchive();
+    final decoded = jsonDecode(archive) as Map<String, dynamic>;
+    expect(decoded['formatVersion'], 2);
+    expect(decoded['conflicts'], hasLength(1));
+    expect(
+        await restored.importArchive(archive,
+            validateRecords: WorkspaceBackup.validateRecords),
+        1);
+    final conflict = (await restored.fieldConflicts()).single;
+    expect(conflict.localValue, 'My title');
+    expect(conflict.cloudValue, 'Cloud title');
+    await restored.retryMyValue(conflict, validate: (_, __) {});
+    expect(await restored.fieldConflicts(), isEmpty);
+    expect((await restored.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'My title');
+
+    final legacy = await memory();
+    addTearDown(legacy.close);
+    final payload = {...decoded}
+      ..remove('checksum')
+      ..remove('conflicts')
+      ..['formatVersion'] = 1;
+    final oldArchive = jsonEncode({
+      ...payload,
+      'checksum':
+          sha256.convert(utf8.encode(canonicalJson(payload))).toString()
+    });
+    expect(await legacy.importArchive(oldArchive), 1);
+    expect((await legacy.get(RecordKind.task, 'proposal'))!.fields['title'],
+        'Cloud title');
+    expect(await legacy.fieldConflicts(), isEmpty);
+  });
+
+  test('recomputed checksum cannot hide inconsistent conflict values',
+      () async {
+    final original = await memory(), restored = await memory();
+    addTearDown(original.close);
+    addTearDown(restored.close);
+    await createTitleConflict(original);
+    final archive = await original.exportArchive();
+    for (final field in ['cloudValue', 'localValue']) {
+      final payload = jsonDecode(archive) as Map<String, dynamic>;
+      payload.remove('checksum');
+      final conflicts = payload['conflicts'] as List;
+      (conflicts.single as Map<String, dynamic>)[field] = 'Forged';
+      final tampered = jsonEncode({
+        ...payload,
+        'checksum':
+            sha256.convert(utf8.encode(canonicalJson(payload))).toString(),
+      });
+      await expectLater(
+          restored.importArchive(tampered), throwsFormatException);
+      expect(await restored.list(), isEmpty);
+      expect(await restored.fieldConflicts(), isEmpty);
+    }
+  });
+
   test(
       'restore clocks advance beyond archived clocks instead of losing to old cloud data',
       () async {
@@ -497,6 +700,13 @@ void main() {
         'records': [
           ...source['records'] as List,
           ...(source['records'] as List)
+        ]
+      }),
+      checked({
+        ...source,
+        'history': [
+          ...source['history'] as List,
+          ...(source['history'] as List)
         ]
       }),
       checked({

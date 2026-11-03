@@ -14,7 +14,7 @@ import 'package:ummah_assist/src/productivity/domain/task.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('two Android clients reject a merged graph cycle and recover',
+  testWidgets('two Android clients review graph and field conflicts',
       (tester) async {
     const projectId = 'demo-ummah';
     assert(projectId.startsWith('demo-'));
@@ -113,5 +113,39 @@ void main() {
         .doc('taskGraph')
         .get(const GetOptions(source: Source.server));
     expect(guard.data()!['revision'], 4);
+
+    // A later same-field edit is never discarded just because the server's
+    // clock wins. The losing value remains reviewable on this device.
+    await tasksB.editTask('b', {'title': 'My task title'});
+    for (var index = 0; index < 5; index++) {
+      await tasksA.editTask('b', {'title': 'Cloud task title $index'});
+    }
+    while ((await localA.pending()).isNotEmpty) {
+      final operation = (await localA.pending()).single;
+      final acknowledgement = await remoteA.apply(operation);
+      await localA.acknowledge(operation, acknowledgement.record,
+          rejectedFields: acknowledgement.rejectedFields);
+    }
+    final losingEdit = (await localB.pending()).single;
+    final losingAck = await remoteB.apply(losingEdit);
+    expect(losingAck.rejectedFields, contains('title'));
+    await localB.acknowledge(losingEdit, losingAck.record,
+        rejectedFields: losingAck.rejectedFields);
+    final conflict = (await localB.fieldConflicts()).single;
+    expect(conflict.localValue, 'My task title');
+    expect(conflict.cloudValue, 'Cloud task title 4');
+    expect((await localB.get(RecordKind.task, 'b'))!.fields['title'],
+        'Cloud task title 4');
+    await localB.retryMyValue(conflict,
+        validate: tasksB.validateTaskConflictCandidate);
+    final reviewed = (await localB.pending()).single;
+    final reviewedAck = await remoteB.apply(reviewed);
+    await localB.acknowledge(reviewed, reviewedAck.record,
+        rejectedFields: reviewedAck.rejectedFields);
+    expect(await localB.fieldConflicts(), isEmpty);
+    final finalPage = await remoteA.pull(null);
+    expect(
+        finalPage.records.singleWhere((record) => record.id == 'b').fields['title'],
+        'My task title');
   });
 }

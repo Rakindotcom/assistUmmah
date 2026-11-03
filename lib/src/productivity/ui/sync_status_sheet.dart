@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../core/records.dart';
 import '../data/productivity_session.dart';
 import '../data/task_repository.dart';
+import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
@@ -10,6 +14,10 @@ import 'experience_strings.dart';
 import 'task_editor_page.dart';
 
 typedef _AttentionItem = ({SyncOperation operation, WorkspaceRecord? record});
+typedef _ReviewState = ({
+  List<_AttentionItem> operations,
+  List<FieldConflict> conflicts
+});
 
 class ProductivitySyncStatusSheet extends StatefulWidget {
   const ProductivitySyncStatusSheet({
@@ -30,7 +38,8 @@ class ProductivitySyncStatusSheet extends StatefulWidget {
 
 class _ProductivitySyncStatusSheetState
     extends State<ProductivitySyncStatusSheet> {
-  late Future<List<_AttentionItem>> _attention;
+  late Future<_ReviewState> _attention;
+  StreamSubscription<SyncSnapshot>? _statusSubscription;
   bool _busy = false;
   ExperienceStrings get strings => ExperienceStrings(widget.options.language);
 
@@ -38,19 +47,114 @@ class _ProductivitySyncStatusSheetState
   void initState() {
     super.initState();
     _refresh();
+    _statusSubscription = widget.session.database.watchSync().listen((_) {
+      if (mounted) setState(_refresh);
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_statusSubscription?.cancel());
+    super.dispose();
   }
 
   void _refresh() {
     _attention = _loadAttention();
   }
 
-  Future<List<_AttentionItem>> _loadAttention() async {
+  Future<_ReviewState> _loadAttention() async {
     final database = widget.session.database;
     final operations = await database.attention();
-    return Future.wait(operations.map((operation) async => (
+    final attention = await Future.wait(operations.map((operation) async => (
           operation: operation,
           record: await database.get(operation.kind, operation.recordId),
         )));
+    return (operations: attention, conflicts: await database.fieldConflicts());
+  }
+
+  String _fieldName(String field) => switch (field) {
+        'title' => strings.text('Title', 'শিরোনাম'),
+        'description' => strings.text('Description', 'বিবরণ'),
+        'status' => strings.text('Status', 'অবস্থা'),
+        'priority' => strings.text('Priority', 'অগ্রাধিকার'),
+        'scheduledAt' => strings.text('Scheduled time', 'নির্ধারিত সময়'),
+        'deadlineAt' => strings.text('Deadline', 'শেষ সময়'),
+        'dependencies' => strings.text('Prerequisites', 'পূর্বশর্ত'),
+        'parentId' => strings.text('Parent task', 'মূল কাজ'),
+        '_deleted' => strings.text('Deletion', 'মুছে ফেলা'),
+        _ => field,
+      };
+
+  String _value(Object? value) {
+    if (value == null) return strings.text('Empty', 'খালি');
+    if (value is bool) {
+      return value ? strings.text('Yes', 'হ্যাঁ') : strings.text('No', 'না');
+    }
+    return value is String ? value : jsonEncode(value);
+  }
+
+  Future<void> _reviewField(FieldConflict conflict) async {
+    if (_busy) return;
+    final choice = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+              title: Text(strings.text('Review conflicting values',
+                  'ভিন্ন তথ্য পর্যালোচনা করুন')),
+              content: SingleChildScrollView(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_fieldName(conflict.field),
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      Text(strings.text('On this device', 'এই ডিভাইসে')),
+                      SelectableText(_value(conflict.localValue)),
+                      const SizedBox(height: 12),
+                      Text(strings.text('In the cloud', 'ক্লাউডে')),
+                      SelectableText(_value(conflict.cloudValue)),
+                    ]),
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: Text(strings.text('Cancel', 'বাতিল'))),
+                TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, 'cloud'),
+                    child:
+                        Text(strings.text('Keep cloud', 'ক্লাউডেরটি রাখুন'))),
+                FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, 'mine'),
+                    child: Text(strings.text('Use mine', 'আমারটি রাখুন'))),
+              ],
+            ));
+    if (!mounted || choice == null) return;
+    setState(() => _busy = true);
+    try {
+      if (choice == 'cloud') {
+        await widget.session.database.keepCloudValue(conflict);
+      } else {
+        await widget.session.database.retryMyValue(conflict,
+            validate: (candidate, records) {
+          if (candidate.kind == RecordKind.task) {
+            widget.repository.validateTaskConflictCandidate(candidate, records);
+          } else {
+            WorkspaceBackup.validateRecords([candidate]);
+          }
+        });
+      }
+      await widget.session.sync?.sync(force: true);
+      if (mounted) setState(_refresh);
+    } on TaskEditFailure catch (error) {
+      _message(strings.taskError(error.code));
+    } catch (_) {
+      _message(strings.text(
+          'These values changed or could not be applied. Review them again.',
+          'তথ্য বদলে গেছে বা প্রয়োগ করা যায়নি। আবার পর্যালোচনা করুন।'));
+      if (mounted) setState(_refresh);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _message(String message) {
@@ -181,22 +285,56 @@ class _ProductivitySyncStatusSheetState
                 label: Text(strings.text('Sync now', 'এখন সিঙ্ক করুন'))),
             const SizedBox(height: 8),
             Expanded(
-              child: FutureBuilder<List<_AttentionItem>>(
+              child: FutureBuilder<_ReviewState>(
                   future: _attention,
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final operations = snapshot.data!;
-                    if (operations.isEmpty) {
+                    final review = snapshot.data!;
+                    if (review.operations.isEmpty && review.conflicts.isEmpty) {
                       return Center(
                           child: Text(strings.text('No changes need review.',
                               'কোনো পরিবর্তন পর্যালোচনার অপেক্ষায় নেই।')));
                     }
                     return ListView.builder(
-                        itemCount: operations.length,
+                        itemCount:
+                            review.operations.length + review.conflicts.length,
                         itemBuilder: (context, index) {
-                          final item = operations[index];
+                          if (index >= review.operations.length) {
+                            final conflict = review
+                                .conflicts[index - review.operations.length];
+                            return Card(
+                                child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                              strings.text(
+                                                  'Values differ between devices',
+                                                  'ডিভাইসগুলোর তথ্য ভিন্ন'),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium),
+                                          Text(_fieldName(conflict.field)),
+                                          Text(_value(conflict.localValue),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis),
+                                          TextButton.icon(
+                                              onPressed: _busy
+                                                  ? null
+                                                  : () =>
+                                                      _reviewField(conflict),
+                                              icon: const Icon(
+                                                  Icons.compare_arrows),
+                                              label: Text(strings.text(
+                                                  'Review values',
+                                                  'তথ্য পর্যালোচনা করুন'))),
+                                        ])));
+                          }
+                          final item = review.operations[index];
                           final operation = item.operation;
                           return Card(
                               child: Padding(

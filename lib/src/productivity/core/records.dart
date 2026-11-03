@@ -370,5 +370,59 @@ class SyncSnapshot {
   final int pending, failed, needsAttention;
   final int? lastSuccessMillis;
   final String? lastErrorCode;
-  bool get synchronized => pending == 0;
+  bool get synchronized => pending == 0 && needsAttention == 0;
+}
+
+/// A local value rejected by the cloud's field clock. Both values remain
+/// available until the owner explicitly keeps the cloud value or retries theirs.
+class FieldConflict {
+  FieldConflict({
+    required this.kind,
+    required this.recordId,
+    required this.workspaceId,
+    required this.field,
+    required Object? localValue,
+    required Object? cloudValue,
+    required this.cloudStamp,
+    required this.operationId,
+    required this.createdAtMillis,
+  })  : localValue = validatedFields({field: localValue})[field],
+        cloudValue = validatedFields({field: cloudValue})[field] {
+    validateRecordId(recordId);
+    validateRecordId(workspaceId);
+    validateRecordId(operationId);
+  }
+
+  final RecordKind kind;
+  final String recordId, workspaceId, field, operationId;
+  final Object? localValue, cloudValue;
+  final VersionStamp cloudStamp;
+  final int createdAtMillis;
+  String get recordKey => '${kind.name}--$recordId';
+  String get key => '$recordKey--$field';
+
+  Map<String, Object?> toJson() => {
+        'kind': kind.name,
+        'recordId': recordId,
+        'workspaceId': workspaceId,
+        'field': field,
+        'localValue': localValue,
+        'cloudValue': cloudValue,
+        'cloudStamp': cloudStamp.toJson(),
+        'operationId': operationId,
+        'createdAtMillis': createdAtMillis,
+      };
+
+  factory FieldConflict.fromJson(Map<String, dynamic> json) => FieldConflict(
+        kind: RecordKind.values.byName(json['kind'] as String),
+        recordId: json['recordId'] as String,
+        workspaceId: json['workspaceId'] as String,
+        field: json['field'] as String,
+        localValue: json['localValue'],
+        cloudValue: json['cloudValue'],
+        cloudStamp: VersionStamp.fromJson(
+            Map<String, dynamic>.from(json['cloudStamp'] as Map)),
+        operationId: json['operationId'] as String,
+        createdAtMillis: json['createdAtMillis'] as int,
+      );
 }

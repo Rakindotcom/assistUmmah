@@ -38,9 +38,14 @@ stores. An edit returns only after its local transaction commits.
 
 Each field carries a Lamport counter and device ID. Independent field edits
 merge; concurrent changes to the same field resolve deterministically. The
-losing fields remain recorded in the change receipt. General same-field conflict
-review is still required. This is not a text CRDT or an end-to-end encrypted
-database.
+losing fields remain in the audit receipt and a durable local conflict store.
+The sync sheet presents both values and asks the owner to keep the cloud value
+or send the local value with a fresh logical clock. A newer cloud edit makes an
+open review choice stale and requires another look; a later intentional local
+edit clears its older conflict. Task choices run through task relationship
+validation. Other supported record types run through backup-domain validation;
+future record types still need validators. This is not a text CRDT or an
+end-to-end encrypted database.
 
 Firestore stores canonical records at `users/{uid}/productivity/{kind--id}` and
 immutable receipts at `users/{uid}/productivityChanges/{operationId}`. A receipt
@@ -79,13 +84,16 @@ execution and production telemetry remain to be implemented and verified.
   verify an indexed storage backend before claiming large-scale/background
   reliability. Web transactions can retry; planners must be pure.
 - General records are bounded to 256 KiB. JSON backups are bounded to 25 MiB and
-  20,000 records. Larger archives and attachments need a separate streaming path.
+  20,000 records. Backup format 2 preserves open field conflicts and accepts
+  older format 1 files. Larger archives and attachments need a separate
+  streaming path.
 - On-device encryption, sensitive-note protection and key recovery are not
   implemented. The native application sandbox is not an encryption claim.
 - The graph revision and rules pairing have emulator coverage, while merged
   offline graph cases have pure Dart and Android emulator coverage. Physical
   devices, long-running reconnection and larger graph behavior remain open.
-  General rejected-field conflict review remains open.
+  Conflict review for future record kinds and long-running reconnection remains
+  open.
 
 See the [Sembast documentation](https://pub.dev/documentation/sembast/latest/index.html),
 [Sembast web package](https://pub.dev/packages/sembast_web), and Flutter's
@@ -162,9 +170,14 @@ platforms, but that package support is not app-level platform verification.
 - Unit/widget tests exercise real local transactions and files, two-client
   convergence, retry idempotency, lifecycle interruption, migration replay,
   hierarchy/dependency cycles, recurrence, backup validation, onboarding and
-  phone-width/large-text task capture.
+  phone-width/large-text task capture. Conflict tests also cover restart,
+  stale review choices, explicit retry, backup preservation and a Bangla phone
+  dialog.
 - Firebase emulator tests use synthetic `demo-ummah` accounts only. They exercise
   owner rules, immutable receipts, deletion batches and the legacy write fence.
+- An Android emulator test uses two signed-in Dart clients to verify graph
+  conflict recovery and same-field rejection, review and retry against local
+  Firebase emulators. It does not represent a physical-device reconnection test.
 - The signed build 3 APK passed startup/login on Android API 36 x86_64 with
   16 KiB pages before the productivity changes. The later APK with the new
   native plugin also passed signature, 16 KiB alignment and clean-start login

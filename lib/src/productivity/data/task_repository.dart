@@ -78,6 +78,42 @@ class TaskRepository {
     });
   }
 
+  /// Reuse task invariants when a user chooses a previously rejected value.
+  /// This runs inside the database's conflict-resolution transaction.
+  void validateTaskConflictCandidate(
+      WorkspaceRecord candidate, List<WorkspaceRecord> records) {
+    if (candidate.kind != RecordKind.task) {
+      throw const TaskEditFailure('invalid-field');
+    }
+    final task = ProductivityTask.fromRecord(candidate);
+    if (!candidate.deleted) {
+      _validateTask(task, [
+        for (final record in records)
+          if (record.key != candidate.key) record,
+        candidate,
+      ]);
+      return;
+    }
+    if (records.any((record) =>
+        record.kind == RecordKind.task &&
+        !record.deleted &&
+        record.id != candidate.id &&
+        record.fields['parentId'] == candidate.id)) {
+      throw const TaskEditFailure('children-open');
+    }
+    try {
+      TaskGraph([
+        for (final record in records)
+          if (record.kind == RecordKind.task &&
+              record.id != candidate.id &&
+              !record.deleted)
+            TaskGraphNode.fromTask(ProductivityTask.fromRecord(record)),
+      ]).validate();
+    } on TaskGraphConflict catch (error) {
+      throw TaskEditFailure(error.code);
+    }
+  }
+
   Future<ProductivityTask> createTask(ProductivityTask task) async {
     ProductivityTask? existing;
     final result = await database.changeRecords(
