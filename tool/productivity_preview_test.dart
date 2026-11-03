@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sembast/sembast_memory.dart';
+import 'package:ummah_assist/src/app_repository.dart';
 import 'package:ummah_assist/src/productivity/data/experience_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_session.dart';
@@ -70,6 +71,8 @@ void main() {
                   openDatabase: () async => db,
                   detectTimeZone: () async => 'Asia/Dhaka',
                   initialLanguage: language,
+                  faithRepository:
+                      AppRepository(uid: uid, firebaseReady: false),
                   faithBuilder: (_) => const SizedBox.shrink(),
                   accountBuilder: (_) => const SizedBox.shrink()))));
       await tester.pumpAndSettle();

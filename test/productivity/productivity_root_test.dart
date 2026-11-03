@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sembast/sembast_memory.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:ummah_assist/src/app_repository.dart';
+import 'package:ummah_assist/src/pages/prayer_page.dart';
 import 'package:ummah_assist/src/productivity/data/experience_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_session.dart';
@@ -10,14 +15,24 @@ import 'package:ummah_assist/src/productivity/data/task_repository.dart';
 import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
 import 'package:ummah_assist/src/productivity/domain/task.dart';
 import 'package:ummah_assist/src/productivity/ui/productivity_root.dart';
+import 'package:ummah_assist/src/productivity/ui/faith_module_page.dart';
+
+import '../support/native_ui_channels.dart';
 
 void main() {
   var sequence = 0;
-  Future<ProductivityDatabase> database(String uid, {String? task}) async {
+  Future<ProductivityDatabase> database(String uid,
+      {String? task,
+      Iterable<WorkspaceModule> modules = const [
+        WorkspaceModule.personal
+      ]}) async {
     final db = await ProductivityDatabase.open(
         uid: uid, factory: databaseFactoryMemory, path: 'root-${sequence++}');
     await ExperienceRepository(db).completeOnboarding(ExperienceOptions(
-        language: 'en', timeZone: 'Asia/Dhaka', completedOnboarding: true));
+        language: 'en',
+        timeZone: 'Asia/Dhaka',
+        modules: modules,
+        completedOnboarding: true));
     if (task != null) {
       await TaskRepository(db).createTask(
           ProductivityTask(id: 'task', workspaceId: 'personal', title: task));
@@ -25,16 +40,112 @@ void main() {
     return db;
   }
 
-  Widget root(String uid, Future<ProductivityDatabase> Function() open) =>
+  Widget root(String uid, Future<ProductivityDatabase> Function() open,
+          {bool defaultFaith = false, AppRepository? faithRepository}) =>
       MaterialApp(
           home: ProductivityRoot(
               uid: uid,
               initialLanguage: 'en',
               openDatabase: open,
               detectTimeZone: () async => 'Asia/Dhaka',
-              faithBuilder: (_) => const Text('Faith feature content'),
+              faithRepository: faithRepository ??
+                  AppRepository(uid: uid, firebaseReady: false),
+              faithBuilder: defaultFaith
+                  ? null
+                  : (_) => const Text('Faith feature content'),
               accountBuilder: (_) =>
                   const Scaffold(body: Text('Account controls'))));
+
+  testWidgets('enabled Faith opens the default adapter in the universal root',
+      (tester) async {
+    configureNativeUiChannels();
+    final db = (await tester.runAsync(() => database('root-faith',
+        modules: [WorkspaceModule.personal, WorkspaceModule.faith])))!;
+    addTearDown(() => ProductivitySession.closeAccount('root-faith'));
+    await tester
+        .pumpWidget(root('root-faith', () async => db, defaultFaith: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Faith'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(FaithModulePage), findsOneWidget);
+    expect(find.byType(PrayerPage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => ProductivitySession.closeAccount('root-faith'));
+  });
+
+  testWidgets(
+      'turning off Faith cancels legacy alerts and never schedules task alerts',
+      (tester) async {
+    configureNativeUiChannels();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (call) async {
+      calls.add(call);
+      return switch (call.method) {
+        'initialize' ||
+        'areNotificationsEnabled' ||
+        'canScheduleExactNotifications' =>
+          true,
+        'cancel' || 'zonedSchedule' => null,
+        _ => throw StateError('Unexpected notification method ${call.method}'),
+      };
+    });
+    final uid = 'root-reminders';
+    final db = (await tester.runAsync(() => database(uid,
+        modules: [WorkspaceModule.personal, WorkspaceModule.faith])))!;
+    addTearDown(() => ProductivitySession.closeAccount(uid));
+    await tester.pumpWidget(root(uid, () async => db,
+        faithRepository: _EnabledRemindersRepository(uid)));
+    await tester.pumpAndSettle();
+    for (var i = 0;
+        i < 30 && !calls.any((call) => call.method == 'zonedSchedule');
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final scheduledIds = calls
+        .where((call) => call.method == 'zonedSchedule')
+        .map((call) => (call.arguments as Map)['id'])
+        .toSet();
+    expect(scheduledIds, containsAll([1002, 1003]));
+    expect(scheduledIds, isNot(contains(1001)));
+
+    final beforeDisable = calls.length;
+    await tester.runAsync(() => ExperienceRepository(db).updateOptions({
+          'modules': ['personal']
+        }));
+    final saved = await tester
+        .runAsync(() => ExperienceRepository(db).watchOptions().first);
+    expect(saved!.faithEnabled, isFalse);
+    for (var i = 0; i < 30 && find.text('Faith').evaluate().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Faith'), findsNothing);
+    Set<Object?> cancelledSinceDisable() => calls
+        .skip(beforeDisable)
+        .where((call) => call.method == 'cancel')
+        .map((call) => (call.arguments as Map)['id'])
+        .toSet();
+    for (var i = 0;
+        i < 30 && !cancelledSinceDisable().containsAll([1001, 1002, 1003]);
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(cancelledSinceDisable(), containsAll([1001, 1002, 1003]));
+    expect(
+        calls
+            .skip(beforeDisable)
+            .where((call) => call.method == 'zonedSchedule'),
+        isEmpty);
+    expect(find.text('Faith'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => ProductivitySession.closeAccount(uid));
+  });
 
   testWidgets(
       'universal root opens the saved workspace and settings without Faith enabled',
@@ -112,4 +223,15 @@ void main() {
     await tester
         .runAsync(() => ProductivitySession.closeAccount('root-fast-c'));
   });
+}
+
+class _EnabledRemindersRepository extends AppRepository {
+  const _EnabledRemindersRepository(String uid)
+      : super(uid: uid, firebaseReady: true);
+
+  @override
+  Future<Map<String, dynamic>?> loadSettings() async => {
+        'remindersConfigured': true,
+        'notifications': {'prayer': true, 'tasks': true, 'growth': true},
+      };
 }

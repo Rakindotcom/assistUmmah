@@ -157,6 +157,18 @@ entry, status actions, recurrence and dependency editing. Bangla uses Anek Bangl
 and supports Bangla numeric input. The rest of the application still needs full
 localization and integration with this root experience.
 
+The universal root now has a default Faith adapter for the existing Prayer,
+Quran, Dhikr, Growth and Dua screens. It opens those screens lazily, tracks a
+local day rollover and keeps legacy task routes out of the Faith area. Its
+repository must belong to the same signed-in account. The root owns legacy
+notification refresh: with Faith on, only prayer and growth daily reminders
+may be scheduled; the old task reminder is cancelled. Turning Faith off
+cancels the daily and prayer-time alerts without deleting Faith history.
+Changing this option and its notification behavior have widget coverage. The
+main app still enters `HomeShell`, so this adapter does not yet appear in the
+release APK. Existing Faith screen content is still Bengali-only; English
+localization remains open.
+
 Backup export/import uses the native picker through a testable gateway. Import
 checks owner, schema, checksum, duplicates, record types and history identities
 before writes. A recomputed checksum cannot bypass task field validation.
@@ -172,7 +184,9 @@ platforms, but that package support is not app-level platform verification.
   hierarchy/dependency cycles, recurrence, backup validation, onboarding and
   phone-width/large-text task capture. Conflict tests also cover restart,
   stale review choices, explicit retry, backup preservation and a Bangla phone
-  dialog.
+  dialog. Faith adapter tests cover lazy tab navigation, account-independent
+  legacy task exclusion, date rollover at 320 px with enlarged text, and
+  root-level reminder cancellation when Faith is turned off.
 - Firebase emulator tests use synthetic `demo-ummah` accounts only. They exercise
   owner rules, immutable receipts, deletion batches and the legacy write fence.
 - An Android emulator test uses two signed-in Dart clients to verify graph

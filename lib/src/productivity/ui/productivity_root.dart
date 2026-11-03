@@ -5,7 +5,9 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 
 import '../../app_identity.dart';
 import '../../app_localization.dart';
+import '../../app_repository.dart';
 import '../../app_theme.dart';
+import '../../reminder_session.dart';
 import '../../widgets/app_brand.dart';
 import '../core/records.dart';
 import '../data/experience_repository.dart';
@@ -17,6 +19,7 @@ import '../data/task_repository.dart';
 import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
 import 'experience_strings.dart';
+import 'faith_module_page.dart';
 import 'onboarding_page.dart';
 import 'productivity_settings_page.dart';
 import 'sync_status_sheet.dart';
@@ -28,7 +31,8 @@ class ProductivityRoot extends StatefulWidget {
   const ProductivityRoot(
       {super.key,
       required this.uid,
-      required this.faithBuilder,
+      required this.faithRepository,
+      this.faithBuilder,
       required this.accountBuilder,
       this.remote,
       this.prepareLegacyMigration,
@@ -40,7 +44,9 @@ class ProductivityRoot extends StatefulWidget {
   final Future<LegacyTaskMigration> Function()? prepareLegacyMigration;
   final Future<ProductivityDatabase> Function()? openDatabase;
   final Future<String> Function()? detectTimeZone;
-  final WidgetBuilder faithBuilder, accountBuilder;
+  final AppRepository faithRepository;
+  final WidgetBuilder? faithBuilder;
+  final WidgetBuilder accountBuilder;
   @override
   State<ProductivityRoot> createState() => _ProductivityRootState();
 }
@@ -64,6 +70,9 @@ class _ProductivityRootState extends State<ProductivityRoot>
     final uid = widget.uid,
         remote = widget.remote,
         opener = widget.openDatabase;
+    if (widget.faithRepository.uid != uid) {
+      throw StateError('Faith repository belongs to another account.');
+    }
     final prepare = widget.prepareLegacyMigration,
         detector = widget.detectTimeZone;
     bool current() => !_disposed && epoch == _epoch;
@@ -189,6 +198,7 @@ class _ProductivityRootState extends State<ProductivityRoot>
             session: session,
             zone: _zone,
             initialLanguage: widget.initialLanguage,
+            faithRepository: widget.faithRepository,
             faithBuilder: widget.faithBuilder,
             accountBuilder: widget.accountBuilder);
       });
@@ -199,11 +209,14 @@ class _Experience extends StatefulWidget {
       {required this.session,
       required this.zone,
       required this.initialLanguage,
+      required this.faithRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final String zone, initialLanguage;
-  final WidgetBuilder faithBuilder, accountBuilder;
+  final AppRepository faithRepository;
+  final WidgetBuilder? faithBuilder;
+  final WidgetBuilder accountBuilder;
   @override
   State<_Experience> createState() => _ExperienceState();
 }
@@ -255,6 +268,7 @@ class _ExperienceState extends State<_Experience> {
                     session: widget.session,
                     options: options,
                     repository: _repository,
+                    faithRepository: widget.faithRepository,
                     faithBuilder: widget.faithBuilder,
                     accountBuilder: widget.accountBuilder));
       });
@@ -265,19 +279,78 @@ class _WorkspaceHome extends StatefulWidget {
       {required this.session,
       required this.options,
       required this.repository,
+      required this.faithRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final ExperienceOptions options;
   final ExperienceRepository repository;
-  final WidgetBuilder faithBuilder, accountBuilder;
+  final AppRepository faithRepository;
+  final WidgetBuilder? faithBuilder;
+  final WidgetBuilder accountBuilder;
   @override
   State<_WorkspaceHome> createState() => _WorkspaceHomeState();
 }
 
-class _WorkspaceHomeState extends State<_WorkspaceHome> {
+class _WorkspaceHomeState extends State<_WorkspaceHome>
+    with WidgetsBindingObserver {
   String _page = 'tasks';
   late final _tasks = TaskRepository(widget.session.database);
+  late ReminderSession _reminders;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _replaceReminders();
+  }
+
+  @override
+  void didUpdateWidget(_WorkspaceHome oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.options.faithEnabled != widget.options.faithEnabled ||
+        !identical(oldWidget.faithRepository, widget.faithRepository)) {
+      _reminders.dispose();
+      _replaceReminders();
+    }
+  }
+
+  void _replaceReminders() {
+    _reminders = ReminderSession(
+        repository: widget.faithRepository,
+        enabledDailyKeys:
+            widget.options.faithEnabled ? const {'prayer', 'growth'} : const {},
+        prayerAlertsEnabled: widget.options.faithEnabled);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_refreshReminders());
+    });
+  }
+
+  Future<void> _refreshReminders() async {
+    final reminders = _reminders;
+    final refreshed = await reminders.refresh();
+    if (!mounted || !identical(reminders, _reminders) || refreshed) return;
+    final strings = ExperienceStrings(widget.options.language);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(strings.text(
+            'Could not refresh reminders.', 'রিমাইন্ডার রিফ্রেশ করা যায়নি।')),
+        action: SnackBarAction(
+            label: strings.text('Retry', 'আবার চেষ্টা'),
+            onPressed: () => unawaited(_refreshReminders()))));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_refreshReminders());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _reminders.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final options = widget.options;
@@ -312,7 +385,8 @@ class _WorkspaceHomeState extends State<_WorkspaceHome> {
             backup: WorkspaceBackup(widget.session.database),
             onOpenAccount: () => Navigator.of(context)
                 .push(MaterialPageRoute<void>(builder: widget.accountBuilder))),
-        'faith' => widget.faithBuilder(context),
+        'faith' => widget.faithBuilder?.call(context) ??
+            FaithModulePage(repository: widget.faithRepository),
         _ => Column(children: [
             Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
