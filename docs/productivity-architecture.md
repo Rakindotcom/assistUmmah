@@ -157,6 +157,16 @@ entry, status actions, recurrence and dependency editing. Bangla uses Anek Bangl
 and supports Bangla numeric input. The rest of the application still needs full
 localization and integration with this root experience.
 
+The universal root now starts at a cross-workspace Inbox. It shows open,
+unorganized tasks from enabled non-Faith workspaces, provides search and
+workspace filters, and lets the user choose the destination workspace before
+capturing a task. Editing an Inbox item opens the editor in its original
+workspace. Completed, archived, planned and deleted tasks do not appear. A
+320 px enlarged-text widget flow saves a new item to the selected workspace;
+390 px Bengali and English previews pass label and tap-target checks. This
+surface is still hidden behind the legacy app entry and is not counted as a
+finished requirement in the gap ledger.
+
 The universal root now has a default Faith adapter for the existing Prayer,
 Quran, Dhikr, Growth and Dua screens. It opens those screens lazily, tracks a
 local day rollover and keeps legacy task routes out of the Faith area. Its

@@ -25,6 +25,7 @@ import 'onboarding_page.dart';
 import 'productivity_settings_page.dart';
 import 'sync_status_sheet.dart';
 import 'task_workspace_page.dart';
+import 'universal_inbox_page.dart';
 
 /// The universal root is enabled only after route cutover and deployment gates
 /// pass. Keeping the legacy entry untouched prevents a half-migrated account.
@@ -295,7 +296,7 @@ class _WorkspaceHome extends StatefulWidget {
 
 class _WorkspaceHomeState extends State<_WorkspaceHome>
     with WidgetsBindingObserver {
-  String _page = 'tasks';
+  String _page = 'inbox';
   late final _tasks = TaskRepository(widget.session.database);
   late ReminderSession _reminders;
 
@@ -356,8 +357,13 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   Widget build(BuildContext context) {
     final options = widget.options;
     final strings = ExperienceStrings(options.language);
-    final pages = ['tasks', if (options.faithEnabled) 'faith', 'settings'];
-    final page = pages.contains(_page) ? _page : 'tasks';
+    final pages = [
+      'inbox',
+      'tasks',
+      if (options.faithEnabled) 'faith',
+      'settings'
+    ];
+    final page = pages.contains(_page) ? _page : 'inbox';
     return Scaffold(
       appBar: page == 'settings'
           ? null
@@ -380,6 +386,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
                             : const Icon(Icons.sync)))
             ]),
       body: switch (page) {
+        'inbox' => UniversalInboxPage(repository: _tasks, options: options),
         'settings' => ProductivitySettingsPage(
             repository: widget.repository,
             options: options,
@@ -438,6 +445,9 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
           onDestinationSelected: (index) =>
               setState(() => _page = pages[index]),
           destinations: [
+            NavigationDestination(
+                icon: const Icon(Icons.inbox_outlined),
+                label: strings.text('Inbox', 'ইনবক্স')),
             NavigationDestination(
                 icon: const Icon(Icons.checklist),
                 label: strings.text('Tasks', 'কাজ')),
