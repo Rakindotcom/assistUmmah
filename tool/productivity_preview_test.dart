@@ -71,7 +71,7 @@ void main() {
                   openDatabase: () async => db,
                   detectTimeZone: () async => 'Asia/Dhaka',
                   initialLanguage: language,
-                  faithRepository:
+                  legacyRepository:
                       AppRepository(uid: uid, firebaseReady: false),
                   faithBuilder: (_) => const SizedBox.shrink(),
                   accountBuilder: (_) => const SizedBox.shrink()))));

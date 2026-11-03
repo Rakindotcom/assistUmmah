@@ -12,11 +12,13 @@ class ProductivitySettingsPage extends StatefulWidget {
       required this.repository,
       required this.options,
       required this.backup,
-      this.onOpenAccount});
+      this.onOpenAccount,
+      this.onOpenContacts});
   final ExperienceRepository repository;
   final ExperienceOptions options;
   final WorkspaceBackup backup;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenContacts;
   @override
   State<ProductivitySettingsPage> createState() =>
       _ProductivitySettingsPageState();
@@ -254,14 +256,24 @@ class _ProductivitySettingsPageState extends State<ProductivitySettingsPage> {
                 icon: const Icon(Icons.restore),
                 label: Text(
                     strings.text('Restore backup', 'ব্যাকআপ ফিরিয়ে আনুন'))),
-            if (widget.onOpenAccount != null) ...[
+            if (widget.onOpenAccount != null ||
+                widget.onOpenContacts != null) ...[
               const Divider(height: 32),
-              ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(strings.text(
-                      'Account and privacy', 'অ্যাকাউন্ট ও গোপনীয়তা')),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _working ? null : widget.onOpenAccount),
+              if (widget.onOpenContacts != null)
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.contact_phone_outlined),
+                    title: Text(
+                        strings.text('Emergency contacts', 'জরুরি যোগাযোগ')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _working ? null : widget.onOpenContacts),
+              if (widget.onOpenAccount != null)
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.text(
+                        'Account and privacy', 'অ্যাকাউন্ট ও গোপনীয়তা')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _working ? null : widget.onOpenAccount),
             ],
           ]),
         ))));

@@ -160,8 +160,9 @@ localization and integration with this root experience.
 The universal root now has a default Faith adapter for the existing Prayer,
 Quran, Dhikr, Growth and Dua screens. It opens those screens lazily, tracks a
 local day rollover and keeps legacy task routes out of the Faith area. Its
-repository must belong to the same signed-in account. The root owns legacy
-notification refresh: with Faith on, only prayer and growth daily reminders
+legacy repository must belong to the same signed-in account. Existing
+emergency contacts remain reachable from Settings through that repository.
+The root owns legacy notification refresh: with Faith on, only prayer and growth daily reminders
 may be scheduled; the old task reminder is cancelled. Turning Faith off
 cancels the daily and prayer-time alerts without deleting Faith history.
 Changing this option and its notification behavior have widget coverage. The

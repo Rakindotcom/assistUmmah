@@ -7,6 +7,7 @@ import '../../app_identity.dart';
 import '../../app_localization.dart';
 import '../../app_repository.dart';
 import '../../app_theme.dart';
+import '../../pages/contacts_page.dart';
 import '../../reminder_session.dart';
 import '../../widgets/app_brand.dart';
 import '../core/records.dart';
@@ -31,7 +32,7 @@ class ProductivityRoot extends StatefulWidget {
   const ProductivityRoot(
       {super.key,
       required this.uid,
-      required this.faithRepository,
+      required this.legacyRepository,
       this.faithBuilder,
       required this.accountBuilder,
       this.remote,
@@ -44,7 +45,7 @@ class ProductivityRoot extends StatefulWidget {
   final Future<LegacyTaskMigration> Function()? prepareLegacyMigration;
   final Future<ProductivityDatabase> Function()? openDatabase;
   final Future<String> Function()? detectTimeZone;
-  final AppRepository faithRepository;
+  final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
   @override
@@ -70,8 +71,8 @@ class _ProductivityRootState extends State<ProductivityRoot>
     final uid = widget.uid,
         remote = widget.remote,
         opener = widget.openDatabase;
-    if (widget.faithRepository.uid != uid) {
-      throw StateError('Faith repository belongs to another account.');
+    if (widget.legacyRepository.uid != uid) {
+      throw StateError('Legacy repository belongs to another account.');
     }
     final prepare = widget.prepareLegacyMigration,
         detector = widget.detectTimeZone;
@@ -198,7 +199,7 @@ class _ProductivityRootState extends State<ProductivityRoot>
             session: session,
             zone: _zone,
             initialLanguage: widget.initialLanguage,
-            faithRepository: widget.faithRepository,
+            legacyRepository: widget.legacyRepository,
             faithBuilder: widget.faithBuilder,
             accountBuilder: widget.accountBuilder);
       });
@@ -209,12 +210,12 @@ class _Experience extends StatefulWidget {
       {required this.session,
       required this.zone,
       required this.initialLanguage,
-      required this.faithRepository,
+      required this.legacyRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final String zone, initialLanguage;
-  final AppRepository faithRepository;
+  final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
   @override
@@ -268,7 +269,7 @@ class _ExperienceState extends State<_Experience> {
                     session: widget.session,
                     options: options,
                     repository: _repository,
-                    faithRepository: widget.faithRepository,
+                    legacyRepository: widget.legacyRepository,
                     faithBuilder: widget.faithBuilder,
                     accountBuilder: widget.accountBuilder));
       });
@@ -279,13 +280,13 @@ class _WorkspaceHome extends StatefulWidget {
       {required this.session,
       required this.options,
       required this.repository,
-      required this.faithRepository,
+      required this.legacyRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final ExperienceOptions options;
   final ExperienceRepository repository;
-  final AppRepository faithRepository;
+  final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
   @override
@@ -309,7 +310,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   void didUpdateWidget(_WorkspaceHome oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.options.faithEnabled != widget.options.faithEnabled ||
-        !identical(oldWidget.faithRepository, widget.faithRepository)) {
+        !identical(oldWidget.legacyRepository, widget.legacyRepository)) {
       _reminders.dispose();
       _replaceReminders();
     }
@@ -317,7 +318,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
 
   void _replaceReminders() {
     _reminders = ReminderSession(
-        repository: widget.faithRepository,
+        repository: widget.legacyRepository,
         enabledDailyKeys:
             widget.options.faithEnabled ? const {'prayer', 'growth'} : const {},
         prayerAlertsEnabled: widget.options.faithEnabled);
@@ -383,10 +384,17 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             repository: widget.repository,
             options: options,
             backup: WorkspaceBackup(widget.session.database),
+            onOpenContacts: () => Navigator.of(context).push(MaterialPageRoute<
+                    void>(
+                builder: (_) => Scaffold(
+                    appBar: AppBar(
+                        title: Text(strings.text(
+                            'Emergency contacts', 'জরুরি যোগাযোগ'))),
+                    body: ContactsPage(repository: widget.legacyRepository)))),
             onOpenAccount: () => Navigator.of(context)
                 .push(MaterialPageRoute<void>(builder: widget.accountBuilder))),
         'faith' => widget.faithBuilder?.call(context) ??
-            FaithModulePage(repository: widget.faithRepository),
+            FaithModulePage(repository: widget.legacyRepository),
         _ => Column(children: [
             Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),

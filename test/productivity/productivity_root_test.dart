@@ -7,6 +7,7 @@ import 'package:sembast/sembast_memory.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:ummah_assist/src/app_repository.dart';
+import 'package:ummah_assist/src/pages/contacts_page.dart';
 import 'package:ummah_assist/src/pages/prayer_page.dart';
 import 'package:ummah_assist/src/productivity/data/experience_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
@@ -41,14 +42,14 @@ void main() {
   }
 
   Widget root(String uid, Future<ProductivityDatabase> Function() open,
-          {bool defaultFaith = false, AppRepository? faithRepository}) =>
+          {bool defaultFaith = false, AppRepository? legacyRepository}) =>
       MaterialApp(
           home: ProductivityRoot(
               uid: uid,
               initialLanguage: 'en',
               openDatabase: open,
               detectTimeZone: () async => 'Asia/Dhaka',
-              faithRepository: faithRepository ??
+              legacyRepository: legacyRepository ??
                   AppRepository(uid: uid, firebaseReady: false),
               faithBuilder: defaultFaith
                   ? null
@@ -101,7 +102,7 @@ void main() {
         modules: [WorkspaceModule.personal, WorkspaceModule.faith])))!;
     addTearDown(() => ProductivitySession.closeAccount(uid));
     await tester.pumpWidget(root(uid, () async => db,
-        faithRepository: _EnabledRemindersRepository(uid)));
+        legacyRepository: _EnabledRemindersRepository(uid)));
     await tester.pumpAndSettle();
     for (var i = 0;
         i < 30 && !calls.any((call) => call.method == 'zonedSchedule');
@@ -163,6 +164,26 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.runAsync(() => ProductivitySession.closeAccount('root-alice'));
+  });
+
+  testWidgets('settings keeps legacy emergency contacts reachable',
+      (tester) async {
+    final uid = 'root-contacts';
+    final db = (await tester.runAsync(() => database(uid)))!;
+    addTearDown(() => ProductivitySession.closeAccount(uid));
+    await tester.pumpWidget(root(uid, () async => db));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Emergency contacts'), 250,
+        scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.text('Emergency contacts'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(ContactsPage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => ProductivitySession.closeAccount(uid));
   });
 
   testWidgets(
