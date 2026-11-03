@@ -19,11 +19,14 @@ import '../data/productivity_session.dart';
 import '../data/task_repository.dart';
 import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
+import '../domain/project.dart';
+import '../domain/task.dart';
 import 'experience_strings.dart';
 import 'faith_module_page.dart';
 import 'onboarding_page.dart';
 import 'productivity_settings_page.dart';
 import 'sync_status_sheet.dart';
+import 'task_editor_page.dart';
 import 'task_workspace_page.dart';
 import 'universal_inbox_page.dart';
 
@@ -297,6 +300,7 @@ class _WorkspaceHome extends StatefulWidget {
 class _WorkspaceHomeState extends State<_WorkspaceHome>
     with WidgetsBindingObserver {
   String _page = 'inbox';
+  bool _adding = false;
   late final _tasks = TaskRepository(widget.session.database);
   late ReminderSession _reminders;
 
@@ -353,6 +357,40 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
     super.dispose();
   }
 
+  Future<void> _quickAdd() async {
+    if (_adding) return;
+    final session = widget.session;
+    final options = widget.options;
+    final workspaceId = options.activeWorkspace;
+    setState(() => _adding = true);
+    try {
+      final records = await session.database.list(workspaceId: workspaceId);
+      if (!mounted || !identical(widget.session, session)) return;
+      await Navigator.of(context).push<bool>(MaterialPageRoute(
+          builder: (_) => ProductivityTaskEditorPage(
+              repository: _tasks,
+              options: options,
+              workspaceId: workspaceId,
+              tasks: records
+                  .where((record) => record.kind == RecordKind.task)
+                  .map(ProductivityTask.fromRecord)
+                  .toList(growable: false),
+              projects: records
+                  .where((record) => record.kind == RecordKind.project)
+                  .map(ProductivityProject.fromRecord)
+                  .toList(growable: false))));
+    } catch (_) {
+      if (mounted) {
+        final strings = ExperienceStrings(widget.options.language);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(strings.text('Could not open the task editor.',
+                'কাজের ফর্ম খোলা যায়নি।'))));
+      }
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final options = widget.options;
@@ -368,6 +406,11 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
       appBar: page == 'settings'
           ? null
           : AppBar(title: const AppBrand(compact: true), actions: [
+              if (page == 'faith')
+                IconButton(
+                    tooltip: strings.text('Quick add task', 'দ্রুত কাজ যোগ'),
+                    onPressed: _adding ? null : () => unawaited(_quickAdd()),
+                    icon: const Icon(Icons.add)),
               if (widget.session.sync != null)
                 StreamBuilder<SyncSnapshot>(
                     stream: widget.session.database.watchSync(),
@@ -391,6 +434,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             repository: widget.repository,
             options: options,
             backup: WorkspaceBackup(widget.session.database),
+            onQuickAdd: _adding ? null : () => unawaited(_quickAdd()),
             onOpenContacts: () => Navigator.of(context).push(MaterialPageRoute<
                     void>(
                 builder: (_) => Scaffold(

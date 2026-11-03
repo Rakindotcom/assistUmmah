@@ -13,12 +13,14 @@ class ProductivitySettingsPage extends StatefulWidget {
       required this.options,
       required this.backup,
       this.onOpenAccount,
-      this.onOpenContacts});
+      this.onOpenContacts,
+      this.onQuickAdd});
   final ExperienceRepository repository;
   final ExperienceOptions options;
   final WorkspaceBackup backup;
   final VoidCallback? onOpenAccount;
   final VoidCallback? onOpenContacts;
+  final VoidCallback? onQuickAdd;
   @override
   State<ProductivitySettingsPage> createState() =>
       _ProductivitySettingsPageState();
@@ -90,7 +92,14 @@ class _ProductivitySettingsPageState extends State<ProductivitySettingsPage> {
   Widget build(BuildContext context) {
     final options = widget.options;
     return Scaffold(
-        appBar: AppBar(title: Text(strings.text('Settings', 'সেটিংস'))),
+        appBar:
+            AppBar(title: Text(strings.text('Settings', 'সেটিংস')), actions: [
+          if (widget.onQuickAdd != null)
+            IconButton(
+                tooltip: strings.text('Quick add task', 'দ্রুত কাজ যোগ'),
+                onPressed: widget.onQuickAdd,
+                icon: const Icon(Icons.add))
+        ]),
         body: SafeArea(
             child: Center(
                 child: ConstrainedBox(

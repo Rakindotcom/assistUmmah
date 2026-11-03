@@ -167,6 +167,13 @@ workspace. Completed, archived, planned and deleted tasks do not appear. A
 surface is still hidden behind the legacy app entry and is not counted as a
 finished requirement in the gap ledger.
 
+The Inbox and Tasks screens retain their add actions. The root also exposes
+quick add from Faith and Settings, using the active workspace and loading its
+current tasks/projects from the local account database before opening the
+editor. The route checks that its session is still active after the read, so a
+late account switch cannot open another user's task form. Widget tests cover
+both entry points; the shipped legacy shell still has its separate add flow.
+
 The universal root now has a default Faith adapter for the existing Prayer,
 Quran, Dhikr, Growth and Dua screens. It opens those screens lazily, tracks a
 local day rollover and keeps legacy task routes out of the Faith area. Its

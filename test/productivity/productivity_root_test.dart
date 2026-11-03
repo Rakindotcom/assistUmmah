@@ -17,6 +17,7 @@ import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
 import 'package:ummah_assist/src/productivity/domain/task.dart';
 import 'package:ummah_assist/src/productivity/ui/productivity_root.dart';
 import 'package:ummah_assist/src/productivity/ui/faith_module_page.dart';
+import 'package:ummah_assist/src/productivity/ui/task_editor_page.dart';
 
 import '../support/native_ui_channels.dart';
 
@@ -71,6 +72,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(FaithModulePage), findsOneWidget);
     expect(find.byType(PrayerPage), findsOneWidget);
+    await tester.tap(find.byTooltip('Quick add task'));
+    for (var i = 0;
+        i < 30 && find.byType(ProductivityTaskEditorPage).evaluate().isEmpty;
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(ProductivityTaskEditorPage), findsOneWidget);
+    expect(
+        tester
+            .widget<ProductivityTaskEditorPage>(
+                find.byType(ProductivityTaskEditorPage))
+            .workspaceId,
+        'personal');
+    await tester.pageBack();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Quick add task'));
+    for (var i = 0;
+        i < 30 && find.byType(ProductivityTaskEditorPage).evaluate().isEmpty;
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(ProductivityTaskEditorPage), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.runAsync(() => ProductivitySession.closeAccount('root-faith'));
