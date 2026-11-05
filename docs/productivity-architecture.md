@@ -122,6 +122,16 @@ time conversion returns no candidates for a spring gap and both candidates for
 a fall overlap. The editor asks the user to resolve an overlap; it does not
 silently shift a nonexistent meeting time.
 
+The Tasks screen's Today view now sums scheduled task estimates across every
+enabled non-Faith workspace in the configured time zone. It counts active
+recurring occurrences, excludes completed and archived work, and does not
+mistake a deadline for scheduled effort. The daily ceiling is the smaller of
+the user's task-capacity setting and workday span; a nonworking day has zero
+planned capacity. The card warns on an overrun and calls out tasks without an
+estimate. Calendar events, buffers and externally imported commitments are
+not yet in this calculation, which the card states. The broader calendar and
+planning requirements remain open.
+
 ## Migration and account preservation
 
 1. The Firestore adapter reads the account deletion marker and legacy task

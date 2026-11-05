@@ -130,6 +130,24 @@ class ProductivityDatabase {
                   (workspaceId == null || record.workspaceId == workspaceId))
               .toList(growable: false));
 
+  /// Watches a bounded set of record kinds across this account's workspaces.
+  /// Useful for planning views that must not treat each workspace as having
+  /// an independent daily capacity.
+  Stream<List<WorkspaceRecord>> watchKinds(Set<RecordKind> kinds,
+      {bool includeDeleted = false}) {
+    if (kinds.isEmpty) throw ArgumentError.value(kinds, 'kinds');
+    return _records
+        .query(
+            finder: Finder(
+                filter: Filter.inList(
+                    'kind', kinds.map((kind) => kind.name).toList())))
+        .onSnapshots(_db)
+        .map((rows) => rows
+            .map((row) => _decode(row.value))
+            .where((record) => includeDeleted || !record.deleted)
+            .toList(growable: false));
+  }
+
   /// Record, audit entry, clock and outbox commit together before returning.
   Future<WorkspaceRecord> mutate(
           {required RecordKind kind,

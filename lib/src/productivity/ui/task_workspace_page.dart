@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/records.dart';
 import '../data/task_repository.dart';
 import '../domain/calendar_day.dart';
+import '../domain/daily_task_capacity.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
 import '../domain/project.dart';
@@ -32,6 +33,7 @@ class TaskWorkspacePage extends StatefulWidget {
 
 class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
   late Stream<List<WorkspaceRecord>> _records;
+  late Stream<List<WorkspaceRecord>> _planningRecords;
   TaskWorkspaceView _view = TaskWorkspaceView.inbox;
   String _query = '';
   String? _projectId;
@@ -49,8 +51,13 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
     });
   }
 
-  void _watch() => _records = widget.repository.database
-      .watch(workspaceId: widget.workspaceId, includeDeleted: true);
+  void _watch() {
+    _records = widget.repository.database
+        .watch(workspaceId: widget.workspaceId, includeDeleted: true);
+    _planningRecords = widget.repository.database
+        .watchKinds({RecordKind.task, RecordKind.taskOccurrence});
+  }
+
   @override
   void didUpdateWidget(TaskWorkspacePage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -178,6 +185,48 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
         }
       });
 
+  Widget _capacityContent(
+      AsyncSnapshot<List<WorkspaceRecord>> snapshot, CalendarDay day) {
+    if (snapshot.hasError) {
+      return Text(strings.text('Could not calculate task capacity.',
+          'কাজের সময়সীমা হিসাব করা যায়নি।'));
+    }
+    if (!snapshot.hasData) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    try {
+      final enabled = widget.options.modules
+          .where((module) => module != WorkspaceModule.faith)
+          .map((module) => module.name)
+          .toSet();
+      final records = snapshot.data!;
+      final tasks = records
+          .where((record) =>
+              record.kind == RecordKind.task &&
+              enabled.contains(record.workspaceId))
+          .map(ProductivityTask.fromRecord);
+      final occurrences = {
+        for (final record in records
+            .where((record) => record.kind == RecordKind.taskOccurrence))
+          record.id: TaskOccurrence.fromRecord(record)
+      };
+      final plan = DailyTaskCapacity.calculate(
+          tasks: tasks,
+          day: day,
+          options: widget.options,
+          isCompleted: (task) => task.recurrence == null
+              ? task.status == TaskStatus.completed
+              : occurrences[TaskRepository.occurrenceId(task.id, day)]
+                      ?.status ==
+                  TaskStatus.completed);
+      return _TaskCapacityCard(plan: plan, strings: strings);
+    } on FormatException {
+      return Text(strings.text(
+          'Some saved planning data needs recovery. Open Settings to export a backup.',
+          'কিছু পরিকল্পনার তথ্য পুনরুদ্ধার করতে হবে। সেটিংস থেকে ব্যাকআপ নিন।'));
+    }
+  }
+
   Widget _content(BuildContext context, List<WorkspaceRecord> records) {
     final day = today;
     final tasks = records
@@ -290,6 +339,13 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
                             icon: const Icon(Icons.create_new_folder_outlined),
                             label: Text(strings.text('Project', 'প্রকল্প'))),
                       ]),
+                  if (_view == TaskWorkspaceView.today) ...[
+                    const SizedBox(height: 16),
+                    StreamBuilder<List<WorkspaceRecord>>(
+                        stream: _planningRecords,
+                        builder: (context, snapshot) =>
+                            _capacityContent(snapshot, day)),
+                  ],
                   const SizedBox(height: 16),
                   Text(
                       '${viewLabel(_view)} · ${strings.number(visible.length)}',
@@ -436,6 +492,68 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
         const SliverToBoxAdapter(child: SizedBox(height: 112)),
       ]),
     );
+  }
+}
+
+class _TaskCapacityCard extends StatelessWidget {
+  const _TaskCapacityCard({required this.plan, required this.strings});
+
+  final DailyTaskCapacity plan;
+  final ExperienceStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final progress = plan.capacityMinutes == 0
+        ? 0.0
+        : (plan.plannedMinutes / plan.capacityMinutes).clamp(0.0, 1.0);
+    return Card(
+        color: plan.overloaded ? colors.errorContainer : null,
+        child: Padding(
+            padding: const EdgeInsets.all(16),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                  strings.text(
+                      'Planned task effort today', 'আজ নির্ধারিত কাজের সময়'),
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(strings.text(
+                  '${strings.number(plan.plannedMinutes)} / ${strings.number(plan.capacityMinutes)} min of task capacity',
+                  'কাজের সময় ${strings.number(plan.plannedMinutes)} / ${strings.number(plan.capacityMinutes)} মিনিট')),
+              const SizedBox(height: 6),
+              Text(
+                  strings.text(
+                      'Includes enabled workspaces. Calendar events are not included.',
+                      'চালু কর্মপরিসরগুলো ধরা হয়েছে। ক্যালেন্ডারের সময় ধরা হয়নি।'),
+                  style: Theme.of(context).textTheme.bodySmall),
+              if (plan.capacityMinutes > 0) ...[
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                    value: progress,
+                    semanticsLabel: strings.text(
+                        'Task capacity used', 'ব্যবহৃত কাজের সময়')),
+              ],
+              if (plan.nonworkingDay) ...[
+                const SizedBox(height: 8),
+                Text(strings.text('This is a nonworking day in Settings.',
+                    'সেটিংসে দিনটি কাজের দিন নয়।')),
+              ],
+              if (plan.overloaded) ...[
+                const SizedBox(height: 8),
+                Text(
+                    strings.text(
+                        'At least ${strings.number(plan.overByMinutes)} min over your task capacity.',
+                        'কাজের নির্ধারিত সময় অন্তত ${strings.number(plan.overByMinutes)} মিনিট বেশি।'),
+                    style: TextStyle(color: colors.onErrorContainer)),
+              ],
+              if (plan.unestimatedCount > 0) ...[
+                const SizedBox(height: 8),
+                Text(strings.text(
+                    '${strings.number(plan.unestimatedCount)} scheduled task${plan.unestimatedCount == 1 ? '' : 's'} ${plan.unestimatedCount == 1 ? 'has' : 'have'} no estimate; actual effort may be higher.',
+                    '${strings.number(plan.unestimatedCount)}টি নির্ধারিত কাজের সময় অনুমান করা হয়নি; মোট সময় আরও বেশি হতে পারে।')),
+              ],
+            ])));
   }
 }
 

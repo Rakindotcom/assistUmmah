@@ -6,6 +6,7 @@ import 'package:ummah_assist/src/app_theme.dart';
 import 'package:ummah_assist/src/productivity/core/records.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/task_repository.dart';
+import 'package:ummah_assist/src/productivity/domain/calendar_day.dart';
 import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
 import 'package:ummah_assist/src/productivity/domain/task.dart';
 import 'package:ummah_assist/src/productivity/domain/project.dart';
@@ -155,26 +156,80 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('project save failures retain the draft and retry the same project identity', (tester) async {
+  testWidgets(
+      'project save failures retain the draft and retry the same project identity',
+      (tester) async {
     final failing = _ProjectFailsOnce(db);
-    await tester.pumpWidget(app(TaskWorkspacePage(repository: failing,
-        options: options('en'), workspaceId: 'personal')));
+    await tester.pumpWidget(app(TaskWorkspacePage(
+        repository: failing, options: options('en'), workspaceId: 'personal')));
     await tester.pumpAndSettle();
     await scrollTo(tester, find.text('Project'));
     await tester.tap(find.text('Project'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextField, 'Project name'), 'Retain my project');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Project name'), 'Retain my project');
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
-    expect(find.text('Could not save. Your draft is kept; try again.'), findsOneWidget);
+    expect(find.text('Could not save. Your draft is kept; try again.'),
+        findsOneWidget);
     expect(find.text('Retain my project'), findsOneWidget);
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
     expect(find.text('New project'), findsNothing);
     expect(failing.identities.toSet(), hasLength(1));
-    expect((await tester.runAsync(() => db.list(kind: RecordKind.project)))!.single.fields['name'], 'Retain my project');
+    expect(
+        (await tester.runAsync(() => db.list(kind: RecordKind.project)))!
+            .single
+            .fields['name'],
+        'Retain my project');
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+      'Today shows capacity overrun and unknown estimates at phone width',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final day = CalendarDay(2026, 11, 3);
+    await tester.runAsync(() async {
+      for (final (id, workspace, minutes) in [
+        ('first', 'personal', 90),
+        ('second', 'work', 45),
+        ('unknown', 'personal', 0)
+      ]) {
+        await repository.createTask(ProductivityTask(
+            id: id,
+            workspaceId: workspace,
+            title: id,
+            scheduledDay: day,
+            estimatedMinutes: minutes));
+      }
+    });
+    final preferences = ExperienceOptions(
+        language: 'en',
+        timeZone: 'Asia/Dhaka',
+        modules: [WorkspaceModule.personal, WorkspaceModule.work],
+        dailyCapacityMinutes: 120,
+        completedOnboarding: true);
+    await tester.pumpWidget(app(
+        TaskWorkspacePage(
+            repository: repository,
+            options: preferences,
+            workspaceId: 'personal',
+            clock: () => DateTime.utc(2026, 11, 3, 3)),
+        scale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Today'));
+    await tester.pumpAndSettle();
+    expect(find.text('135 / 120 min of task capacity'), findsOneWidget);
+    expect(
+        find.text('At least 15 min over your task capacity.'), findsOneWidget);
+    expect(find.textContaining('1 scheduled task has no estimate'),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 
@@ -195,7 +250,9 @@ class _ProjectFailsOnce extends TaskRepository {
   @override
   Future<ProductivityProject> createProject(ProductivityProject project) async {
     identities.add(project.id);
-    if (identities.length == 1) throw StateError('Synthetic project storage error');
+    if (identities.length == 1) {
+      throw StateError('Synthetic project storage error');
+    }
     return super.createProject(project);
   }
 }
