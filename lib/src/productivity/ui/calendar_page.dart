@@ -91,7 +91,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                                     () => _day = CalendarDay.fromDate(picked));
                               }
                             },
-                            child: Text(_day.toString()))),
+                            child: Text(strings.number(_day.toString())))),
                     IconButton(
                         tooltip: strings.text('Next day', 'পরের দিন'),
                         onPressed: () => setState(() => _day = _day.addDays(1)),
@@ -118,6 +118,13 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                                         TimeOfDay.fromDateTime(value),
                                         alwaysUse24HourFormat:
                                             widget.options.use24HourClock);
+                            final module = WorkspaceModule.values
+                                .where(
+                                    (value) => value.name == event.workspaceId)
+                                .firstOrNull;
+                            final workspace = module == null
+                                ? event.workspaceId
+                                : strings.module(module);
                             return Card(
                                 margin: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 4),
@@ -125,7 +132,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                                     onTap: () => _edit(event),
                                     title: Text(event.title),
                                     subtitle: Text(
-                                        '${time(start)}–${time(end)} · ${event.workspaceId}${overlap ? '\n${strings.text('Overlaps another event', 'অন্য ইভেন্টের সঙ্গে সময় মিলে গেছে')}' : ''}'),
+                                        '${strings.number(time(start))}–${strings.number(time(end))} · $workspace${overlap ? '\n${strings.text('Overlaps another event', 'অন্য ইভেন্টের সঙ্গে সময় মিলে গেছে')}' : ''}'),
                                     isThreeLine: overlap,
                                     trailing: const Icon(Icons.chevron_right)));
                           })),
@@ -249,12 +256,15 @@ class _EventEditorState extends State<CalendarEventEditorPage> {
       if (widget.event == null) {
         await widget.repository.create(event);
       } else {
-        await widget.repository.edit(event.id, {
-          'title': event.title,
-          'start': event.start.toIso8601String(),
-          'end': event.end.toIso8601String(),
-          'notes': event.notes,
-        });
+        final original = widget.event!;
+        final patch = <String, Object?>{
+          if (event.title != original.title) 'title': event.title,
+          if (event.start != original.start)
+            'start': event.start.toIso8601String(),
+          if (event.end != original.end) 'end': event.end.toIso8601String(),
+          if (event.notes != original.notes) 'notes': event.notes,
+        };
+        if (patch.isNotEmpty) await widget.repository.edit(event.id, patch);
       }
       if (mounted) Navigator.pop(context, true);
     } on FormatException {
@@ -281,7 +291,7 @@ class _EventEditorState extends State<CalendarEventEditorPage> {
       final time = MaterialLocalizations.of(context).formatTimeOfDay(
           TimeOfDay.fromDateTime(local),
           alwaysUse24HourFormat: widget.options.use24HourClock);
-      return '${CalendarDay.fromDate(local)} · $time';
+      return '${strings.number(CalendarDay.fromDate(local).toString())} · ${strings.number(time)}';
     }
 
     return Scaffold(

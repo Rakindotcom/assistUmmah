@@ -239,6 +239,10 @@ fresh patch. The immutable audit history names the superseded operations.
 Field conflicts show the interval as localized dates and times. A rejected
 event no longer holds unrelated task writes in the same sync batch. Repository,
 coordinator and 320 px enlarged-text widget tests cover this recovery path.
+The event editor submits only fields the owner changed, so saving a stale form
+does not revert a concurrent edit to another field. Bangla date digits, event
+times and workspace names are localized in the day list; narrow-phone widget
+tests cover both the concurrent edit and Bangla display.
 
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping

@@ -58,6 +58,7 @@ void main() {
     expect(find.textContaining('Overlaps another event'), findsNWidgets(2));
     await tester.tap(find.text('Doctor visit'));
     await tester.pumpAndSettle();
+    await tester.runAsync(() => repo.edit('a', {'notes': 'Edited elsewhere'}));
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Title'), 'Dentist appointment');
     tester.testTextInput.hide();
@@ -65,11 +66,51 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save event'));
     await tester.pumpAndSettle();
+    final saved =
+        (await tester.runAsync(() => db.get(RecordKind.calendarEvent, 'a')))!;
+    expect(saved.fields['title'], 'Dentist appointment');
+    await tester.runAsync(() => repo.watchEvents().firstWhere((events) =>
+        events.any((event) =>
+            event.id == 'a' && event.title == 'Dentist appointment')));
+    await tester.pumpAndSettle();
     expect(find.text('Dentist appointment'), findsOneWidget);
     expect(
         (await tester.runAsync(() => db.get(RecordKind.calendarEvent, 'a')))!
-            .fields['title'],
-        'Dentist appointment');
+            .fields['notes'],
+        'Edited elsewhere');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Bangla date and workspace labels use localized text',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final db = (await tester.runAsync(() => ProductivityDatabase.open(
+        uid: 'calendar-bangla',
+        factory: databaseFactoryMemory,
+        path: 'calendar-bangla')))!;
+    addTearDown(db.close);
+    await tester.runAsync(() => CalendarEventRepository(db).create(
+        CalendarEvent(
+            id: 'visit',
+            workspaceId: 'personal',
+            title: 'ডাক্তার দেখানো',
+            start: DateTime.utc(2026, 11, 5, 9),
+            end: DateTime.utc(2026, 11, 5, 10),
+            timeZone: 'Asia/Dhaka')));
+    await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: ProductivityCalendarPage(
+            repository: CalendarEventRepository(db),
+            options: ExperienceOptions(
+                language: 'bn', timeZone: 'Asia/Dhaka', use24HourClock: true),
+            clock: () => DateTime.utc(2026, 11, 5))));
+    await tester.pumpAndSettle();
+    expect(find.text('২০২৬-১১-০৫'), findsOneWidget);
+    expect(find.textContaining('ব্যক্তিগত'), findsOneWidget);
+    expect(find.textContaining('১৫'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
