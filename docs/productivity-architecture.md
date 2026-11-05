@@ -127,10 +127,10 @@ enabled non-Faith workspace in the configured time zone. It counts active
 recurring occurrences, excludes completed and archived work, and does not
 mistake a deadline for scheduled effort. The daily ceiling is the smaller of
 the user's task-capacity setting and workday span; a nonworking day has zero
-planned capacity. The card warns on an overrun and calls out tasks without an
-estimate. Calendar events, buffers and externally imported commitments are
-not yet in this calculation, which the card states. The broader calendar and
-planning requirements remain open.
+planned capacity. Local calendar events reduce that ceiling once per occupied
+minute, even when events overlap. The card warns on an overrun and calls out
+tasks without an estimate. Buffers and externally imported commitments remain
+outside this estimate; broader planning requirements remain open.
 
 Open one-off tasks can be moved to tomorrow from the task action menu. This
 stores a civil day rather than inventing a wall-clock instant, increments the
@@ -210,6 +210,8 @@ checks owner, schema, checksum, duplicates, record types and history identities
 before writes. A recomputed checksum cannot bypass task field validation.
 Cancelled pickers do not report success. Exported JSON is explicitly described
 as unencrypted. Native picker behavior still needs emulator/device verification.
+The [file picker API](https://pub.dev/packages/file_picker) supports the target
+platforms, but that package support is not app-level platform verification.
 
 The hidden root now includes a Calendar tab. Locally owned events use UTC
 start/end instants plus an IANA time zone and workspace identity. The editor
@@ -228,8 +230,6 @@ events count once; workspaces disabled in preferences are excluded. A DST
 transition uses actual elapsed time between resolved workday boundaries.
 External calendars, travel buffers and automatic task placement are still
 outside this capacity estimate.
-The [file picker API](https://pub.dev/packages/file_picker) supports the target
-platforms, but that package support is not app-level platform verification.
 
 ## Verification scope
 
