@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/records.dart';
 import '../data/calendar_event_repository.dart';
+import '../data/daily_planning_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/calendar_day.dart';
 import '../domain/calendar_event.dart';
@@ -9,6 +10,7 @@ import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
 import '../domain/task.dart';
 import 'calendar_day_timeline.dart';
+import 'daily_planning_page.dart';
 import 'experience_strings.dart';
 
 class ProductivityCalendarPage extends StatefulWidget {
@@ -36,6 +38,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
   late Stream<List<ProductivityTask>>? _tasks =
       widget.taskRepository?.watchAllTasks();
   bool _timeline = false;
+  bool _planning = false;
   ExperienceStrings get strings => ExperienceStrings(widget.options.language);
 
   @override
@@ -56,6 +59,23 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
             options: widget.options,
             day: _day,
             event: event)));
+  }
+
+  Future<void> _plan() async {
+    final tasks = widget.taskRepository;
+    if (tasks == null || _planning) return;
+    setState(() => _planning = true);
+    try {
+      final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+          builder: (_) => DailyPlanningPage(
+              repository:
+                  DailyPlanningRepository(tasks.database, clock: widget.clock),
+              day: _day,
+              options: widget.options)));
+      if (mounted && saved == true) setState(() => _timeline = true);
+    } finally {
+      if (mounted) setState(() => _planning = false);
+    }
   }
 
   @override
@@ -122,6 +142,16 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                             ? Icons.view_agenda_outlined
                             : Icons.view_timeline_outlined)),
                   ])),
+              if (widget.taskRepository != null)
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                            onPressed: _planning ? null : _plan,
+                            icon: const Icon(Icons.event_available_outlined),
+                            label: Text(strings.text(
+                                'Plan this day', 'দিনের পরিকল্পনা'))))),
               Expanded(
                   child: _timeline
                       ? _tasks == null
@@ -196,7 +226,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
           events: events,
           tasks: tasks,
           options: widget.options,
-          now: (widget.clock ?? DateTime.now)(),
+          now: widget.clock?.call(),
           onOpen: _edit,
           onOpenTask: widget.onOpenTask);
 }

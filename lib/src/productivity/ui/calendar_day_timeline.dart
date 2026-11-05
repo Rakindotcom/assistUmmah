@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class CalendarDayTimeline extends StatefulWidget {
     required this.onOpen,
     this.onOpenTask,
     this.now,
+    this.clock,
   });
 
   final CalendarDay day;
@@ -32,6 +34,10 @@ class CalendarDayTimeline extends StatefulWidget {
   final ValueChanged<ProductivityTask>? onOpenTask;
   final DateTime? now;
 
+  /// A live clock can be injected without disabling minute and resume updates.
+  /// [now] instead renders a fixed snapshot with no timer.
+  final DateTime Function()? clock;
+
   static const double pixelsPerHour = 72;
   static const double gutter = 72;
   static const double minimumLaneWidth = 112;
@@ -40,9 +46,54 @@ class CalendarDayTimeline extends StatefulWidget {
   State<CalendarDayTimeline> createState() => _CalendarDayTimelineState();
 }
 
-class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
+class _CalendarDayTimelineState extends State<CalendarDayTimeline>
+    with WidgetsBindingObserver {
   late final ScrollController _vertical =
       ScrollController(initialScrollOffset: _initialOffset());
+  Timer? _minuteTimer;
+  bool _active = true;
+
+  DateTime _now() =>
+      (widget.now ?? widget.clock?.call() ?? DateTime.now()).toUtc();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _active = WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _scheduleMinute();
+  }
+
+  @override
+  void didUpdateWidget(CalendarDayTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.now != widget.now || oldWidget.clock != widget.clock) {
+      _scheduleMinute();
+    }
+  }
+
+  void _scheduleMinute() {
+    _minuteTimer?.cancel();
+    if (!_active || widget.now != null) return;
+    final now = _now();
+    final elapsed = now.second * Duration.microsecondsPerSecond +
+        now.millisecond * Duration.microsecondsPerMillisecond +
+        now.microsecond;
+    _minuteTimer = Timer(
+        Duration(microseconds: Duration.microsecondsPerMinute - elapsed), () {
+      if (!mounted) return;
+      setState(() {});
+      _scheduleMinute();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _active = state == AppLifecycleState.resumed;
+    if (_active && widget.now == null && mounted) setState(() {});
+    _scheduleMinute();
+  }
 
   double _initialOffset() {
     final place = PlanningTimeZone.location(widget.options.timeZone);
@@ -51,7 +102,7 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
             .toUtc();
     final next = widget.day.addDays(1);
     final end = tz.TZDateTime(place, next.year, next.month, next.day).toUtc();
-    final now = (widget.now ?? DateTime.now()).toUtc();
+    final now = _now();
     final today = now.isBefore(end) && !now.isBefore(start);
     final enabled = widget.options.modules.map((module) => module.name).toSet();
     final starts = <({DateTime start, DateTime end})>[
@@ -87,6 +138,8 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _minuteTimer?.cancel();
     _vertical.dispose();
     super.dispose();
   }
@@ -98,7 +151,7 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
     final options = widget.options;
     final events = widget.events;
     final tasks = widget.tasks;
-    final now = (widget.now ?? DateTime.now()).toUtc();
+    final now = _now();
     final start = tz.TZDateTime(place, day.year, day.month, day.day).toUtc();
     final next = day.addDays(1);
     final end = tz.TZDateTime(place, next.year, next.month, next.day).toUtc();
@@ -140,18 +193,6 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
         final order = a.start.compareTo(b.start);
         return order != 0 ? order : a.id.compareTo(b.id);
       });
-    final laneEnds = <DateTime>[];
-    for (final entry in entries) {
-      var lane = laneEnds.indexWhere((value) => !value.isAfter(entry.start));
-      if (lane < 0) {
-        lane = laneEnds.length;
-        laneEnds.add(entry.end);
-      } else {
-        laneEnds[lane] = entry.end;
-      }
-      entry.lane = lane;
-    }
-
     final strings = ExperienceStrings(options.language);
     final localizations = MaterialLocalizations.of(context);
     String time(DateTime instant) {
@@ -162,6 +203,16 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
       return strings.number(formatted);
     }
 
+    String endpoint(DateTime instant) {
+      final localDay = CalendarDay.fromDate(tz.TZDateTime.from(instant, place));
+      return localDay == day
+          ? time(instant)
+          : '${strings.number(localDay.toString())} ${time(instant)}';
+    }
+
+    String range(_TimelineEntry entry) =>
+        '${endpoint(entry.originalStart)}–${endpoint(entry.originalEnd)}';
+
     String description(_TimelineEntry entry) {
       final module = WorkspaceModule.values
           .where((value) => value.name == entry.workspaceId)
@@ -171,18 +222,67 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
       final source = entry.task == null
           ? strings.text('Event', 'ইভেন্ট')
           : strings.text('Scheduled task', 'সময় নির্ধারিত কাজ');
-      return '$source · $workspace · ${entry.title} · ${time(entry.originalStart)}–${time(entry.originalEnd)}';
+      return '$source · $workspace · ${entry.title} · ${range(entry)}';
     }
 
-    final height = minutes * CalendarDayTimeline.pixelsPerHour / 60 + 24;
+    final labelStyle = Theme.of(context).textTheme.labelMedium;
+    final textScaler = MediaQuery.textScalerOf(context);
+    TextPainter measure(String value) => TextPainter(
+        text: TextSpan(text: value, style: labelStyle),
+        textDirection: Directionality.of(context),
+        textScaler: textScaler)
+      ..layout();
+    final line = measure('Ag');
+    var minimumHeight = math.max(48.0, line.height * 2 + 6);
+    line.dispose();
+    var minimumLaneWidth = CalendarDayTimeline.minimumLaneWidth;
+    for (final entry in entries) {
+      final label = measure(range(entry));
+      final title = measure(entry.title);
+      minimumLaneWidth = math.max(minimumLaneWidth, label.width + 20);
+      minimumHeight = math.max(minimumHeight, label.height + title.height + 6);
+      label.dispose();
+      title.dispose();
+    }
+    double pixels(Duration value) =>
+        value.inMicroseconds *
+        CalendarDayTimeline.pixelsPerHour /
+        Duration.microsecondsPerHour;
+    double blockHeight(_TimelineEntry entry) =>
+        math.max(minimumHeight, pixels(entry.end.difference(entry.start)) - 4);
+
+    // Minimum tap targets and readable labels can extend beyond a short event.
+    // Allocate their rendered extents so adjacent short events cannot cover
+    // each other's labels or intercept each other's taps.
+    final laneEnds = <double>[];
+    for (final entry in entries) {
+      final top = pixels(entry.start.difference(start));
+      final bottom = top + blockHeight(entry);
+      var lane = laneEnds.indexWhere((value) => value <= top);
+      if (lane < 0) {
+        lane = laneEnds.length;
+        laneEnds.add(bottom);
+      } else {
+        laneEnds[lane] = bottom;
+      }
+      entry.lane = lane;
+    }
+
+    final height = entries.fold<double>(
+        minutes * CalendarDayTimeline.pixelsPerHour / 60 + 24,
+        (current, entry) => math.max(
+            current,
+            pixels(entry.start.difference(start)) +
+                6 +
+                blockHeight(entry) +
+                8));
     return LayoutBuilder(builder: (context, constraints) {
       final visibleWidth = constraints.maxWidth;
       final width = math.max(
           visibleWidth,
           CalendarDayTimeline.gutter +
               12 +
-              math.max(1, laneEnds.length) *
-                  CalendarDayTimeline.minimumLaneWidth);
+              math.max(1, laneEnds.length) * minimumLaneWidth);
       final laneWidth = (width - CalendarDayTimeline.gutter - 12) /
           math.max(1, laneEnds.length);
       return SingleChildScrollView(
@@ -220,9 +320,8 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
                               ])),
                         if (now.isAfter(start) && now.isBefore(end))
                           Positioned(
-                              top: now.difference(start).inMinutes *
-                                  CalendarDayTimeline.pixelsPerHour /
-                                  60,
+                              key: const ValueKey('calendar-timeline-now'),
+                              top: pixels(now.difference(start)),
                               left: CalendarDayTimeline.gutter,
                               right: 0,
                               child: Semantics(
@@ -236,29 +335,17 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
                                           .error))),
                         for (final entry in entries)
                           Positioned(
-                              top: entry.start.difference(start).inMinutes *
-                                      CalendarDayTimeline.pixelsPerHour /
-                                      60 +
-                                  6,
+                              top: pixels(entry.start.difference(start)) + 6,
                               left: CalendarDayTimeline.gutter +
                                   entry.lane * laneWidth,
                               width: laneWidth - 4,
-                              height: math.max(
-                                  20,
-                                  entry.end.difference(entry.start).inMinutes *
-                                          CalendarDayTimeline.pixelsPerHour /
-                                          60 -
-                                      4),
+                              height: blockHeight(entry),
                               child: Material(
                                   key: ValueKey(
                                       'calendar-${entry.task == null ? 'event' : 'task'}-${entry.id}'),
-                                  color: entry.task == null
-                                      ? Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .secondaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(8),
                                   clipBehavior: Clip.antiAlias,
                                   child: Tooltip(
@@ -271,10 +358,50 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
                                                   ? null
                                                   : () => widget
                                                       .onOpenTask!(entry.task!),
-                                          child: Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8, vertical: 3),
-                                              child: Text('${entry.title}  ${time(entry.originalStart)}–${time(entry.originalEnd)}', maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelMedium)))))),
+                                          child: Stack(children: [
+                                            Positioned(
+                                                left: 0,
+                                                top: 0,
+                                                width: 4,
+                                                height: math.min(
+                                                    blockHeight(entry),
+                                                    math.max(
+                                                        1.0,
+                                                        pixels(entry.end
+                                                            .difference(
+                                                                entry.start)))),
+                                                child: ColoredBox(
+                                                    key: ValueKey(
+                                                        'calendar-duration-${entry.task == null ? 'event' : 'task'}-${entry.id}'),
+                                                    color: entry.task == null
+                                                        ? Theme.of(context)
+                                                            .colorScheme
+                                                            .primary
+                                                        : Theme.of(context)
+                                                            .colorScheme
+                                                            .secondary)),
+                                            Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 3),
+                                                child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(entry.title,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: labelStyle),
+                                                      Text(range(entry),
+                                                          maxLines: 1,
+                                                          style: labelStyle),
+                                                    ])),
+                                          ]))))),
                       ])))));
     });
   }

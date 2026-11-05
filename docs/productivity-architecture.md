@@ -158,9 +158,12 @@ invent completion timestamps or convert a soft scheduled day into a deadline.
 An orphan recurring instance remains a recoverable standalone task.
 
 The fence and adapter are **not deployed or called by the legacy UI**. Main-shell
-cutover, growth/checklist migration, native migration testing and route coverage
-remain open. Do not activate the fence before replacing every legacy task write
-route and preparing account-deletion/privacy assets.
+dependency wiring, an actual Firestore adapter migration/replay test and live
+deployment verification remain open. The new root retains Faith data through
+its account-matched legacy repository; its prayer/growth history and reports
+do not depend on the legacy task document. General habit migration remains
+separate work. Do not activate the fence before replacing every legacy task
+write route and verifying account-deletion/privacy deployment.
 
 ## Preferences and UI
 
@@ -193,14 +196,20 @@ late account switch cannot open another user's task form. Widget tests cover
 both entry points; the shipped legacy shell still has its separate add flow.
 
 The universal root now has a default Faith adapter for the existing Prayer,
-Quran, Dhikr, Growth and Dua screens. It opens those screens lazily, tracks a
+Quran, Dhikr, Growth and Dua screens, plus prayer/growth history, reports and
+trends. It opens those screens lazily, tracks a
 local day rollover and keeps legacy task routes out of the Faith area. Its
 legacy repository must belong to the same signed-in account. Existing
 emergency contacts remain reachable from Settings through that repository.
 The root owns legacy notification refresh: with Faith on, only prayer and growth daily reminders
 may be scheduled; the old task reminder is cancelled. Turning Faith off
 cancels the daily and prayer-time alerts without deleting Faith history.
-Changing this option and its notification behavior have widget coverage. The
+Changing this option and its notification behavior have widget coverage.
+An explicit notification opt-out flows through the root and every nested
+Faith history/trends/prayer route for the isolated offline preview. Tests
+assert zero notification initialization, cancellation or scheduling on that path.
+Navigation labels follow the chosen language; existing Faith page bodies
+still need full English localization. The
 main app still enters `HomeShell`, so this adapter does not yet appear in the
 release APK. Existing Faith screen content is still Bengali-only; English
 localization remains open.
@@ -247,13 +256,32 @@ tests cover both the concurrent edit and Bangla display.
 An optional hourly day view now lays local events and scheduled tasks with time
 estimates on an elapsed-time grid with separate horizontal lanes for overlaps.
 It clips blocks at local day boundaries,
-uses 23/25-hour grids across daylight-saving changes, marks the current time,
+uses 23/25-hour grids across daylight-saving changes, refreshes the current-time
+marker each minute and on resume,
 and opens near the first upcoming event or the current hour. Narrow-phone,
 enlarged-text and DST widget tests cover this view. The agenda remains
 available from the same calendar switch. Tasks without estimates or a clock
 time are not assigned a fabricated block. Event and task blocks have distinct
 colors and open their respective editors. External calendar integration and
 drag-to-reschedule remain unimplemented.
+
+The Calendar tab also opens a reviewed daily planner. A deterministic engine
+places eligible untimed tasks by priority, deadline, planned day and manual
+order into contiguous free intervals. It respects enabled workspaces, work
+hours, nonworking days, estimates, current time, completed recurring
+occurrences, unfinished prerequisites/subtasks and the shared daily budget.
+Existing timed tasks and local events remain fixed. Unsupported recurrence,
+missing estimates and work that does not fit receive explicit explanations.
+The review shows exact zone labels and elapsed duration across DST changes.
+
+Previewing a plan writes nothing. Applying it compares an account-scoped
+fingerprint of the reviewed tasks, events, occurrences, references and
+preferences inside one local transaction, rechecks current time and validates
+every task before committing all schedule patches, history and outbox entries.
+Changed, expired, repeated or cross-account reviews fail without partial writes.
+New slots leave five minutes for review and reviews expire after fifteen minutes.
+This is local reviewed placement; background replanning, calendar connections,
+travel/buffer allowances and recurring time-block editing remain open.
 
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
