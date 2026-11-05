@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:sembast/sembast.dart';
 
 import '../core/records.dart';
+import '../domain/calendar_event.dart';
 import 'database_platform.dart';
 
 class ProductivityDatabase {
@@ -371,8 +372,8 @@ class ProductivityDatabase {
     }
     final conflicts = rawConflicts.map((raw) {
       try {
-        final conflict = FieldConflict.fromJson(
-            Map<String, dynamic>.from(raw as Map));
+        final conflict =
+            FieldConflict.fromJson(Map<String, dynamic>.from(raw as Map));
         final source = recordsByKey[conflict.recordKey];
         final origin = historyById[conflict.operationId];
         final patch = origin?['patch'];
@@ -571,8 +572,8 @@ class ProductivityDatabase {
           revision: record.revision,
           modifiedAtMillis: now);
       final rows = await _records.find(transaction);
-      validate(candidate,
-          List.unmodifiable(rows.map((row) => _decode(row.value))));
+      validate(
+          candidate, List.unmodifiable(rows.map((row) => _decode(row.value))));
       final mutation = RecordMutation(
           kind: record.kind,
           id: record.id,
@@ -601,8 +602,10 @@ class ProductivityDatabase {
     if (current.operationId != expected.operationId ||
         current.cloudStamp != expected.cloudStamp ||
         current.workspaceId != expected.workspaceId ||
-        canonicalJson(current.cloudValue) != canonicalJson(expected.cloudValue) ||
-        canonicalJson(current.localValue) != canonicalJson(expected.localValue)) {
+        canonicalJson(current.cloudValue) !=
+            canonicalJson(expected.cloudValue) ||
+        canonicalJson(current.localValue) !=
+            canonicalJson(expected.localValue)) {
       throw StateError('Conflict changed during review.');
     }
     return current;
@@ -701,6 +704,9 @@ class ProductivityDatabase {
     final old = await _records.record(incoming.key).get(transaction);
     final merged =
         old == null ? incoming : mergeRecords(_decode(old), incoming);
+    if (merged.kind == RecordKind.calendarEvent) {
+      CalendarEvent.fromRecord(merged);
+    }
     await _records.record(merged.key).put(transaction, merged.toJson());
     for (final entry in incoming.fields.entries) {
       final conflictKey = '${incoming.key}--${entry.key}';
@@ -709,7 +715,8 @@ class ProductivityDatabase {
       final conflict = FieldConflict.fromJson(rawConflict);
       final incomingStamp = incoming.clocks[entry.key]!;
       if (incomingStamp.compareTo(conflict.cloudStamp) > 0) {
-        await _conflicts.record(conflictKey).put(transaction,
+        await _conflicts.record(conflictKey).put(
+            transaction,
             FieldConflict(
               kind: conflict.kind,
               recordId: conflict.recordId,
@@ -785,7 +792,9 @@ class ProductivityDatabase {
               cloudStamp: canonical.clocks[field]!,
               operationId: operation.id,
               createdAtMillis: _clock().toUtc().millisecondsSinceEpoch);
-          await _conflicts.record(conflict.key).put(transaction, conflict.toJson());
+          await _conflicts
+              .record(conflict.key)
+              .put(transaction, conflict.toJson());
         }
         await _outbox.record(operation.id).delete(transaction);
         await _changes.record(operation.id).update(transaction, {

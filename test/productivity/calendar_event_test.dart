@@ -35,7 +35,8 @@ void main() {
       () async {
     await events.create(event('visit'));
     final record = (await db.get(RecordKind.calendarEvent, 'visit'))!;
-    expect(record.fields['start'], '2026-11-05T09:00:00.000Z');
+    expect((record.fields['interval'] as Map)['start'],
+        '2026-11-05T09:00:00.000000Z');
     expect(CalendarEvent.fromRecord(record).title, 'Visit');
     expect(await db.pending(), hasLength(1));
     WorkspaceBackup.validateRecords([record]);
@@ -96,5 +97,119 @@ void main() {
         PlanningTimeZone.candidates(
             CalendarDay(2026, 11, 1), 1, 30, 'America/New_York'),
         hasLength(2));
+  });
+
+  test('concurrent valid time edits cannot merge into an invalid interval',
+      () async {
+    await events.create(event('meeting'));
+    final base = (await db.get(RecordKind.calendarEvent, 'meeting'))!;
+    WorkspaceRecord changed(int counter, DateTime start, DateTime end) {
+      final value = event('meeting', start: start, end: end);
+      return WorkspaceRecord(
+          ownerId: db.uid,
+          kind: RecordKind.calendarEvent,
+          id: 'meeting',
+          fields: {...base.fields, 'interval': value.toFields()['interval']},
+          clocks: {
+            ...base.clocks,
+            'interval': VersionStamp(counter, 'other-device')
+          },
+          revision: counter,
+          modifiedAtMillis: counter);
+    }
+
+    final laterStart = changed(
+        10, DateTime.utc(2026, 11, 5, 9, 30), DateTime.utc(2026, 11, 5, 10));
+    final earlierEnd = changed(
+        11, DateTime.utc(2026, 11, 5, 9), DateTime.utc(2026, 11, 5, 9, 15));
+    await db.acceptPage([laterStart, earlierEnd], null);
+    final merged = (await db.get(RecordKind.calendarEvent, 'meeting'))!;
+    expect(
+        CalendarEvent.fromRecord(merged).end, DateTime.utc(2026, 11, 5, 9, 15));
+    expect(merged.clocks['interval'], VersionStamp(11, 'other-device'));
+  });
+
+  test('invalid remote event page rolls back every record and cursor',
+      () async {
+    await events.create(event('meeting'));
+    final base = (await db.get(RecordKind.calendarEvent, 'meeting'))!;
+    final invalid = WorkspaceRecord(
+        ownerId: db.uid,
+        kind: RecordKind.calendarEvent,
+        id: 'meeting',
+        fields: {
+          ...base.fields,
+          'interval': {
+            'start': '2026-11-05T10:00:00.000Z',
+            'end': '2026-11-05T09:00:00.000Z',
+            'timeZone': 'Asia/Dhaka',
+          }
+        },
+        clocks: {...base.clocks, 'interval': VersionStamp(20, 'other-device')},
+        revision: 20,
+        modifiedAtMillis: 20);
+    final another = event('another');
+    final fields = {...another.toFields(), '_deleted': false};
+    final valid = WorkspaceRecord(
+        ownerId: db.uid,
+        kind: RecordKind.calendarEvent,
+        id: another.id,
+        fields: fields,
+        clocks: {
+          for (final key in fields.keys) key: VersionStamp(2, 'other-device')
+        },
+        revision: 1,
+        modifiedAtMillis: 2);
+    await expectLater(
+        db.acceptPage(
+            [valid, invalid], const SyncCursor(4, 0, 'calendarEvent--meeting')),
+        throwsFormatException);
+    expect(await db.get(RecordKind.calendarEvent, 'another'), isNull);
+    expect((await db.get(RecordKind.calendarEvent, 'meeting'))!.fields,
+        base.fields);
+    expect(await db.cursor, isNull);
+  });
+
+  test('legacy preview events upgrade their interval when edited or deleted',
+      () async {
+    for (final id in ['edit-legacy', 'delete-legacy']) {
+      await db.mutate(
+          kind: RecordKind.calendarEvent,
+          id: id,
+          workspaceId: 'personal',
+          patch: {
+            'title': 'Preview event',
+            'start': '2026-11-05T09:00:00.000Z',
+            'end': '2026-11-05T10:00:00.000Z',
+            'timeZone': 'Asia/Dhaka',
+          });
+    }
+    expect(
+        CalendarEvent.fromRecord(
+                (await db.get(RecordKind.calendarEvent, 'edit-legacy'))!)
+            .title,
+        'Preview event');
+    await events.edit('edit-legacy', {'notes': 'Keep'});
+    final edited = (await db.get(RecordKind.calendarEvent, 'edit-legacy'))!;
+    expect((edited.fields['interval'] as Map)['start'],
+        '2026-11-05T09:00:00.000000Z');
+    await events.delete('delete-legacy');
+    final deleted = (await db.get(RecordKind.calendarEvent, 'delete-legacy'))!;
+    expect(deleted.deleted, isTrue);
+    expect(deleted.fields['interval'], isA<Map>());
+  });
+
+  test('UTC microseconds have fixed-width ordering in the stored interval', () {
+    final early = event('early',
+        start: DateTime.utc(2026, 11, 5, 9),
+        end: DateTime.utc(2026, 11, 5, 10));
+    final later = event('later',
+        start: DateTime.utc(2026, 11, 5, 9, 0, 0, 0, 1),
+        end: DateTime.utc(2026, 11, 5, 10));
+    final first = (early.toFields()['interval'] as Map)['start'] as String;
+    final second = (later.toFields()['interval'] as Map)['start'] as String;
+    expect(first, '2026-11-05T09:00:00.000000Z');
+    expect(second, '2026-11-05T09:00:00.000001Z');
+    expect(first.compareTo(second), lessThan(0));
   });
 }

@@ -51,21 +51,39 @@ class CalendarEventRepository {
           if (current == null || current.deleted) {
             throw const CalendarEventFailure('not-found');
           }
-          final combined = {...current.fields, ...patch};
+          final previous = CalendarEvent.fromRecord(current);
           final candidate = CalendarEvent(
               id: id,
               workspaceId: current.workspaceId,
-              title: combined['title'] as String,
-              start: parseStoredInstant(combined['start'] as String),
-              end: parseStoredInstant(combined['end'] as String),
-              timeZone: combined['timeZone'] as String,
-              notes: combined['notes'] as String? ?? '');
+              title: patch.containsKey('title')
+                  ? patch['title'] as String
+                  : previous.title,
+              start: patch.containsKey('start')
+                  ? parseStoredInstant(patch['start'] as String)
+                  : previous.start,
+              end: patch.containsKey('end')
+                  ? parseStoredInstant(patch['end'] as String)
+                  : previous.end,
+              timeZone: patch.containsKey('timeZone')
+                  ? patch['timeZone'] as String
+                  : previous.timeZone,
+              notes: patch.containsKey('notes')
+                  ? patch['notes'] as String
+                  : previous.notes);
           final changed = <String, Object?>{};
           final normalized = candidate.toFields();
-          for (final key in patch.keys) {
+          for (final key in const ['title', 'notes']) {
+            if (!patch.containsKey(key)) continue;
             if (current.fields[key] != normalized[key]) {
               changed[key] = normalized[key];
             }
+          }
+          if (current.fields['interval'] == null ||
+              (patch.keys.any((key) =>
+                      const {'start', 'end', 'timeZone'}.contains(key)) &&
+                  canonicalJson(current.fields['interval']) !=
+                      canonicalJson(normalized['interval']))) {
+            changed['interval'] = normalized['interval'];
           }
           if (changed.isEmpty) {
             unchanged = CalendarEvent.fromRecord(current);
@@ -90,12 +108,17 @@ class CalendarEventRepository {
           final current =
               records.where((record) => record.id == id).firstOrNull;
           if (current == null || current.deleted) return [];
+          final upgradedInterval = current.fields['interval'] == null
+              ? CalendarEvent.fromRecord(current).toFields()['interval']
+              : null;
           return [
             RecordMutation(
                 kind: RecordKind.calendarEvent,
                 id: id,
                 workspaceId: current.workspaceId,
-                patch: const {},
+                patch: {
+                  if (upgradedInterval != null) 'interval': upgradedInterval
+                },
                 deleted: true)
           ];
         });

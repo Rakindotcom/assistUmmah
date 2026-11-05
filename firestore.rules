@@ -25,6 +25,24 @@ service cloud.firestore {
         && d.revision is int && d.revision >= 1
         && d.modifiedAtMillis is int && d.updatedAt == request.time;
     }
+    function validCalendarEvent() {
+      let fields = request.resource.data.fields;
+      let interval = fields.get('interval', {});
+      return fields.title is string && fields.title.size() > 0
+        && fields.title.size() <= 1000
+        && fields.get('notes', '') is string
+        && fields.get('notes', '').size() <= 10000
+        && interval is map
+        && interval.keys().hasOnly(['start', 'end', 'timeZone'])
+        && interval.keys().hasAll(['start', 'end', 'timeZone'])
+        && interval.start is string && interval.end is string
+        && interval.start.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$')
+        && interval.end.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$')
+        && interval.start < interval.end
+        && interval.timeZone is string
+        && interval.timeZone.size() > 0
+        && interval.timeZone.size() <= 100;
+    }
     function taskPath(userId, taskId) {
       return /databases/$(database)/documents/users/$(userId)/productivity/$("task--" + taskId);
     }
@@ -101,6 +119,7 @@ service cloud.firestore {
         allow read: if owns(userId);
         allow create: if activeOwner(userId) && validProductivityRecord(userId, recordId)
           && request.resource.data.revision == 1
+          && (request.resource.data.kind != 'calendarEvent' || validCalendarEvent())
           && (request.resource.data.kind != 'task' ||
             (graphControlAfter(userId, request.resource.data.id) &&
               taskEdgeAfter(userId, request.resource.data.id, request.resource.data)));
@@ -108,6 +127,7 @@ service cloud.firestore {
           && request.resource.data.id == resource.data.id
           && request.resource.data.kind == resource.data.kind
           && request.resource.data.revision == resource.data.revision + 1
+          && (request.resource.data.kind != 'calendarEvent' || validCalendarEvent())
           && (request.resource.data.kind != 'task' ||
             (graphControlAfter(userId, request.resource.data.id) &&
               taskEdgeAfter(userId, request.resource.data.id, request.resource.data)));

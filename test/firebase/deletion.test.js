@@ -171,6 +171,33 @@ function productivityRecord(uid, revision = 1) {
     modifiedAtMillis:Date.now(), updatedAt:serverTimestamp()};
 }
 
+function calendarRecord(uid, revision = 1, interval = {
+  start:'2026-11-05T09:00:00.000000Z',
+  end:'2026-11-05T10:00:00.000000Z',
+  timeZone:'Asia/Dhaka',
+}) {
+  const stamp = {counter: revision, device: 'synthetic_device'};
+  return {schemaVersion:1, ownerId:uid, kind:'calendarEvent', id:'meeting', workspaceId:'personal',
+    fields:{workspaceId:'personal',_deleted:false,title:'Synthetic meeting',notes:'',interval},
+    clocks:{workspaceId:stamp,_deleted:stamp,title:stamp,notes:stamp,interval:stamp},
+    revision, modifiedAtMillis:Date.now(), updatedAt:serverTimestamp()};
+}
+
+test('calendar rules reject malformed or reversed intervals', async () => {
+  const owner = await client(`${prefix}-calendar`);
+  const record = doc(owner.db,'users',owner.uid,'productivity','calendarEvent--meeting');
+  await setDoc(record,calendarRecord(owner.uid));
+  assert.equal((await getDocFromServer(record)).data().fields.interval.end,
+    '2026-11-05T10:00:00.000000Z');
+  await assert.rejects(setDoc(record,calendarRecord(owner.uid,2,{
+    start:'2026-11-05T11:00:00.000000Z',end:'2026-11-05T10:00:00.000000Z',timeZone:'Asia/Dhaka'
+  })),{code:'permission-denied'});
+  await assert.rejects(setDoc(record,calendarRecord(owner.uid,2,{
+    start:'2026-11-05T09:00:00.000Z',end:'2026-11-05T10:00:00.000000Z',timeZone:'Asia/Dhaka'
+  })),{code:'permission-denied'});
+  assert.equal((await getDocFromServer(record)).data().revision,1);
+});
+
 async function writeCoupledTask(owner, recordData) {
   const record = doc(owner.db,'users',owner.uid,'productivity',`task--${recordData.id}`);
   const edge = doc(owner.db,'users',owner.uid,'productivityGraph',recordData.id);

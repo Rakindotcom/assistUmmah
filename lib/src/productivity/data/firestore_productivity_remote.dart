@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/records.dart';
+import '../domain/calendar_event.dart';
 import '../domain/task.dart';
 import '../domain/task_graph.dart';
 import 'productivity_remote.dart';
@@ -139,6 +140,17 @@ class FirestoreProductivityRemote implements ProductivityRemote {
           final record = application.record;
           final accepted = application.acceptedFields;
           final rejected = application.rejectedFields;
+          if (operation.kind == RecordKind.calendarEvent) {
+            try {
+              CalendarEvent.fromRecord(record);
+            } on FormatException {
+              throw const SyncFailure('invalid-calendar-event',
+                  permanent: true);
+            } on TypeError {
+              throw const SyncFailure('invalid-calendar-event',
+                  permanent: true);
+            }
+          }
           _GraphSnapshot? updatedGraph;
           if (graph != null && accepted.isNotEmpty) {
             try {

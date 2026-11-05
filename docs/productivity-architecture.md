@@ -224,6 +224,15 @@ covers conflict display and a real edit. This is a local event slice: weekly
 grid, external calendar accounts, reminders and automatic scheduling remain
 unimplemented, and the shipped main entry still uses the legacy shell.
 
+Event start/end/zone now share one versioned `interval` field, so two devices
+cannot combine independently edited endpoints into an invalid event. The
+reader accepts the previous hidden-preview fields for backup recovery. Local
+remote-page merge and Firestore transaction writes validate the event before
+commit; Firestore rules require a canonical fixed-width UTC interval and
+reject reversed or malformed values. Tests cover concurrent endpoint edits,
+atomic rollback of an invalid pull page, and 14 Auth/Firestore emulator cases.
+These rules remain undeployed until the broader root cutover is ready.
+
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
 events count once; workspaces disabled in preferences are excluded. A DST
