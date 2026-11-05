@@ -16,6 +16,7 @@ void main() {
           location: BannerLocation.topEnd,
           child: ProductivityRoot(
               uid: 'productivity-preview',
+              enableNotifications: false,
               legacyRepository: const AppRepository(
                   uid: 'productivity-preview', firebaseReady: false),
               accountBuilder: (_) => const PrivacyPage()))));

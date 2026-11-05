@@ -3,9 +3,11 @@
 `lib/main_productivity_preview.dart` is a separate Flutter entrypoint for the
 new workspace while production cutover remains gated. It does not initialize
 Firebase or call the migration fence. Its local database uses the
-`productivity-preview` account namespace; production account records are not
-imported or modified. A visible `PREVIEW` banner distinguishes it from the
-normal application.
+`productivity-preview` account namespace. The Android `preview` flavor uses
+`com.rakindotcom.ummah_assist.preview`, removes the native Firebase startup
+provider and disables notification operations. A visible `PREVIEW` banner and
+preview app label identify it. Gradle rejects a preview entrypoint built under
+the production flavor or a preview package built with the normal entrypoint.
 
 Build with the Android SDK and a full JDK 17:
 
@@ -14,15 +16,14 @@ export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 export ANDROID_HOME="$PWD/.local/android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$JAVA_HOME/bin:$PATH"
-flutter build apk --release -t lib/main_productivity_preview.dart
+tool/build_productivity_preview.sh
 ```
 
-The APK uses the same Android package ID and signing key as the existing
-release. Installing it replaces the installed app binary; reinstalling the
-normal APK restores the normal entrypoint. The two experiences keep separate
-local account namespaces, but an uninstall can erase all local app data. Use
-the app's export before uninstalling either build. Preview data is local-only
-and does not sync to the production account.
+The preview installs alongside the normal app and has its own Android storage
+and notification namespace. Its data remains local and does not sync to the
+production account. Export any preview work you need before uninstalling it.
+The earlier 5 November preview built under the production package has been
+superseded; use the isolated flavor build.
 
 This build is for native UI review, not Play Store publication. The new root
 still needs live rules, migration and route cutover, privacy/deletion checks,

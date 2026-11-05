@@ -108,7 +108,7 @@ Verified locally through 29 October 2026:
 
 See [bundle evidence](bundle-verification.json) and
 [merged manifest](bundle-verification.manifest.xml). The signed bundle is at
-`build/app/outputs/bundle/release/app-release.aab`; a locally installable universal
+`build/app/outputs/bundle/productionRelease/app-production-release.aab`; a locally installable universal
 APK is at `.local/app-release-universal.apk`.
 
 ## Completed implementation

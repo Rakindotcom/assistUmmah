@@ -17,12 +17,14 @@ class CalendarPage extends StatefulWidget {
     required this.today,
     this.refreshToken = 0,
     this.initialDay,
+    this.enableNotifications = true,
   });
 
   final AppRepository repository;
   final DateTime today;
   final int refreshToken;
   final DateTime? initialDay;
+  final bool enableNotifications;
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();
@@ -235,6 +237,7 @@ class _CalendarPageState extends State<CalendarPage> {
           appBar: AppBar(title: Text(compactDateLabel(day))),
           body: PrayerPage(
             repository: widget.repository,
+            enableNotifications: widget.enableNotifications,
             day: day,
             historical: dateKey(day) != dateKey(widget.today),
             onSaved: () {
@@ -253,7 +256,8 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
     );
-    if (mounted && uid == widget.repository.uid &&
+    if (mounted &&
+        uid == widget.repository.uid &&
         dateKey(_selectedDay) == dateKey(day)) {
       await _load();
     }
@@ -286,7 +290,8 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
     );
-    if (mounted && uid == widget.repository.uid &&
+    if (mounted &&
+        uid == widget.repository.uid &&
         dateKey(_selectedDay) == dateKey(day)) {
       await _load();
     }

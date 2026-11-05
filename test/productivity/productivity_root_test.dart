@@ -9,6 +9,9 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:ummah_assist/src/app_repository.dart';
 import 'package:ummah_assist/src/pages/contacts_page.dart';
 import 'package:ummah_assist/src/pages/prayer_page.dart';
+import 'package:ummah_assist/src/pages/prayer_alert_card.dart';
+import 'package:ummah_assist/src/prayer_alerts.dart';
+import 'package:ummah_assist/src/prayer_times_service.dart';
 import 'package:ummah_assist/src/productivity/data/experience_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_session.dart';
@@ -43,11 +46,14 @@ void main() {
   }
 
   Widget root(String uid, Future<ProductivityDatabase> Function() open,
-          {bool defaultFaith = false, AppRepository? legacyRepository}) =>
+          {bool defaultFaith = false,
+          bool enableNotifications = true,
+          AppRepository? legacyRepository}) =>
       MaterialApp(
           home: ProductivityRoot(
               uid: uid,
               initialLanguage: 'en',
+              enableNotifications: enableNotifications,
               openDatabase: open,
               detectTimeZone: () async => 'Asia/Dhaka',
               legacyRepository: legacyRepository ??
@@ -57,6 +63,63 @@ void main() {
                   : (_) => const Text('Faith feature content'),
               accountBuilder: (_) =>
                   const Scaffold(body: Text('Account controls'))));
+
+  testWidgets(
+      'disabled notifications leave device reminders untouched through Faith and lifecycle changes',
+      (tester) async {
+    configureNativeUiChannels();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (call) async {
+      calls.add(call);
+      return null;
+    });
+    const uid = 'root-no-notifications';
+    await tester.runAsync(() async {
+      await PrayerTimeStore(uid).save(PrayerTimeConfig(
+          latitude: 23.81,
+          longitude: 90.41,
+          placeName: 'Dhaka',
+          timeZoneId: 'Asia/Dhaka'));
+      await PrayerAlertStore(uid).save(PrayerAlertSettings(enabled: true));
+    });
+    final db = (await tester.runAsync(() => database(uid,
+        modules: [WorkspaceModule.personal, WorkspaceModule.faith])))!;
+    addTearDown(() => ProductivitySession.closeAccount(uid));
+    await tester.pumpWidget(root(uid, () async => db,
+        defaultFaith: true,
+        enableNotifications: false,
+        legacyRepository: const _EnabledRemindersRepository(uid)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Faith'));
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<PrayerPage>(find.byType(PrayerPage)).enableNotifications,
+        isFalse);
+    expect(find.byType(PrayerAlertCard, skipOffstage: false), findsNothing);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => ExperienceRepository(db).updateOptions({
+          'modules': ['personal']
+        }));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => ExperienceRepository(db).updateOptions({
+          'modules': ['personal', 'faith']
+        }));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => ProductivitySession.closeAccount(uid));
+    expect(calls, isEmpty,
+        reason: 'A preview must not initialize, cancel or schedule reminders.');
+    expect((await tester.runAsync(() => PrayerAlertStore(uid).load()))!.enabled,
+        isTrue);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('enabled Faith opens the default adapter in the universal root',
       (tester) async {
@@ -71,6 +134,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(FaithModulePage), findsOneWidget);
+    expect(
+        tester.widget<FaithModulePage>(find.byType(FaithModulePage)).language,
+        'en');
     expect(find.byType(PrayerPage), findsOneWidget);
     await tester.tap(find.byTooltip('Quick add task'));
     for (var i = 0;
@@ -281,4 +347,7 @@ class _EnabledRemindersRepository extends AppRepository {
         'remindersConfigured': true,
         'notifications': {'prayer': true, 'tasks': true, 'growth': true},
       };
+
+  @override
+  Future<Map<String, dynamic>?> loadPrayerDocument(String date) async => null;
 }

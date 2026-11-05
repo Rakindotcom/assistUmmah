@@ -45,12 +45,14 @@ class ProductivityRoot extends StatefulWidget {
       this.prepareLegacyMigration,
       this.openDatabase,
       this.detectTimeZone,
+      this.enableNotifications = true,
       this.initialLanguage = 'bn'});
   final String uid, initialLanguage;
   final ProductivityRemote? remote;
   final Future<LegacyTaskMigration> Function()? prepareLegacyMigration;
   final Future<ProductivityDatabase> Function()? openDatabase;
   final Future<String> Function()? detectTimeZone;
+  final bool enableNotifications;
   final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
@@ -205,6 +207,7 @@ class _ProductivityRootState extends State<ProductivityRoot>
             session: session,
             zone: _zone,
             initialLanguage: widget.initialLanguage,
+            enableNotifications: widget.enableNotifications,
             legacyRepository: widget.legacyRepository,
             faithBuilder: widget.faithBuilder,
             accountBuilder: widget.accountBuilder);
@@ -216,11 +219,13 @@ class _Experience extends StatefulWidget {
       {required this.session,
       required this.zone,
       required this.initialLanguage,
+      required this.enableNotifications,
       required this.legacyRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final String zone, initialLanguage;
+  final bool enableNotifications;
   final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
@@ -275,6 +280,7 @@ class _ExperienceState extends State<_Experience> {
                     session: widget.session,
                     options: options,
                     repository: _repository,
+                    enableNotifications: widget.enableNotifications,
                     legacyRepository: widget.legacyRepository,
                     faithBuilder: widget.faithBuilder,
                     accountBuilder: widget.accountBuilder));
@@ -286,12 +292,14 @@ class _WorkspaceHome extends StatefulWidget {
       {required this.session,
       required this.options,
       required this.repository,
+      required this.enableNotifications,
       required this.legacyRepository,
       required this.faithBuilder,
       required this.accountBuilder});
   final ProductivitySession session;
   final ExperienceOptions options;
   final ExperienceRepository repository;
+  final bool enableNotifications;
   final AppRepository legacyRepository;
   final WidgetBuilder? faithBuilder;
   final WidgetBuilder accountBuilder;
@@ -305,7 +313,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   bool _adding = false;
   late final _tasks = TaskRepository(widget.session.database);
   late final _calendar = CalendarEventRepository(widget.session.database);
-  late ReminderSession _reminders;
+  ReminderSession? _reminders;
 
   @override
   void initState() {
@@ -318,13 +326,16 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   void didUpdateWidget(_WorkspaceHome oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.options.faithEnabled != widget.options.faithEnabled ||
+        oldWidget.enableNotifications != widget.enableNotifications ||
         !identical(oldWidget.legacyRepository, widget.legacyRepository)) {
-      _reminders.dispose();
       _replaceReminders();
     }
   }
 
   void _replaceReminders() {
+    _reminders?.dispose();
+    _reminders = null;
+    if (!widget.enableNotifications) return;
     _reminders = ReminderSession(
         repository: widget.legacyRepository,
         enabledDailyKeys:
@@ -337,6 +348,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
 
   Future<void> _refreshReminders() async {
     final reminders = _reminders;
+    if (reminders == null) return;
     final refreshed = await reminders.refresh();
     if (!mounted || !identical(reminders, _reminders) || refreshed) return;
     final strings = ExperienceStrings(widget.options.language);
@@ -350,13 +362,15 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_refreshReminders());
+    if (widget.enableNotifications && state == AppLifecycleState.resumed) {
+      unawaited(_refreshReminders());
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _reminders.dispose();
+    _reminders?.dispose();
     super.dispose();
   }
 
@@ -486,7 +500,10 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             onOpenAccount: () => Navigator.of(context)
                 .push(MaterialPageRoute<void>(builder: widget.accountBuilder))),
         'faith' => widget.faithBuilder?.call(context) ??
-            FaithModulePage(repository: widget.legacyRepository),
+            FaithModulePage(
+                repository: widget.legacyRepository,
+                language: options.language,
+                enableNotifications: widget.enableNotifications),
         _ => Column(children: [
             Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),

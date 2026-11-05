@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 
 import '../../app_repository.dart';
 import '../../date_helpers.dart';
+import '../../pages/calendar_page.dart';
 import '../../pages/dhikr_page.dart';
 import '../../pages/dua_library_page.dart';
 import '../../pages/growth_page.dart';
 import '../../pages/prayer_page.dart';
 import '../../pages/quran_page.dart';
+import '../../pages/report_dialog.dart';
+import '../../pages/trends_page.dart';
+import 'experience_strings.dart';
 
 /// Presents the existing Faith data without exposing legacy task routes.
 /// The universal shell owns the outer app bar and module navigation.
@@ -17,10 +21,14 @@ class FaithModulePage extends StatefulWidget {
     super.key,
     required this.repository,
     this.clock,
+    this.enableNotifications = true,
+    this.language = 'bn',
   });
 
   final AppRepository repository;
   final DateTime Function()? clock;
+  final bool enableNotifications;
+  final String language;
 
   @override
   State<FaithModulePage> createState() => _FaithModulePageState();
@@ -33,6 +41,8 @@ class _FaithModulePageState extends State<FaithModulePage>
   Timer? _dayTimer;
   final _opened = <int>{0};
   int _selected = 0;
+  int _historyRevision = 0;
+  bool _openingRoute = false;
 
   DateTime _now() => widget.clock?.call() ?? DateTime.now();
 
@@ -56,6 +66,8 @@ class _FaithModulePageState extends State<FaithModulePage>
         ..clear()
         ..add(0);
       _day = dateOnly(_now());
+      _historyRevision = 0;
+      _openingRoute = false;
       _scheduleDayChange();
     }
   }
@@ -90,6 +102,49 @@ class _FaithModulePageState extends State<FaithModulePage>
     });
   }
 
+  Future<void> _openRoute(WidgetBuilder builder) async {
+    if (_openingRoute) return;
+    final repository = widget.repository;
+    setState(() => _openingRoute = true);
+    try {
+      await Navigator.of(context)
+          .push<void>(MaterialPageRoute<void>(builder: builder));
+    } finally {
+      if (mounted && repository.uid == widget.repository.uid) {
+        setState(() {
+          _openingRoute = false;
+          _historyRevision++;
+        });
+      }
+    }
+  }
+
+  Future<void> _openHistory() {
+    final repository = widget.repository;
+    final day = _day;
+    final notifications = widget.enableNotifications;
+    final strings = ExperienceStrings(widget.language);
+    return _openRoute((_) => Scaffold(
+        appBar: AppBar(
+            title: Text(strings.text('Faith history', 'আমলের দিনপঞ্জি'))),
+        body: CalendarPage(
+            repository: repository,
+            today: day,
+            enableNotifications: notifications)));
+  }
+
+  Future<void> _openReports() {
+    final repository = widget.repository;
+    final day = _day;
+    final notifications = widget.enableNotifications;
+    final language = widget.language;
+    return _openRoute((_) => _FaithReportsPage(
+        repository: repository,
+        today: day,
+        language: language,
+        enableNotifications: notifications));
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -101,6 +156,7 @@ class _FaithModulePageState extends State<FaithModulePage>
   @override
   Widget build(BuildContext context) {
     final repository = widget.repository;
+    final strings = ExperienceStrings(widget.language);
     return PopScope<void>(
       canPop: _selected == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -111,19 +167,35 @@ class _FaithModulePageState extends State<FaithModulePage>
           controller: _tabs,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: 'নামাজ'),
-            Tab(text: 'কুরআন'),
-            Tab(text: 'জিকির'),
-            Tab(text: 'গ্রোথ'),
-            Tab(text: 'দোয়া'),
+          tabs: [
+            Tab(text: strings.text('Prayer', 'নামাজ')),
+            Tab(text: strings.text('Quran', 'কুরআন')),
+            Tab(text: strings.text('Dhikr', 'জিকির')),
+            Tab(text: strings.text('Growth', 'গ্রোথ')),
+            Tab(text: strings.text('Duas', 'দোয়া')),
           ],
         ),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(spacing: 8, children: [
+                  TextButton.icon(
+                      onPressed: _openingRoute ? null : _openHistory,
+                      icon: const Icon(Icons.history_outlined),
+                      label: Text(strings.text('History', 'দিনপঞ্জি'))),
+                  TextButton.icon(
+                      onPressed: _openingRoute ? null : _openReports,
+                      icon: const Icon(Icons.insights_outlined),
+                      label: Text(strings.text('Reports', 'রিপোর্ট'))),
+                ]))),
         Expanded(
           child: IndexedStack(index: _selected, children: [
             PrayerPage(
-                key: ValueKey('faith-prayer-${dateKey(_day)}'),
+                key:
+                    ValueKey('faith-prayer-${dateKey(_day)}-$_historyRevision'),
                 repository: repository,
+                enableNotifications: widget.enableNotifications,
                 day: _day,
                 active: _selected == 0),
             _opened.contains(1)
@@ -142,7 +214,8 @@ class _FaithModulePageState extends State<FaithModulePage>
                 : const SizedBox.shrink(),
             _opened.contains(3)
                 ? GrowthPage(
-                    key: ValueKey('faith-growth-${dateKey(_day)}'),
+                    key: ValueKey(
+                        'faith-growth-${dateKey(_day)}-$_historyRevision'),
                     repository: repository,
                     day: _day,
                     onOpenQuran: () => _tabs.animateTo(1),
@@ -155,5 +228,81 @@ class _FaithModulePageState extends State<FaithModulePage>
         ),
       ]),
     );
+  }
+}
+
+class _FaithReportsPage extends StatelessWidget {
+  const _FaithReportsPage(
+      {required this.repository,
+      required this.today,
+      required this.language,
+      required this.enableNotifications});
+  final AppRepository repository;
+  final DateTime today;
+  final String language;
+  final bool enableNotifications;
+
+  Future<void> _report(BuildContext context, String title, DateTime start) =>
+      showDialog<void>(
+          context: context,
+          builder: (_) => ReportDialog(
+              repository: repository, title: title, start: start, end: today));
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = ExperienceStrings(language);
+    final daily = strings.text('Daily report', 'দৈনিক রিপোর্ট');
+    final weekly = strings.text('Weekly report', 'সাপ্তাহিক রিপোর্ট');
+    final monthly = strings.text('Monthly report', 'মাসিক রিপোর্ট');
+    return Scaffold(
+        appBar:
+            AppBar(title: Text(strings.text('Faith reports', 'আমলের রিপোর্ট'))),
+        body: ListView(padding: const EdgeInsets.all(16), children: [
+          Text(
+              strings.text('Review your prayer and growth records.',
+                  'নামাজ ও গ্রোথের সংরক্ষিত হিসাব পর্যালোচনা করুন।'),
+              style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 16),
+          Card(
+              child: Column(children: [
+            ListTile(
+                leading: const Icon(Icons.today_outlined),
+                title: Text(daily),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _report(context, daily, today)),
+            const Divider(height: 1),
+            ListTile(
+                leading: const Icon(Icons.calendar_view_week_outlined),
+                title: Text(weekly),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _report(context, weekly,
+                    DateTime(today.year, today.month, today.day - 6))),
+            const Divider(height: 1),
+            ListTile(
+                leading: const Icon(Icons.calendar_month_outlined),
+                title: Text(monthly),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _report(
+                    context, monthly, DateTime(today.year, today.month))),
+            const Divider(height: 1),
+            ListTile(
+                leading: const Icon(Icons.show_chart_outlined),
+                title:
+                    Text(strings.text('Progress trends', 'অগ্রগতির ট্রেন্ড')),
+                subtitle:
+                    Text(strings.text('Last 7 and 30 days', 'শেষ ৭ ও ৩০ দিন')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                        builder: (_) => Scaffold(
+                            appBar: AppBar(
+                                title: Text(strings.text(
+                                    'Progress trends', 'অগ্রগতির ট্রেন্ড'))),
+                            body: TrendsPage(
+                                repository: repository,
+                                today: today,
+                                enableNotifications: enableNotifications))))),
+          ])),
+        ]));
   }
 }
