@@ -244,6 +244,14 @@ does not revert a concurrent edit to another field. Bangla date digits, event
 times and workspace names are localized in the day list; narrow-phone widget
 tests cover both the concurrent edit and Bangla display.
 
+An optional hourly day view now lays local events on an elapsed-time grid with
+separate horizontal lanes for overlaps. It clips events at local day boundaries,
+uses 23/25-hour grids across daylight-saving changes, marks the current time,
+and opens near the first upcoming event or the current hour. Narrow-phone,
+enlarged-text and DST widget tests cover this view. The agenda remains
+available from the same calendar switch. This is not yet a task time-blocking
+or external-calendar view.
+
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
 events count once; workspaces disabled in preferences are excluded. A DST

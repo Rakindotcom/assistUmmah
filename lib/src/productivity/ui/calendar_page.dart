@@ -6,6 +6,7 @@ import '../domain/calendar_day.dart';
 import '../domain/calendar_event.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
+import 'calendar_day_timeline.dart';
 import 'experience_strings.dart';
 
 class ProductivityCalendarPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
   late CalendarDay _day = CalendarDay.fromDate(PlanningTimeZone.inZone(
       (widget.clock ?? DateTime.now)(), widget.options.timeZone));
   late Stream<List<CalendarEvent>> _events = widget.repository.watchEvents();
+  bool _timeline = false;
   ExperienceStrings get strings => ExperienceStrings(widget.options.language);
 
   @override
@@ -96,46 +98,65 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                         tooltip: strings.text('Next day', 'পরের দিন'),
                         onPressed: () => setState(() => _day = _day.addDays(1)),
                         icon: const Icon(Icons.chevron_right)),
+                    IconButton(
+                        tooltip: _timeline
+                            ? strings.text('Show agenda', 'ইভেন্ট তালিকা দেখুন')
+                            : strings.text('Show hourly timeline',
+                                'ঘণ্টাভিত্তিক সময়রেখা দেখুন'),
+                        onPressed: () => setState(() => _timeline = !_timeline),
+                        icon: Icon(_timeline
+                            ? Icons.view_agenda_outlined
+                            : Icons.view_timeline_outlined)),
                   ])),
               Expanded(
-                  child: events.isEmpty
-                      ? Center(
-                          child: Text(strings.text('No events on this day.',
-                              'এই দিনে কোনো ইভেন্ট নেই।')))
-                      : ListView.builder(
-                          itemCount: events.length,
-                          itemBuilder: (context, index) {
-                            final event = events[index];
-                            final overlap = events.any((other) =>
-                                other.id != event.id && event.overlaps(other));
-                            final start = PlanningTimeZone.inZone(
-                                event.start, widget.options.timeZone);
-                            final end = PlanningTimeZone.inZone(
-                                event.end, widget.options.timeZone);
-                            String time(DateTime value) =>
-                                MaterialLocalizations.of(context)
-                                    .formatTimeOfDay(
-                                        TimeOfDay.fromDateTime(value),
-                                        alwaysUse24HourFormat:
-                                            widget.options.use24HourClock);
-                            final module = WorkspaceModule.values
-                                .where(
-                                    (value) => value.name == event.workspaceId)
-                                .firstOrNull;
-                            final workspace = module == null
-                                ? event.workspaceId
-                                : strings.module(module);
-                            return Card(
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 4),
-                                child: ListTile(
-                                    onTap: () => _edit(event),
-                                    title: Text(event.title),
-                                    subtitle: Text(
-                                        '${strings.number(time(start))}–${strings.number(time(end))} · $workspace${overlap ? '\n${strings.text('Overlaps another event', 'অন্য ইভেন্টের সঙ্গে সময় মিলে গেছে')}' : ''}'),
-                                    isThreeLine: overlap,
-                                    trailing: const Icon(Icons.chevron_right)));
-                          })),
+                  child: _timeline
+                      ? CalendarDayTimeline(
+                          key: ValueKey('$_day-${widget.options.timeZone}'),
+                          day: _day,
+                          events: events,
+                          options: widget.options,
+                          now: (widget.clock ?? DateTime.now)(),
+                          onOpen: _edit)
+                      : events.isEmpty
+                          ? Center(
+                              child: Text(strings.text('No events on this day.',
+                                  'এই দিনে কোনো ইভেন্ট নেই।')))
+                          : ListView.builder(
+                              itemCount: events.length,
+                              itemBuilder: (context, index) {
+                                final event = events[index];
+                                final overlap = events.any((other) =>
+                                    other.id != event.id &&
+                                    event.overlaps(other));
+                                final start = PlanningTimeZone.inZone(
+                                    event.start, widget.options.timeZone);
+                                final end = PlanningTimeZone.inZone(
+                                    event.end, widget.options.timeZone);
+                                String time(DateTime value) =>
+                                    MaterialLocalizations.of(context)
+                                        .formatTimeOfDay(
+                                            TimeOfDay.fromDateTime(value),
+                                            alwaysUse24HourFormat:
+                                                widget.options.use24HourClock);
+                                final module = WorkspaceModule.values
+                                    .where((value) =>
+                                        value.name == event.workspaceId)
+                                    .firstOrNull;
+                                final workspace = module == null
+                                    ? event.workspaceId
+                                    : strings.module(module);
+                                return Card(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
+                                    child: ListTile(
+                                        onTap: () => _edit(event),
+                                        title: Text(event.title),
+                                        subtitle: Text(
+                                            '${strings.number(time(start))}–${strings.number(time(end))} · $workspace${overlap ? '\n${strings.text('Overlaps another event', 'অন্য ইভেন্টের সঙ্গে সময় মিলে গেছে')}' : ''}'),
+                                        isThreeLine: overlap,
+                                        trailing:
+                                            const Icon(Icons.chevron_right)));
+                              })),
             ]),
             floatingActionButton: FloatingActionButton.extended(
                 onPressed: () => _edit(),
