@@ -132,6 +132,14 @@ estimate. Calendar events, buffers and externally imported commitments are
 not yet in this calculation, which the card states. The broader calendar and
 planning requirements remain open.
 
+Open one-off tasks can be moved to tomorrow from the task action menu. This
+stores a civil day rather than inventing a wall-clock instant, increments the
+postponement count once, keeps the original deadline, and avoids repeating an
+identical move. A confirmation is required when the new day is after the
+deadline in the user's configured time zone. The action is hidden for
+completed, recurring and already-future tasks. Reminder snoozing and richer
+recovery planning remain separate work.
+
 ## Migration and account preservation
 
 1. The Firestore adapter reads the account deletion marker and legacy task

@@ -231,6 +231,67 @@ void main() {
         findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('postponing past a deadline requires an explicit choice',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final today = CalendarDay(2026, 11, 3);
+    await tester.runAsync(() => repository.createTask(ProductivityTask(
+        id: 'due-today',
+        workspaceId: 'personal',
+        title: 'Send proposal',
+        scheduledDay: today,
+        deadline: DateTime.utc(2026, 11, 3, 10))));
+    await tester.pumpWidget(app(TaskWorkspacePage(
+        repository: repository,
+        options: options('en'),
+        workspaceId: 'personal',
+        clock: () => DateTime.utc(2026, 11, 3, 3))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Today'));
+    await tester.pumpAndSettle();
+
+    Future<void> chooseTomorrow() async {
+      final menu = find.byTooltip('Task actions');
+      await tester.ensureVisible(menu);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      final action = find.text('Postpone to tomorrow');
+      await tester.ensureVisible(action);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+    }
+
+    await chooseTomorrow();
+    expect(find.text('Move past the deadline?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    var task = ProductivityTask.fromRecord((await tester
+        .runAsync(() async => (await db.get(RecordKind.task, 'due-today'))!))!);
+    expect(task.scheduledDay, today);
+    expect(task.postponements, 0);
+
+    await chooseTomorrow();
+    await tester.tap(find.text('Move anyway'));
+    await tester.pumpAndSettle();
+    task = ProductivityTask.fromRecord((await tester
+        .runAsync(() async => (await db.get(RecordKind.task, 'due-today'))!))!);
+    expect(task.scheduledDay, today.addDays(1));
+    expect(task.deadline, DateTime.utc(2026, 11, 3, 10));
+    expect(task.postponements, 1);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Next 7 days'));
+    await tester.pumpAndSettle();
+    final menu = find.byTooltip('Task actions');
+    await tester.ensureVisible(menu);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    expect(find.text('Postpone to tomorrow'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FailsOnce extends TaskRepository {

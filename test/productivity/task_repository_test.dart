@@ -235,6 +235,37 @@ void main() {
     expect(updated.inbox, isFalse);
   });
 
+  test('civil-day postponement preserves the deadline and rejects a series',
+      () async {
+    final tomorrow = CalendarDay(2026, 10, 31);
+    final deadline = DateTime.utc(2026, 10, 30, 8);
+    await repository.createTask(ProductivityTask(
+        id: 'one-off',
+        workspaceId: 'personal',
+        title: 'Finish draft',
+        scheduledAt: now,
+        deadline: deadline));
+    await repository.postponeToDay('one-off', tomorrow);
+    final updated = ProductivityTask.fromRecord(
+        (await db.get(RecordKind.task, 'one-off'))!);
+    expect(updated.scheduledDay, tomorrow);
+    expect(updated.scheduledAt, isNull);
+    expect(updated.deadline, deadline);
+    expect(updated.postponements, 1);
+    expect(updated.inbox, isFalse);
+    final pendingBeforeRetry = (await db.pending()).length;
+    await repository.postponeToDay('one-off', tomorrow);
+    expect(await db.pending(), hasLength(pendingBeforeRetry));
+
+    await repository.createTask(task('repeat',
+        recurrence: RecurrenceRule(
+            start: tomorrow, frequency: RecurrenceFrequency.daily)));
+    final pending = (await db.pending()).length;
+    await expectLater(repository.postponeToDay('repeat', tomorrow),
+        throwsA(failure('choose-open-task')));
+    expect(await db.pending(), hasLength(pending));
+  });
+
   test(
       'reading recurring occurrences is write-free; completion belongs to one day',
       () async {

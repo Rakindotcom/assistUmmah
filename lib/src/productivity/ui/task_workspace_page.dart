@@ -121,6 +121,33 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
     if (created == true && mounted) setState(() => _projectId = id);
   }
 
+  Future<bool> _confirmPostpone(
+      ProductivityTask task, CalendarDay target) async {
+    final deadline = task.deadline;
+    if (deadline == null) return true;
+    final deadlineDay = CalendarDay.fromDate(
+        PlanningTimeZone.inZone(deadline, widget.options.timeZone));
+    if (!target.isAfter(deadlineDay)) return true;
+    final approved = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text(strings.text(
+                  'Move past the deadline?', 'শেষ সময় পেরিয়ে সরাবেন?')),
+              content: Text(strings.text(
+                  'The deadline stays unchanged. This task will be planned after it is due.',
+                  'শেষ সময় বদলাবে না। কাজটি নির্ধারিত সময়ের পরে পরিকল্পনায় যাবে।')),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(strings.text('Cancel', 'বাতিল'))),
+                FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(strings.text('Move anyway', 'তবু সরান'))),
+              ],
+            ));
+    return approved == true;
+  }
+
   bool _visible(
       ProductivityTask task, TaskStatus status, bool deleted, CalendarDay day) {
     if (_view == TaskWorkspaceView.trash) return deleted;
@@ -377,6 +404,14 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
                   final (record, task) = visible[index];
                   final currentStatus = status(task);
                   final disabled = _pending.contains(task.id);
+                  final plannedDay = task.scheduledDay ??
+                      (task.scheduledAt == null
+                          ? null
+                          : CalendarDay.fromDate(PlanningTimeZone.inZone(
+                              task.scheduledAt!, widget.options.timeZone)));
+                  final canPostpone = task.recurrence == null &&
+                      currentStatus != TaskStatus.completed &&
+                      (plannedDay == null || !plannedDay.isAfter(day));
                   final canCheck = task.recurrence == null ||
                       task.recurrence!.between(day, day).isNotEmpty ||
                       occurrences.containsKey(
@@ -459,6 +494,15 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
                             }
                           } else if (action == 'subtask') {
                             await _editor(tasks, projects, parentId: task.id);
+                          } else if (action == 'tomorrow') {
+                            final target = day.addDays(1);
+                            if (await _confirmPostpone(task, target) &&
+                                mounted) {
+                              await _run(
+                                  task.id,
+                                  () => widget.repository
+                                      .postponeToDay(task.id, target));
+                            }
                           } else if (action.startsWith('status:')) {
                             await setStatus(
                                 TaskStatus.values.byName(action.substring(7)));
@@ -482,6 +526,12 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
                                     value: 'subtask',
                                     child: Text(strings.text(
                                         'Add subtask', 'উপকাজ যোগ করুন'))),
+                                if (canPostpone)
+                                  PopupMenuItem(
+                                      value: 'tomorrow',
+                                      child: Text(strings.text(
+                                          'Postpone to tomorrow',
+                                          'আগামীকাল সরান'))),
                                 PopupMenuItem(
                                     value: 'trash',
                                     child: Text(strings.text(

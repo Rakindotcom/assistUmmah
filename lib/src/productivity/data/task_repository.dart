@@ -239,6 +239,34 @@ class TaskRepository {
         });
   }
 
+  /// Moves an open one-off task to a civil day without inventing a clock
+  /// time or changing its hard deadline. The daily planner uses this for a
+  /// one-tap "tomorrow" action across DST boundaries.
+  Future<void> postponeToDay(String id, CalendarDay day) async {
+    await database.changeRecords(
+        kinds: _kinds,
+        plan: (records) {
+          final previous = _require(records, RecordKind.task, id);
+          final task = ProductivityTask.fromRecord(previous);
+          if (task.status == TaskStatus.completed || task.recurrence != null) {
+            throw const TaskEditFailure('choose-open-task');
+          }
+          if (task.scheduledDay == day &&
+              task.scheduledAt == null &&
+              !task.inbox) {
+            return [];
+          }
+          return [
+            _mutation(previous, {
+              'scheduledDay': day.toString(),
+              'scheduledAt': null,
+              'postponements': task.postponements + 1,
+              'inbox': false,
+            })
+          ];
+        });
+  }
+
   /// Parent and every live descendant move to trash in the same commit. Linked
   /// dependent tasks stay visible and cannot complete until resolved/restored.
   Future<void> trash(String id) async {
