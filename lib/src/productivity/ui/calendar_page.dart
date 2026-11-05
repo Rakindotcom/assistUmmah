@@ -35,7 +35,7 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
 
   Future<void> _edit([CalendarEvent? event]) async {
     await Navigator.of(context).push<bool>(MaterialPageRoute(
-        builder: (_) => _EventEditor(
+        builder: (_) => CalendarEventEditorPage(
             repository: widget.repository,
             options: widget.options,
             day: _day,
@@ -137,9 +137,10 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
       });
 }
 
-class _EventEditor extends StatefulWidget {
-  const _EventEditor(
-      {required this.repository,
+class CalendarEventEditorPage extends StatefulWidget {
+  const CalendarEventEditorPage(
+      {super.key,
+      required this.repository,
       required this.options,
       required this.day,
       this.event});
@@ -148,10 +149,10 @@ class _EventEditor extends StatefulWidget {
   final CalendarDay day;
   final CalendarEvent? event;
   @override
-  State<_EventEditor> createState() => _EventEditorState();
+  State<CalendarEventEditorPage> createState() => _EventEditorState();
 }
 
-class _EventEditorState extends State<_EventEditor> {
+class _EventEditorState extends State<CalendarEventEditorPage> {
   final _form = GlobalKey<FormState>();
   late final _title = TextEditingController(text: widget.event?.title ?? '');
   late final _notes = TextEditingController(text: widget.event?.notes ?? '');

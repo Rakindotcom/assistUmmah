@@ -233,6 +233,13 @@ reject reversed or malformed values. Tests cover concurrent endpoint edits,
 atomic rollback of an invalid pull page, and 14 Auth/Firestore emulator cases.
 These rules remain undeployed until the broader root cutover is ready.
 
+The sync sheet now lets the owner open a failed calendar event, correct it,
+review the resubmission, and replace its rejected outbox operations with one
+fresh patch. The immutable audit history names the superseded operations.
+Field conflicts show the interval as localized dates and times. A rejected
+event no longer holds unrelated task writes in the same sync batch. Repository,
+coordinator and 320 px enlarged-text widget tests cover this recovery path.
+
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
 events count once; workspaces disabled in preferences are excluded. A DST

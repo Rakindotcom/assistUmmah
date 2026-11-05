@@ -8,11 +8,13 @@ import 'package:sembast/sembast_io.dart';
 import 'package:sembast/sembast_memory.dart';
 import 'package:ummah_assist/src/productivity/core/records.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
+import 'package:ummah_assist/src/productivity/data/calendar_event_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_remote.dart';
 import 'package:ummah_assist/src/productivity/data/sync_coordinator.dart';
 import 'package:ummah_assist/src/productivity/data/task_repository.dart';
 import 'package:ummah_assist/src/productivity/data/workspace_backup.dart';
 import 'package:ummah_assist/src/productivity/domain/task.dart';
+import 'package:ummah_assist/src/productivity/domain/calendar_event.dart';
 
 void main() {
   var sequence = 0;
@@ -55,10 +57,7 @@ void main() {
         kind: RecordKind.task,
         id: created.id,
         fields: {...created.fields, 'title': 'Cloud title'},
-        clocks: {
-          ...created.clocks,
-          'title': VersionStamp(25, 'other_device')
-        },
+        clocks: {...created.clocks, 'title': VersionStamp(25, 'other_device')},
         revision: 2,
         modifiedAtMillis: created.modifiedAtMillis);
     await db.acknowledge(edit, cloud, rejectedFields: ['title']);
@@ -90,8 +89,9 @@ void main() {
     expect((await db.get(RecordKind.task, 'proposal'))!.fields['title'],
         'Cloud title');
     expect((await db.syncSnapshot()).needsAttention, 0);
-    expect((await db.history(RecordKind.task, 'proposal')).firstWhere(
-        (item) => item['id'] == conflict.operationId)['conflictResolution'],
+    expect(
+        (await db.history(RecordKind.task, 'proposal')).firstWhere(
+            (item) => item['id'] == conflict.operationId)['conflictResolution'],
         'cloud');
   });
 
@@ -122,10 +122,7 @@ void main() {
         kind: cloud.kind,
         id: cloud.id,
         fields: {...cloud.fields, 'title': 'New cloud title'},
-        clocks: {
-          ...cloud.clocks,
-          'title': VersionStamp(30, 'other_device')
-        },
+        clocks: {...cloud.clocks, 'title': VersionStamp(30, 'other_device')},
         revision: 3,
         modifiedAtMillis: cloud.modifiedAtMillis);
     await db.acceptPage([newer], null);
@@ -163,8 +160,7 @@ void main() {
         workspaceId: 'personal',
         patch: {'title': 'New intentional title'});
     expect(await db.fieldConflicts(), isEmpty);
-    expect((await db.pending()).single.patch['title'],
-        'New intentional title');
+    expect((await db.pending()).single.patch['title'], 'New intentional title');
   });
 
   test('edit and outbox survive a real file-backed close and reopen', () async {
@@ -624,8 +620,7 @@ void main() {
       ..['formatVersion'] = 1;
     final oldArchive = jsonEncode({
       ...payload,
-      'checksum':
-          sha256.convert(utf8.encode(canonicalJson(payload))).toString()
+      'checksum': sha256.convert(utf8.encode(canonicalJson(payload))).toString()
     });
     expect(await legacy.importArchive(oldArchive), 1);
     expect((await legacy.get(RecordKind.task, 'proposal'))!.fields['title'],
@@ -955,6 +950,28 @@ void main() {
     expect((await db.syncSnapshot()).pending, 1);
     await expectLater(task(db, 'new'), throwsStateError);
   });
+
+  test('a rejected calendar event does not block unrelated task sync',
+      () async {
+    final db = await memory();
+    addTearDown(db.close);
+    await CalendarEventRepository(db).create(CalendarEvent(
+        id: 'meeting',
+        workspaceId: 'personal',
+        title: 'Meeting',
+        start: DateTime.utc(2026, 11, 5, 9),
+        end: DateTime.utc(2026, 11, 5, 10),
+        timeZone: 'Asia/Dhaka'));
+    await TaskRepository(db).createTask(ProductivityTask(
+        id: 'proposal', workspaceId: 'personal', title: 'Proposal'));
+    final remote = _Remote()..rejectedEventKeys.add('calendarEvent--meeting');
+    final coordinator = SyncCoordinator(database: db, remote: remote);
+    addTearDown(coordinator.dispose);
+    await coordinator.sync();
+    expect(remote.records.containsKey('task--proposal'), isTrue);
+    expect(remote.records.containsKey('calendarEvent--meeting'), isFalse);
+    expect((await db.attention()).single.errorCode, 'invalid-calendar-event');
+  });
 }
 
 class _Remote implements ProductivityRemote {
@@ -965,11 +982,15 @@ class _Remote implements ProductivityRemote {
   Completer<void>? gate;
   SyncFailure? failure;
   final rejectedRecordKeys = <String>{};
+  final rejectedEventKeys = <String>{};
   @override
   Future<RemoteAcknowledgement> apply(SyncOperation operation) async {
     if (!started.isCompleted) started.complete();
     await gate?.future;
     if (failure != null) throw failure!;
+    if (rejectedEventKeys.contains(operation.recordKey)) {
+      throw const SyncFailure('invalid-calendar-event', permanent: true);
+    }
     if (rejectedRecordKeys.contains(operation.recordKey)) {
       throw const SyncFailure('circular-reference', permanent: true);
     }

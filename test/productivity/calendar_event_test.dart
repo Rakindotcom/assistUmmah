@@ -212,4 +212,30 @@ void main() {
     expect(second, '2026-11-05T09:00:00.000001Z');
     expect(first.compareTo(second), lessThan(0));
   });
+
+  test('reviewed calendar failure replaces stale queue without losing audit',
+      () async {
+    await events.create(event('meeting'));
+    final rejected = (await db.pending()).single;
+    await db.recordFailure(rejected, 'invalid-calendar-event', permanent: true);
+    await events.edit('meeting', {'title': 'Corrected meeting'});
+    final corrected = (await db.queued()).last;
+    final retry = await db.resubmitCalendarEventFailure('meeting');
+    expect((await db.pending()).single.id, retry.id);
+    expect(retry.patch['title'], 'Corrected meeting');
+    expect(retry.patch['interval'], isA<Map>());
+    expect(
+        CalendarEvent.fromRecord(applyRecordOperation(null, retry).record)
+            .title,
+        'Corrected meeting');
+    final history = await db.history(RecordKind.calendarEvent, 'meeting');
+    expect(
+        history
+            .firstWhere((entry) => entry['id'] == rejected.id)['supersededBy'],
+        retry.id);
+    expect(
+        history
+            .firstWhere((entry) => entry['id'] == corrected.id)['supersededBy'],
+        retry.id);
+  });
 }

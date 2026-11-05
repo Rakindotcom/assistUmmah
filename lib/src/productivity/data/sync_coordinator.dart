@@ -104,7 +104,8 @@ class SyncCoordinator extends ChangeNotifier {
             if (const {
               'circular-reference',
               'different-workspace',
-              'invalid-task'
+              'invalid-task',
+              'invalid-calendar-event'
             }.contains(failure.code)) {
               continue;
             }

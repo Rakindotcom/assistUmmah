@@ -611,21 +611,43 @@ class ProductivityDatabase {
     return current;
   }
 
-  /// Called only after a user reviews and corrects a graph conflict. The old
-  /// operations were rejected before a server write; their immutable audit
-  /// entries remain, while one fresh patch includes every unsynced field.
+  /// Called only after a user reviews and corrects a graph conflict.
   Future<SyncOperation> resubmitTaskGraphConflict(
     String taskId, {
     required void Function(WorkspaceRecord, List<WorkspaceRecord>) validate,
-  }) {
-    validateRecordId(taskId);
+  }) =>
+      _resubmitRejectedRecord(
+          RecordKind.task,
+          taskId,
+          const {'circular-reference', 'different-workspace', 'invalid-task'},
+          'graph-conflict-review',
+          validate);
+
+  /// Replaces a reviewed failed event write with one complete, fresh patch.
+  /// Unrelated queued records remain untouched; prior audit entries remain.
+  Future<SyncOperation> resubmitCalendarEventFailure(String eventId) =>
+      _resubmitRejectedRecord(
+          RecordKind.calendarEvent,
+          eventId,
+          const {'invalid-calendar-event', 'permission-denied'},
+          'calendar-event-review',
+          (record, _) => CalendarEvent.fromRecord(record));
+
+  Future<SyncOperation> _resubmitRejectedRecord(
+    RecordKind kind,
+    String recordId,
+    Set<String> recoverable,
+    String reason,
+    void Function(WorkspaceRecord, List<WorkspaceRecord>) validate,
+  ) {
+    validateRecordId(recordId);
     final operationId = newRecordId();
     final now = _clock().toUtc().millisecondsSinceEpoch;
     return _db.transaction((transaction) async {
       await _assertWritable(transaction);
-      final key = '${RecordKind.task.name}--$taskId';
+      final key = '${kind.name}--$recordId';
       final raw = await _records.record(key).get(transaction);
-      if (raw == null) throw StateError('Task no longer exists.');
+      if (raw == null) throw StateError('Record no longer exists.');
       final record = _decode(raw);
       final rows = await _records.find(transaction);
       validate(
@@ -636,17 +658,12 @@ class ProductivityDatabase {
           .map((row) => (row.value, SyncOperation.fromJson(row.value)))
           .where((entry) => entry.$2.recordKey == key)
           .toList(growable: false);
-      const recoverable = {
-        'circular-reference',
-        'different-workspace',
-        'invalid-task'
-      };
       final rejected = operations
           .where((entry) => entry.$1['needsAttention'] == true)
           .toList(growable: false);
       if (rejected.isEmpty ||
           rejected.any((entry) => !recoverable.contains(entry.$2.errorCode))) {
-        throw StateError('This task has no reviewed graph conflict.');
+        throw StateError('This record has no reviewed sync failure.');
       }
       final fields = <String>{
         for (final entry in operations) ...entry.$2.patch.keys
@@ -673,8 +690,8 @@ class ProductivityDatabase {
       final operation = SyncOperation(
           id: operationId,
           ownerId: uid,
-          kind: RecordKind.task,
-          recordId: taskId,
+          kind: kind,
+          recordId: recordId,
           patch: patch,
           stamp: stamp,
           createdAtMillis: now);
@@ -690,7 +707,7 @@ class ProductivityDatabase {
         ...operation.payload,
         'before': record.toJson(),
         'source': 'local',
-        'reason': 'graph-conflict-review',
+        'reason': reason,
         'supersedes': operations.map((entry) => entry.$2.id).toList(),
       });
       await _meta.record('clock').put(transaction, counter);

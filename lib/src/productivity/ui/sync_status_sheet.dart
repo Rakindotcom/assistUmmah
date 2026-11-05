@@ -4,12 +4,17 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../core/records.dart';
+import '../data/calendar_event_repository.dart';
 import '../data/productivity_session.dart';
 import '../data/task_repository.dart';
 import '../data/workspace_backup.dart';
+import '../domain/calendar_day.dart';
+import '../domain/calendar_event.dart';
 import '../domain/experience_options.dart';
+import '../domain/planning_time_zone.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
+import 'calendar_page.dart';
 import 'experience_strings.dart';
 import 'task_editor_page.dart';
 
@@ -78,6 +83,7 @@ class _ProductivitySyncStatusSheetState
         'status' => strings.text('Status', 'অবস্থা'),
         'priority' => strings.text('Priority', 'অগ্রাধিকার'),
         'scheduledAt' => strings.text('Scheduled time', 'নির্ধারিত সময়'),
+        'interval' => strings.text('Event time', 'ইভেন্টের সময়'),
         'deadlineAt' => strings.text('Deadline', 'শেষ সময়'),
         'dependencies' => strings.text('Prerequisites', 'পূর্বশর্ত'),
         'parentId' => strings.text('Parent task', 'মূল কাজ'),
@@ -87,6 +93,23 @@ class _ProductivitySyncStatusSheetState
 
   String _value(Object? value) {
     if (value == null) return strings.text('Empty', 'খালি');
+    if (value is Map &&
+        value['start'] is String &&
+        value['end'] is String &&
+        value['timeZone'] is String) {
+      try {
+        final zone = value['timeZone'] as String;
+        final start = PlanningTimeZone.inZone(
+            DateTime.parse(value['start'] as String), zone);
+        final end = PlanningTimeZone.inZone(
+            DateTime.parse(value['end'] as String), zone);
+        String label(DateTime local) =>
+            '${strings.date(local)} ${strings.time(local, use24HourClock: widget.options.use24HourClock)} ${local.timeZoneName}';
+        return '${label(start)} – ${label(end)}';
+      } catch (_) {
+        // Keep the raw value reviewable if an old or forged record is invalid.
+      }
+    }
     if (value is bool) {
       return value ? strings.text('Yes', 'হ্যাঁ') : strings.text('No', 'না');
     }
@@ -98,8 +121,8 @@ class _ProductivitySyncStatusSheetState
     final choice = await showDialog<String>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-              title: Text(strings.text('Review conflicting values',
-                  'ভিন্ন তথ্য পর্যালোচনা করুন')),
+              title: Text(strings.text(
+                  'Review conflicting values', 'ভিন্ন তথ্য পর্যালোচনা করুন')),
               content: SingleChildScrollView(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -178,7 +201,12 @@ class _ProductivitySyncStatusSheetState
   }
 
   Future<void> _review(SyncOperation operation) async {
-    if (_busy || operation.kind != RecordKind.task) return;
+    if (_busy) return;
+    if (operation.kind == RecordKind.calendarEvent) {
+      await _reviewEvent(operation);
+      return;
+    }
+    if (operation.kind != RecordKind.task) return;
     final db = widget.session.database;
     final record = await db.get(RecordKind.task, operation.recordId);
     if (!mounted) return;
@@ -211,6 +239,76 @@ class _ProductivitySyncStatusSheetState
             projects: projects)));
     if (!mounted || edited != true) return;
     await _confirmAndResubmit(task.id);
+  }
+
+  Future<void> _reviewEvent(SyncOperation operation) async {
+    final db = widget.session.database;
+    final record = await db.get(RecordKind.calendarEvent, operation.recordId);
+    if (!mounted) return;
+    if (record == null) {
+      _message(strings.text('This event is missing from local storage.',
+          'এই ইভেন্টটি স্থানীয় সংরক্ষণে পাওয়া যায়নি।'));
+      return;
+    }
+    if (!record.deleted) {
+      CalendarEvent event;
+      try {
+        event = CalendarEvent.fromRecord(record);
+      } catch (_) {
+        _message(strings.text('Export a backup before repairing this event.',
+            'ইভেন্টটি ঠিক করার আগে ব্যাকআপ নিন।'));
+        return;
+      }
+      final day = CalendarDay.fromDate(
+          PlanningTimeZone.inZone(event.start, widget.options.timeZone));
+      final edited = await Navigator.of(context).push<bool>(MaterialPageRoute(
+          builder: (_) => CalendarEventEditorPage(
+              repository: CalendarEventRepository(db),
+              options: widget.options,
+              day: day,
+              event: event)));
+      if (!mounted || edited != true) return;
+    }
+    final current = await db.get(RecordKind.calendarEvent, operation.recordId);
+    if (!mounted || current == null) return;
+    final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+              title: Text(current.deleted
+                  ? strings.text('Sync this event deletion?',
+                      'ইভেন্ট মোছার তথ্য সিঙ্ক করবেন?')
+                  : strings.text(
+                      'Send reviewed event?', 'পর্যালোচিত ইভেন্ট পাঠাবেন?')),
+              content: Text(current.deleted
+                  ? strings.text(
+                      'This event was deleted on this device. Its deletion will be sent again.',
+                      'এই ডিভাইসে ইভেন্টটি মোছা হয়েছে। মোছার তথ্য আবার পাঠানো হবে।')
+                  : strings.text(
+                      'Your corrected event will be sent again. Changes to the same fields on another device may be replaced.',
+                      'সংশোধিত ইভেন্ট আবার পাঠানো হবে। অন্য ডিভাইসে একই অংশ বদলে থাকলে তা প্রতিস্থাপিত হতে পারে।')),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(strings.text('Cancel', 'বাতিল'))),
+                FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: Text(strings.text('Send', 'পাঠান'))),
+              ],
+            ));
+    if (!mounted || confirmed != true) return;
+    setState(() => _busy = true);
+    try {
+      await db.resubmitCalendarEventFailure(operation.recordId);
+      await widget.session.sync?.sync(force: true);
+      if (mounted) setState(_refresh);
+    } catch (_) {
+      _message(strings.text(
+          'Could not resubmit this event. Your edits are saved.',
+          'ইভেন্টটি আবার পাঠানো যায়নি। আপনার পরিবর্তন সংরক্ষিত আছে।'));
+      if (mounted) setState(_refresh);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _confirmAndResubmit(String taskId,
@@ -344,8 +442,14 @@ class _ProductivitySyncStatusSheetState
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                            strings.text('Task needs review',
-                                                'কাজটি পর্যালোচনা দরকার'),
+                                            operation.kind ==
+                                                    RecordKind.calendarEvent
+                                                ? strings.text(
+                                                    'Calendar event needs review',
+                                                    'ক্যালেন্ডার ইভেন্ট পর্যালোচনা দরকার')
+                                                : strings.text(
+                                                    'Task needs review',
+                                                    'কাজটি পর্যালোচনা দরকার'),
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleMedium),
@@ -357,15 +461,21 @@ class _ProductivitySyncStatusSheetState
                                             operation.errorCode ??
                                                 'save-failed')),
                                         const SizedBox(height: 8),
-                                        TextButton.icon(
-                                            onPressed: _busy
-                                                ? null
-                                                : () => _review(operation),
-                                            icon:
-                                                const Icon(Icons.edit_outlined),
-                                            label: Text(strings.text(
-                                                'Review task',
-                                                'কাজ পর্যালোচনা করুন'))),
+                                        if (operation.kind == RecordKind.task ||
+                                            operation.kind ==
+                                                RecordKind.calendarEvent)
+                                          TextButton.icon(
+                                              onPressed: _busy
+                                                  ? null
+                                                  : () => _review(operation),
+                                              icon: const Icon(
+                                                  Icons.edit_outlined),
+                                              label: Text(operation.kind ==
+                                                      RecordKind.calendarEvent
+                                                  ? strings.text('Review event',
+                                                      'ইভেন্ট পর্যালোচনা করুন')
+                                                  : strings.text('Review task',
+                                                      'কাজ পর্যালোচনা করুন'))),
                                       ])));
                         });
                   }),
