@@ -51,6 +51,10 @@ class TaskRepository {
               .map(ProductivityTask.fromRecord)
               .toList(growable: false));
 
+  Stream<List<ProductivityTask>> watchAllTasks() =>
+      database.watch(kind: RecordKind.task).map((records) =>
+          records.map(ProductivityTask.fromRecord).toList(growable: false));
+
   Stream<List<ProductivityProject>> watchProjects(String workspaceId) =>
       database.watch(kind: RecordKind.project, workspaceId: workspaceId).map(
           (records) => records

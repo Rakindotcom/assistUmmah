@@ -2,17 +2,26 @@ import 'package:flutter/material.dart';
 
 import '../core/records.dart';
 import '../data/calendar_event_repository.dart';
+import '../data/task_repository.dart';
 import '../domain/calendar_day.dart';
 import '../domain/calendar_event.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
+import '../domain/task.dart';
 import 'calendar_day_timeline.dart';
 import 'experience_strings.dart';
 
 class ProductivityCalendarPage extends StatefulWidget {
   const ProductivityCalendarPage(
-      {super.key, required this.repository, required this.options, this.clock});
+      {super.key,
+      required this.repository,
+      required this.options,
+      this.taskRepository,
+      this.onOpenTask,
+      this.clock});
   final CalendarEventRepository repository;
+  final TaskRepository? taskRepository;
+  final ValueChanged<ProductivityTask>? onOpenTask;
   final ExperienceOptions options;
   final DateTime Function()? clock;
   @override
@@ -24,6 +33,8 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
   late CalendarDay _day = CalendarDay.fromDate(PlanningTimeZone.inZone(
       (widget.clock ?? DateTime.now)(), widget.options.timeZone));
   late Stream<List<CalendarEvent>> _events = widget.repository.watchEvents();
+  late Stream<List<ProductivityTask>>? _tasks =
+      widget.taskRepository?.watchAllTasks();
   bool _timeline = false;
   ExperienceStrings get strings => ExperienceStrings(widget.options.language);
 
@@ -32,6 +43,9 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.repository != widget.repository) {
       _events = widget.repository.watchEvents();
+    }
+    if (oldWidget.taskRepository != widget.taskRepository) {
+      _tasks = widget.taskRepository?.watchAllTasks();
     }
   }
 
@@ -110,13 +124,23 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                   ])),
               Expanded(
                   child: _timeline
-                      ? CalendarDayTimeline(
-                          key: ValueKey('$_day-${widget.options.timeZone}'),
-                          day: _day,
-                          events: events,
-                          options: widget.options,
-                          now: (widget.clock ?? DateTime.now)(),
-                          onOpen: _edit)
+                      ? _tasks == null
+                          ? _timelineView(events, const [])
+                          : StreamBuilder<List<ProductivityTask>>(
+                              stream: _tasks,
+                              builder: (context, tasks) {
+                                if (tasks.hasError) {
+                                  return Center(
+                                      child: Text(strings.text(
+                                          'Could not load scheduled tasks.',
+                                          'সময় নির্ধারিত কাজগুলো খোলা যায়নি।')));
+                                }
+                                if (!tasks.hasData) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+                                return _timelineView(events, tasks.data!);
+                              })
                       : events.isEmpty
                           ? Center(
                               child: Text(strings.text('No events on this day.',
@@ -163,6 +187,18 @@ class _ProductivityCalendarPageState extends State<ProductivityCalendarPage> {
                 icon: const Icon(Icons.add),
                 label: Text(strings.text('Add event', 'ইভেন্ট যোগ'))));
       });
+
+  Widget _timelineView(
+          List<CalendarEvent> events, List<ProductivityTask> tasks) =>
+      CalendarDayTimeline(
+          key: ValueKey('$_day-${widget.options.timeZone}'),
+          day: _day,
+          events: events,
+          tasks: tasks,
+          options: widget.options,
+          now: (widget.clock ?? DateTime.now)(),
+          onOpen: _edit,
+          onOpenTask: widget.onOpenTask);
 }
 
 class CalendarEventEditorPage extends StatefulWidget {

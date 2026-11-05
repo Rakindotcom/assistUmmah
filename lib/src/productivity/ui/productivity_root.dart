@@ -394,6 +394,38 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
     }
   }
 
+  Future<void> _openCalendarTask(ProductivityTask task) async {
+    try {
+      final records =
+          await widget.session.database.list(workspaceId: task.workspaceId);
+      if (!mounted) return;
+      final tasks = records
+          .where((record) => record.kind == RecordKind.task)
+          .map(ProductivityTask.fromRecord)
+          .toList(growable: false);
+      final current = tasks.where((value) => value.id == task.id).firstOrNull;
+      if (current == null) return;
+      await Navigator.of(context).push<bool>(MaterialPageRoute(
+          builder: (_) => ProductivityTaskEditorPage(
+              repository: _tasks,
+              options: widget.options,
+              workspaceId: task.workspaceId,
+              task: current,
+              tasks: tasks,
+              projects: records
+                  .where((record) => record.kind == RecordKind.project)
+                  .map(ProductivityProject.fromRecord)
+                  .toList(growable: false))));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(ExperienceStrings(widget.options.language).text(
+                'Could not open the scheduled task.',
+                'সময় নির্ধারিত কাজটি খোলা যায়নি।'))));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final options = widget.options;
@@ -434,8 +466,11 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             ]),
       body: switch (page) {
         'inbox' => UniversalInboxPage(repository: _tasks, options: options),
-        'calendar' =>
-          ProductivityCalendarPage(repository: _calendar, options: options),
+        'calendar' => ProductivityCalendarPage(
+            repository: _calendar,
+            taskRepository: _tasks,
+            onOpenTask: (task) => unawaited(_openCalendarTask(task)),
+            options: options),
         'settings' => ProductivitySettingsPage(
             repository: widget.repository,
             options: options,

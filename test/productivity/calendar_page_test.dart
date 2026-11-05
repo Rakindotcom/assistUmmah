@@ -5,9 +5,11 @@ import 'package:ummah_assist/src/app_theme.dart';
 import 'package:ummah_assist/src/productivity/core/records.dart';
 import 'package:ummah_assist/src/productivity/data/calendar_event_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
+import 'package:ummah_assist/src/productivity/data/task_repository.dart';
 import 'package:ummah_assist/src/productivity/domain/calendar_day.dart';
 import 'package:ummah_assist/src/productivity/domain/calendar_event.dart';
 import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
+import 'package:ummah_assist/src/productivity/domain/task.dart';
 import 'package:ummah_assist/src/productivity/ui/calendar_page.dart';
 import 'package:ummah_assist/src/productivity/ui/calendar_day_timeline.dart';
 
@@ -205,6 +207,88 @@ void main() {
         25 * CalendarDayTimeline.pixelsPerHour + 24);
     expect(find.textContaining('01:00 EDT'), findsOneWidget);
     expect(find.textContaining('01:00 EST'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('hourly timeline shows estimated task blocks and opens a task',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final db = (await tester.runAsync(() => ProductivityDatabase.open(
+        uid: 'calendar-task',
+        factory: databaseFactoryMemory,
+        path: 'calendar-task')))!;
+    addTearDown(db.close);
+    final tasks = TaskRepository(db);
+    await tester.runAsync(() async {
+      await tasks.createTask(ProductivityTask(
+          id: 'planned',
+          workspaceId: 'personal',
+          title: 'Write report',
+          scheduledAt: DateTime.utc(2026, 11, 5, 9),
+          estimatedMinutes: 90,
+          inbox: false));
+      await tasks.createTask(ProductivityTask(
+          id: 'unestimated',
+          workspaceId: 'personal',
+          title: 'Unestimated',
+          scheduledAt: DateTime.utc(2026, 11, 5, 10),
+          inbox: false));
+    });
+    ProductivityTask? opened;
+    await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: ProductivityCalendarPage(
+            repository: CalendarEventRepository(db),
+            taskRepository: tasks,
+            onOpenTask: (task) => opened = task,
+            options: ExperienceOptions(language: 'en', timeZone: 'Asia/Dhaka'),
+            clock: () => DateTime.utc(2026, 11, 5, 9))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Show hourly timeline'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('calendar-task-planned')).hitTestable(),
+        findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('calendar-task-unestimated')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('calendar-task-planned')));
+    expect(opened?.id, 'planned');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('timeline clips a cross-midnight event at the day boundary',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final event = CalendarEvent(
+        id: 'overnight',
+        workspaceId: 'personal',
+        title: 'Night shift',
+        start: DateTime.utc(2026, 11, 4, 23, 30),
+        end: DateTime.utc(2026, 11, 5, 1, 30),
+        timeZone: 'UTC');
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: CalendarDayTimeline(
+                day: CalendarDay(2026, 11, 5),
+                events: [event],
+                options: ExperienceOptions(language: 'en', timeZone: 'UTC'),
+                now: DateTime.utc(2026, 11, 5),
+                onOpen: (_) {}))));
+    final grid =
+        tester.getTopLeft(find.byKey(const ValueKey('calendar-timeline-grid')));
+    final block = tester
+        .getTopLeft(find.byKey(const ValueKey('calendar-event-overnight')));
+    expect(block.dy - grid.dy, 6);
+    expect(
+        tester
+            .getSize(find.byKey(const ValueKey('calendar-event-overnight')))
+            .height,
+        90 * CalendarDayTimeline.pixelsPerHour / 60 - 4);
     expect(tester.takeException(), isNull);
   });
 }

@@ -7,6 +7,7 @@ import '../domain/calendar_day.dart';
 import '../domain/calendar_event.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
+import '../domain/task.dart';
 import 'experience_strings.dart';
 
 /// An elapsed-time grid. Building ticks from instants (rather than assuming a
@@ -16,15 +17,19 @@ class CalendarDayTimeline extends StatefulWidget {
     super.key,
     required this.day,
     required this.events,
+    this.tasks = const [],
     required this.options,
     required this.onOpen,
+    this.onOpenTask,
     this.now,
   });
 
   final CalendarDay day;
   final List<CalendarEvent> events;
+  final List<ProductivityTask> tasks;
   final ExperienceOptions options;
   final ValueChanged<CalendarEvent> onOpen;
+  final ValueChanged<ProductivityTask>? onOpenTask;
   final DateTime? now;
 
   static const double pixelsPerHour = 72;
@@ -48,10 +53,23 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
     final end = tz.TZDateTime(place, next.year, next.month, next.day).toUtc();
     final now = (widget.now ?? DateTime.now()).toUtc();
     final today = now.isBefore(end) && !now.isBefore(start);
-    final upcoming = widget.events
-        .where((event) => event.start.isBefore(end) && event.end.isAfter(start))
-        .where((event) => !today || event.end.isAfter(now))
-        .map((event) => event.start.isBefore(start) ? start : event.start)
+    final enabled = widget.options.modules.map((module) => module.name).toSet();
+    final starts = <({DateTime start, DateTime end})>[
+      for (final event in widget.events) (start: event.start, end: event.end),
+      for (final task in widget.tasks)
+        if (enabled.contains(task.workspaceId) &&
+            !task.archived &&
+            task.scheduledAt != null &&
+            task.estimatedMinutes > 0)
+          (
+            start: task.scheduledAt!,
+            end: task.scheduledAt!.add(Duration(minutes: task.estimatedMinutes))
+          ),
+    ];
+    final upcoming = starts
+        .where((item) => item.start.isBefore(end) && item.end.isAfter(start))
+        .where((item) => !today || item.end.isAfter(now))
+        .map((item) => item.start.isBefore(start) ? start : item.start)
         .toList()
       ..sort();
     final target = upcoming.isNotEmpty
@@ -79,6 +97,7 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
     final day = widget.day;
     final options = widget.options;
     final events = widget.events;
+    final tasks = widget.tasks;
     final now = (widget.now ?? DateTime.now()).toUtc();
     final start = tz.TZDateTime(place, day.year, day.month, day.day).toUtc();
     final next = day.addDays(1);
@@ -91,16 +110,35 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
               'নির্বাচিত সময় অঞ্চলে এই তারিখে কোনো স্থানীয় ঘণ্টা নেই।')));
     }
 
+    final enabled = options.modules.map((module) => module.name).toSet();
     final entries = <_TimelineEntry>[
       for (final event in events)
         if (event.start.isBefore(end) && event.end.isAfter(start))
-          _TimelineEntry(
+          _TimelineEntry.event(
               event,
               event.start.isBefore(start) ? start : event.start,
               event.end.isAfter(end) ? end : event.end),
+      for (final task in tasks)
+        if (enabled.contains(task.workspaceId) &&
+            !task.archived &&
+            task.scheduledAt != null &&
+            task.estimatedMinutes > 0)
+          if (task.scheduledAt!.isBefore(end) &&
+              task.scheduledAt!
+                  .add(Duration(minutes: task.estimatedMinutes))
+                  .isAfter(start))
+            _TimelineEntry.task(
+                task,
+                task.scheduledAt!.isBefore(start) ? start : task.scheduledAt!,
+                task.scheduledAt!
+                        .add(Duration(minutes: task.estimatedMinutes))
+                        .isAfter(end)
+                    ? end
+                    : task.scheduledAt!
+                        .add(Duration(minutes: task.estimatedMinutes))),
     ]..sort((a, b) {
         final order = a.start.compareTo(b.start);
-        return order != 0 ? order : a.event.id.compareTo(b.event.id);
+        return order != 0 ? order : a.id.compareTo(b.id);
       });
     final laneEnds = <DateTime>[];
     for (final entry in entries) {
@@ -122,6 +160,18 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
           TimeOfDay.fromDateTime(local),
           alwaysUse24HourFormat: options.use24HourClock);
       return strings.number(formatted);
+    }
+
+    String description(_TimelineEntry entry) {
+      final module = WorkspaceModule.values
+          .where((value) => value.name == entry.workspaceId)
+          .firstOrNull;
+      final workspace =
+          module == null ? entry.workspaceId : strings.module(module);
+      final source = entry.task == null
+          ? strings.text('Event', 'ইভেন্ট')
+          : strings.text('Scheduled task', 'সময় নির্ধারিত কাজ');
+      return '$source · $workspace · ${entry.title} · ${time(entry.originalStart)}–${time(entry.originalEnd)}';
     }
 
     final height = minutes * CalendarDayTimeline.pixelsPerHour / 60 + 24;
@@ -186,40 +236,72 @@ class _CalendarDayTimelineState extends State<CalendarDayTimeline> {
                                           .error))),
                         for (final entry in entries)
                           Positioned(
-                              top: entry.start.difference(start).inMinutes * CalendarDayTimeline.pixelsPerHour / 60 +
+                              top: entry.start.difference(start).inMinutes *
+                                      CalendarDayTimeline.pixelsPerHour /
+                                      60 +
                                   6,
                               left: CalendarDayTimeline.gutter +
                                   entry.lane * laneWidth,
                               width: laneWidth - 4,
                               height: math.max(
                                   20,
-                                  entry.end.difference(entry.start).inMinutes * CalendarDayTimeline.pixelsPerHour / 60 -
+                                  entry.end.difference(entry.start).inMinutes *
+                                          CalendarDayTimeline.pixelsPerHour /
+                                          60 -
                                       4),
                               child: Material(
                                   key: ValueKey(
-                                      'calendar-event-${entry.event.id}'),
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
+                                      'calendar-${entry.task == null ? 'event' : 'task'}-${entry.id}'),
+                                  color: entry.task == null
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                   clipBehavior: Clip.antiAlias,
-                                  child: InkWell(
-                                      onTap: () => widget.onOpen(entry.event),
-                                      child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 3),
-                                          child: Text('${entry.event.title}  ${time(entry.event.start)}–${time(entry.event.end)}',
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context).textTheme.labelMedium))))),
+                                  child: Tooltip(
+                                      message: description(entry),
+                                      child: InkWell(
+                                          onTap: entry.task == null
+                                              ? () =>
+                                                  widget.onOpen(entry.event!)
+                                              : widget.onOpenTask == null
+                                                  ? null
+                                                  : () => widget
+                                                      .onOpenTask!(entry.task!),
+                                          child: Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8, vertical: 3),
+                                              child: Text('${entry.title}  ${time(entry.originalStart)}–${time(entry.originalEnd)}', maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelMedium)))))),
                       ])))));
     });
   }
 }
 
 class _TimelineEntry {
-  _TimelineEntry(this.event, this.start, this.end);
-  final CalendarEvent event;
+  _TimelineEntry.event(CalendarEvent value, this.start, this.end)
+      : event = value,
+        task = null,
+        id = value.id,
+        workspaceId = value.workspaceId,
+        title = value.title,
+        originalStart = value.start,
+        originalEnd = value.end;
+  _TimelineEntry.task(ProductivityTask value, this.start, this.end)
+      : event = null,
+        task = value,
+        id = value.id,
+        workspaceId = value.workspaceId,
+        title = value.title,
+        originalStart = value.scheduledAt!,
+        originalEnd =
+            value.scheduledAt!.add(Duration(minutes: value.estimatedMinutes));
+  final CalendarEvent? event;
+  final ProductivityTask? task;
+  final String id, title, workspaceId;
+  final DateTime originalStart, originalEnd;
   final DateTime start, end;
   int lane = 0;
 }
