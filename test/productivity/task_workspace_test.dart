@@ -4,9 +4,11 @@ import 'package:sembast/sembast_memory.dart' show databaseFactoryMemory;
 import 'package:ummah_assist/src/app_localization.dart';
 import 'package:ummah_assist/src/app_theme.dart';
 import 'package:ummah_assist/src/productivity/core/records.dart';
+import 'package:ummah_assist/src/productivity/data/calendar_event_repository.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/task_repository.dart';
 import 'package:ummah_assist/src/productivity/domain/calendar_day.dart';
+import 'package:ummah_assist/src/productivity/domain/calendar_event.dart';
 import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
 import 'package:ummah_assist/src/productivity/domain/task.dart';
 import 'package:ummah_assist/src/productivity/domain/project.dart';
@@ -229,7 +231,23 @@ void main() {
         find.text('At least 15 min over your task capacity.'), findsOneWidget);
     expect(find.textContaining('1 scheduled task has no estimate'),
         findsOneWidget);
+    await tester.runAsync(() => CalendarEventRepository(db).create(
+        CalendarEvent(
+            id: 'long-meeting',
+            workspaceId: 'work',
+            title: 'Long meeting',
+            start: DateTime.utc(2026, 11, 3, 3),
+            end: DateTime.utc(2026, 11, 3, 4),
+            timeZone: 'Asia/Dhaka')));
+    await tester.runAsync(() => db
+        .watchKinds({RecordKind.calendarEvent}).firstWhere(
+            (records) => records.any((record) => record.id == 'long-meeting')));
+    await tester.pumpAndSettle();
+    expect(find.text('135 / 60 min of task capacity'), findsOneWidget);
+    expect(find.textContaining('60 min blocked by calendar events'),
+        findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('postponing past a deadline requires an explicit choice',
@@ -255,8 +273,8 @@ void main() {
     await tester.pumpAndSettle();
 
     Future<void> chooseTomorrow() async {
+      await scrollTo(tester, find.text('Send proposal'));
       final menu = find.byTooltip('Task actions');
-      await tester.ensureVisible(menu);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(menu);
       await tester.pumpAndSettle();

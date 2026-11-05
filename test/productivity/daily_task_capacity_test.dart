@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ummah_assist/src/productivity/domain/calendar_day.dart';
+import 'package:ummah_assist/src/productivity/domain/calendar_event.dart';
 import 'package:ummah_assist/src/productivity/domain/daily_task_capacity.dart';
 import 'package:ummah_assist/src/productivity/domain/experience_options.dart';
 import 'package:ummah_assist/src/productivity/domain/recurrence.dart';
@@ -122,5 +123,58 @@ void main() {
         isCompleted: (_) => false);
     expect(plan.plannedCount, 1);
     expect(plan.plannedMinutes, 25);
+  });
+
+  test('overlapping commitments reduce free work time once', () {
+    final options = ExperienceOptions(
+        language: 'en',
+        timeZone: 'Asia/Dhaka',
+        workdayStartsAt: 9 * 60,
+        workdayEndsAt: 12 * 60,
+        dailyCapacityMinutes: 180);
+    CalendarEvent event(String id, int startHour, int endHour) => CalendarEvent(
+        id: id,
+        workspaceId: 'personal',
+        title: id,
+        start: DateTime.utc(2026, 11, 3, startHour - 6),
+        end: DateTime.utc(2026, 11, 3, endHour - 6),
+        timeZone: 'Asia/Dhaka');
+    final plan = DailyTaskCapacity.calculate(tasks: [
+      ProductivityTask(
+          id: 'planned',
+          workspaceId: 'personal',
+          title: 'Plan',
+          scheduledDay: day,
+          estimatedMinutes: 100)
+    ], events: [
+      event('meeting', 9, 10),
+      event('overlap', 9, 11),
+      event('outside', 13, 14),
+    ], day: day, options: options, isCompleted: (_) => false);
+    expect(plan.calendarBusyMinutes, 120);
+    expect(plan.capacityMinutes, 60);
+    expect(plan.overByMinutes, 40);
+  });
+
+  test('commitment clipping honors a daylight-saving transition', () {
+    final transition = CalendarDay(2026, 3, 8);
+    final options = ExperienceOptions(
+        language: 'en',
+        timeZone: 'America/New_York',
+        workingDays: [7],
+        workdayStartsAt: 60,
+        workdayEndsAt: 240,
+        dailyCapacityMinutes: 180);
+    final plan = DailyTaskCapacity.calculate(tasks: const [], events: [
+      CalendarEvent(
+          id: 'before-gap',
+          workspaceId: 'personal',
+          title: 'Before',
+          start: DateTime.utc(2026, 3, 8, 6, 30),
+          end: DateTime.utc(2026, 3, 8, 7, 30),
+          timeZone: 'America/New_York')
+    ], day: transition, options: options, isCompleted: (_) => false);
+    expect(plan.calendarBusyMinutes, 60);
+    expect(plan.capacityMinutes, 60);
   });
 }

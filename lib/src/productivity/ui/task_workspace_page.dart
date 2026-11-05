@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/records.dart';
 import '../data/task_repository.dart';
 import '../domain/calendar_day.dart';
+import '../domain/calendar_event.dart';
 import '../domain/daily_task_capacity.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
@@ -54,8 +55,8 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
   void _watch() {
     _records = widget.repository.database
         .watch(workspaceId: widget.workspaceId, includeDeleted: true);
-    _planningRecords = widget.repository.database
-        .watchKinds({RecordKind.task, RecordKind.taskOccurrence});
+    _planningRecords = widget.repository.database.watchKinds(
+        {RecordKind.task, RecordKind.taskOccurrence, RecordKind.calendarEvent});
   }
 
   @override
@@ -232,6 +233,11 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
               record.kind == RecordKind.task &&
               enabled.contains(record.workspaceId))
           .map(ProductivityTask.fromRecord);
+      final events = records
+          .where((record) =>
+              record.kind == RecordKind.calendarEvent &&
+              enabled.contains(record.workspaceId))
+          .map(CalendarEvent.fromRecord);
       final occurrences = {
         for (final record in records
             .where((record) => record.kind == RecordKind.taskOccurrence))
@@ -239,6 +245,7 @@ class _TaskWorkspacePageState extends State<TaskWorkspacePage> {
       };
       final plan = DailyTaskCapacity.calculate(
           tasks: tasks,
+          events: events,
           day: day,
           options: widget.options,
           isCompleted: (task) => task.recurrence == null
@@ -574,8 +581,8 @@ class _TaskCapacityCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                   strings.text(
-                      'Includes enabled workspaces. Calendar events are not included.',
-                      'চালু কর্মপরিসরগুলো ধরা হয়েছে। ক্যালেন্ডারের সময় ধরা হয়নি।'),
+                      'Includes enabled workspaces. ${strings.number(plan.calendarBusyMinutes)} min blocked by calendar events. Connected calendars and travel time are not included.',
+                      'চালু কর্মপরিসরগুলো ধরা হয়েছে। ক্যালেন্ডার ইভেন্টে ${strings.number(plan.calendarBusyMinutes)} মিনিট ব্যস্ত। যুক্ত ক্যালেন্ডার ও যাতায়াতের সময় ধরা হয়নি।'),
                   style: Theme.of(context).textTheme.bodySmall),
               if (plan.capacityMinutes > 0) ...[
                 const SizedBox(height: 10),

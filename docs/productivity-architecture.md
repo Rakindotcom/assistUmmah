@@ -221,6 +221,13 @@ and backup import validates event fields. A 320 px enlarged-text widget test
 covers conflict display and a real edit. This is a local event slice: weekly
 grid, external calendar accounts, reminders and automatic scheduling remain
 unimplemented, and the shipped main entry still uses the legacy shell.
+
+Today task capacity now subtracts the union of local calendar commitments
+inside the configured workday from the user's daily task budget. Overlapping
+events count once; workspaces disabled in preferences are excluded. A DST
+transition uses actual elapsed time between resolved workday boundaries.
+External calendars, travel buffers and automatic task placement are still
+outside this capacity estimate.
 The [file picker API](https://pub.dev/packages/file_picker) supports the target
 platforms, but that package support is not app-level platform verification.
 
