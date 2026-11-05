@@ -11,6 +11,7 @@ import '../../pages/contacts_page.dart';
 import '../../reminder_session.dart';
 import '../../widgets/app_brand.dart';
 import '../core/records.dart';
+import '../data/calendar_event_repository.dart';
 import '../data/experience_repository.dart';
 import '../data/legacy_task_migration.dart';
 import '../data/productivity_database.dart';
@@ -21,6 +22,7 @@ import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
+import 'calendar_page.dart';
 import 'experience_strings.dart';
 import 'faith_module_page.dart';
 import 'onboarding_page.dart';
@@ -302,6 +304,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   String _page = 'inbox';
   bool _adding = false;
   late final _tasks = TaskRepository(widget.session.database);
+  late final _calendar = CalendarEventRepository(widget.session.database);
   late ReminderSession _reminders;
 
   @override
@@ -398,6 +401,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
     final pages = [
       'inbox',
       'tasks',
+      'calendar',
       if (options.faithEnabled) 'faith',
       'settings'
     ];
@@ -430,6 +434,8 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             ]),
       body: switch (page) {
         'inbox' => UniversalInboxPage(repository: _tasks, options: options),
+        'calendar' =>
+          ProductivityCalendarPage(repository: _calendar, options: options),
         'settings' => ProductivitySettingsPage(
             repository: widget.repository,
             options: options,
@@ -495,6 +501,9 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             NavigationDestination(
                 icon: const Icon(Icons.checklist),
                 label: strings.text('Tasks', 'কাজ')),
+            NavigationDestination(
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: strings.text('Calendar', 'ক্যালেন্ডার')),
             if (options.faithEnabled)
               NavigationDestination(
                   icon: const Icon(Icons.mosque_outlined),

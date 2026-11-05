@@ -210,6 +210,17 @@ checks owner, schema, checksum, duplicates, record types and history identities
 before writes. A recomputed checksum cannot bypass task field validation.
 Cancelled pickers do not report success. Exported JSON is explicitly described
 as unencrypted. Native picker behavior still needs emulator/device verification.
+
+The hidden root now includes a Calendar tab. Locally owned events use UTC
+start/end instants plus an IANA time zone and workspace identity. The editor
+rejects missing DST hours and asks which instant a repeated hour means; its
+save action stays visible at narrow phone widths. The day list spans events
+that cross midnight, displays enabled workspaces together, and flags overlaps
+using half-open intervals. Create/edit/delete commit through the local outbox,
+and backup import validates event fields. A 320 px enlarged-text widget test
+covers conflict display and a real edit. This is a local event slice: weekly
+grid, external calendar accounts, reminders and automatic scheduling remain
+unimplemented, and the shipped main entry still uses the legacy shell.
 The [file picker API](https://pub.dev/packages/file_picker) supports the target
 platforms, but that package support is not app-level platform verification.
 

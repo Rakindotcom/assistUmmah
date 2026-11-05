@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 
 import '../core/records.dart';
+import '../domain/calendar_event.dart';
 import '../domain/experience_options.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
@@ -84,6 +85,8 @@ class WorkspaceBackup {
             TaskOccurrence.fromRecord(record);
           case RecordKind.project:
             ProductivityProject.fromRecord(record);
+          case RecordKind.calendarEvent:
+            CalendarEvent.fromRecord(record);
           case RecordKind.workspace:
             if (record.fields['type'] == 'experienceOptions') {
               ExperienceOptions.fromRecord(record);
