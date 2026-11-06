@@ -34,5 +34,8 @@
   "cloudFunctionsUsed": false,
   "playConsoleAccessed": false,
   "publicDeletionPageBrowserInitialization": "pass: email and Google login controls loaded; no warning/error console entries observed; no form submitted",
-  "browserVerificationScope": "Read-only production page initialization, not an account deletion attempt."
+  "browserVerificationScope": "Read-only production page initialization, not an account deletion attempt.",
+  "testLabResultsApiEnabledForVerification": true,
+  "testLabFreeStartupCompleted": true,
+  "billingEnabledAfterCloudTest": false
 }

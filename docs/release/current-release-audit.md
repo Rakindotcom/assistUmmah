@@ -22,7 +22,7 @@ OS notification delivery or an approved Console configuration.
 | Reproducible source checkpoint | Verified | `fe768742b0b8fc4854e71f3d0138811f2a72af58`; no later app-source changes. |
 | Static analysis | Passed | `flutter analyze --no-pub`: no issues. |
 | Flutter regression suite | Passed | 525 passed, 2 browser-only future migration tests skipped. Includes phone layouts, enlarged Bangla text, semantics, core feature flows and account guards. |
-| Release evidence tooling | Passed | 3 Python tests; mismatched binary hashes invalidate historical runtime receipts. |
+| Release evidence tooling | Passed | 5 Python tests; mismatched APK/bundle hashes and resigning cloud modes cannot inherit startup proof. Cloud success cannot unlock the stronger direct-device packet gate. |
 | Deletion and ownership rules | Passed locally | 14 Auth/Firestore emulator cases after the patched lockfile install; synthetic data only. |
 | Test dependency advisories | Passed | Compatible lockfile resolution removes six moderate transitive advisories; fresh `npm ci` and audit report zero vulnerabilities. These Node packages are not shipped in the app. |
 | Live backend and legal pages | Verified | Tested rules and Hosting deployed to `assistummah`; live privacy HTML, deletion inventory, JavaScript and deletion planner match source hashes. See [backend receipt](current-backend-verification.json). |
@@ -34,19 +34,21 @@ OS notification delivery or an approved Console configuration.
 | API and ABI | Passed | Target API 36, minimum API 24, ARM64 included; debug and test flags absent. |
 | 16 KB static compatibility | Passed | All 64-bit ELF load segments aligned; generated universal APK passes 16 KB ZIP alignment and signature validation. |
 | Private/test material exclusion | Passed | Reviewer email/password literals and the native integration-test plugin are absent from the release bundle. |
-| Exact candidate native startup | Unverified | TCG software emulator connected and reported 16 KB pages, but Android boot did not complete and the activity service was unavailable; the APK was not installed/launched. Old startup receipts are invalidated for this candidate. |
+| Exact candidate native startup | Passed in cloud | ARM64 Android 16 / 16 KB Test Lab run completed successfully. Login screenshot and Firebase logs inspected; no registrar errors or fatal crashes. Original uploaded checksum verified and no-resigning mode used. See [cloud startup receipt](current-testlab-startup.json) and [original captures](current-native-startup/README.md). |
+| Independent installed hash / page-size syscall | Open | The cloud run did not independently read the installed APK hash or execute an in-app page-size syscall. The old local runtime receipt remains invalid for this candidate, and the strict packet gate remains closed. Local TCG Android failed during boot before APK installation. |
 | Exact candidate full native flows | Unverified | No physical Android phone is available. The current candidate has no full native-flow receipt. |
 | Play-installed build and Google OAuth | Manual gate | Register the Play app-signing certificate in Firebase and test the Play-installed app. Upload-key verification alone does not prove this. |
 | Store declarations and listing | Prepared, unsubmitted | [Console handoff](console-handoff.md), [listing](store-listing.md), [Data safety](data-safety.md), artwork and release notes. Console stays manual by owner choice. |
-| Current store screenshots | Open | Prior native captures have documented provenance. Re-capture changed screens from the candidate before submission. Widget renders are not store captures. |
-| GitHub hosted CI | Blocked externally | Latest observed jobs never started because the GitHub account is locked for billing. Local checks passed; no hosted CI pass is claimed. |
+| Current store screenshots | Open | Two current startup/device captures exist. The complete changed-screen set still needs re-capture from the candidate; widget renders and old profile captures are not current store artwork. |
+| GitHub hosted CI | Blocked externally | Latest observed jobs never started because the GitHub account is locked for billing. [Run 42255887870](https://github.com/Rakindotcom/assistUmmah/actions/runs/42255887870) had zero steps in all jobs. Local checks passed; no hosted CI pass is claimed. |
 | Firebase billing | Constraint preserved | Spark deployment only; no Cloud Functions or billing-plan upgrade. |
 | iOS | Unverified, outside Android publishing | No Mac/iPhone testing setup is available; do not describe this as an iOS release audit. |
 
 The complete local analyzer, Flutter, Python, Firebase and certificate logs are
 under ignored `.local/logs/current-release-*`. The tracked JSON receipts contain
-public evidence without private credentials. Historical native evidence remains
-available but is marked as belonging to an earlier bundle.
+public evidence without private credentials. Historical local/profile native evidence remains available but belongs to an
+earlier bundle. The current cloud startup receipt is independently scoped and
+does not claim authenticated-home or physical-device coverage.
 
 ## Delivered artifacts
 
@@ -63,7 +65,8 @@ available but is marked as belonging to an earlier bundle.
 
 ## Remaining publishing checks
 
-1. Run the current signed APK on Android, then install the Play-generated build
+1. Complete the signed-in native flows and independent installed-hash/page-size
+   receipt, then install the Play-generated build
    from an internal track. Check email and Google login, logout/account switch,
    core edits and reloads, deletion and interrupted deletion recovery.
 2. Test notification/location denial and revocation, approximate scheduling,

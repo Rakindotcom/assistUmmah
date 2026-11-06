@@ -11,7 +11,7 @@
   "physicalDevice": false,
   "productionAppRuntimeVerified": false,
   "productionRuntimeBundleSha256": null,
-  "productionRuntimeScope": "Current signed bundle has no successful native runtime smoke.",
+  "productionRuntimeScope": "Current candidate startup passed in Firebase Test Lab; independent installed-hash and page-size-syscall proof remains absent.",
   "historicalHardwareAcceleration": "KVM",
   "currentRuntimeAttempt": {
     "attemptedAtUtc": "2026-11-06T16:45:34.725058+00:00",
@@ -29,5 +29,6 @@
       "com.android.systemui: DeadSystemException"
     ],
     "emulatorStoppedAfterDiagnosis": true
-  }
+  },
+  "cloudProductionStartupVerified": true
 }

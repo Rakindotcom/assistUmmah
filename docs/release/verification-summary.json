@@ -1,10 +1,10 @@
 {
-  "verifiedAtUtc": "2026-11-06T16:48:37.456610+00:00",
+  "verifiedAtUtc": "2026-11-06T17:17:09.379441+00:00",
   "flutterTestsPassed": 525,
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 14,
   "releaseInputs": "pass",
-  "nativeRuntimeTested": false,
+  "nativeRuntimeTested": true,
   "playConsoleVerified": false,
   "supportEmail": "teamframecipher@gmail.com",
   "billingPlanChanged": false,
@@ -18,7 +18,8 @@
     "signed-release-smoke.json",
     "android-emulator-environment.json",
     "../ui-review.md",
-    "../dua-content-review.md"
+    "../dua-content-review.md",
+    "current-testlab-startup.json"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": false,
@@ -34,8 +35,8 @@
   "firebaseRegistrarErrorsAbsent": false,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
-  "releaseToolTestsPassed": 3,
+  "nativeEvidenceScope": "Current signed APK startup/login visually verified in ARM64 / 16 KB Firebase Test Lab using upload checksum and no-resigning mode. Independent installed APK hash and page-size syscall were not read; the stricter direct runtime receipt and full signed-in flows remain open.",
+  "releaseToolTestsPassed": 5,
   "universalApkSha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b",
   "signingIdentityMatchesPriorTestApk": true,
   "sourceCommit": "fe768742b0b8fc4854e71f3d0138811f2a72af58",
@@ -57,5 +58,8 @@
   },
   "testToolingVulnerabilities": 0,
   "firebaseTestLockSha256": "49b5a5ff7b79280a07d0693bf774bcbec1a1471e0ec9c447020de9001c706a2f",
-  "uploadPacketGateVerified": true
+  "uploadPacketGateVerified": true,
+  "cloudSignedApkStartupVerified": true,
+  "currentNativeStartupCaptureCount": 2,
+  "currentNativeStartupScope": "ARM64 Android 16 / 16 KB Test Lab startup and signed-out UI only. No credentials supplied; no full native signed-in flow or OS alert delivery claimed."
 }

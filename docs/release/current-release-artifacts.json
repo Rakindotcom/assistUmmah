@@ -26,7 +26,10 @@
   "anekBanglaAndFontLicensesBundled": true,
   "native64BitElfAlignmentAtLeast16KiB": true,
   "universalApkZipAlignment16KiB": true,
-  "nativeRuntimeVerified": false,
+  "nativeRuntimeVerified": true,
   "playInstalledBuildVerified": false,
-  "scope": "Signed production candidate exported for testing. AAB is not an approved Play upload packet; native runtime and manual Play gates remain open."
+  "scope": "Signed production candidate exported for testing. Cloud startup passed; independent installed-hash receipt, signed-in native flows and manual Play gates remain open.",
+  "nativeRuntimeScope": "Firebase Test Lab signed-out startup; verified upload checksum and no-resigning mode, without an independent installed-file hash.",
+  "nativeRuntimeEvidence": "current-testlab-startup.json",
+  "independentDeviceApkHashVerified": false
 }

@@ -122,5 +122,6 @@
   "runtime16KbVerified": false,
   "apkZipAlignmentVerified": true,
   "universalApkSignatureVerified": true,
-  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"
+  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify",
+  "cloudRuntime16KbStartupVerified": true
 }

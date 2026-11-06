@@ -21,8 +21,11 @@ The signed production AAB is
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
 Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
 copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
-binds static checks to the exact AAB hash. Native runtime proof must name that
-same hash before the upload packager will issue a Play upload packet.
+binds static checks to the exact AAB hash. The current APK passed a signed-out
+ARM64 / 16 KB [Test Lab startup check](current-testlab-startup.json). Its login
+screen and Firebase logs were inspected. An independent installed APK hash and
+page-size syscall were not captured, so the stricter direct-device receipt and
+full native-flow gates remain open before a Play upload packet can be issued.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -155,8 +158,10 @@ alignment, and adds those results to the report. A 16 KB device run and testing
 the Play-generated APKs are separate checks.
 
 Bundle verification invalidates native runtime claims when the AAB hash changes.
-A successful signed smoke records that exact hash in the bundle, emulator and
-summary evidence. The upload packager requires all four records to agree.
+A successful direct signed smoke records that exact hash in the bundle, emulator and
+summary evidence. Cloud startup receipts are separate: upload checksum, no-resigning
+mode and visual/log checks are required and their claims invalidate when either
+artifact hash changes. Cloud success does not satisfy the installed-hash gate. The upload packager requires all four records to agree.
 
 With the dedicated `rober_pothe_audit_16k` emulator running as `emulator-5556`,
 run `python3 tool/smoke_android_release.py`. The script clears only that
