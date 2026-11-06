@@ -147,9 +147,14 @@ recovery planning remain separate work.
 2. It validates the entire deterministic plan before setting
    `productivityMigrationVersion: 1` on the source.
 3. Rules freeze that source against stale updates and delete/recreate attempts.
-4. Local batches create tasks, recurring series, occurrences and Unicode-safe
+4. An owner-authenticated REST read obtains the frozen typed values. It retains
+   timestamp microseconds, 64-bit integers, bytes and reference provenance that
+   a web SDK can round or convert. The account ID token only goes to Google's
+   Firestore HTTPS endpoint or an explicit demo-project loopback emulator;
+   redirects, unbounded reads and account changes are rejected.
+5. Local batches create tasks, recurring series, occurrences and Unicode-safe
    source archive parts with stable IDs and create-only semantics.
-5. The local completion checkpoint is written after all batches. Interrupted
+6. The local completion checkpoint is written after all batches. Interrupted
    batches replay without overwriting later edits. A changed frozen source
    checksum is rejected.
 
@@ -157,9 +162,18 @@ Original bucket/section/creation metadata is retained. The importer does not
 invent completion timestamps or convert a soft scheduled day into a deadline.
 An orphan recurring instance remains a recoverable standalone task.
 
+The browser adapter test runs two real Firebase SDK clients against disposable
+Auth/Firestore emulators. It verifies the fence, sub-millisecond archive
+precision, replay after later edits/tombstones, invalid-source validation and
+account/deletion boundaries. Domain failures cross a web transaction callback
+as result values, then are thrown outside the JS Promise boundary to preserve
+their type. The check runs separately from VM tests and is configured in CI.
+Web tests configure the emulator host in Firestore Settings explicitly; this
+SDK version does not reflect useFirestoreEmulator() in its Settings getter.
+
 The fence and adapter are **not deployed or called by the legacy UI**. Main-shell
-dependency wiring, an actual Firestore adapter migration/replay test and live
-deployment verification remain open. The new root retains Faith data through
+dependency wiring, native migration/replay and live deployment verification
+remain open. The new root retains Faith data through
 its account-matched legacy repository; its prayer/growth history and reports
 do not depend on the legacy task document. General habit migration remains
 separate work. Do not activate the fence before replacing every legacy task
@@ -287,8 +301,8 @@ Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
 events count once; workspaces disabled in preferences are excluded. A DST
 transition uses actual elapsed time between resolved workday boundaries.
-External calendars, travel buffers and automatic task placement are still
-outside this capacity estimate.
+External calendars and travel buffers remain outside this capacity estimate.
+Reviewed local task placement uses the same capacity model described above.
 
 ## Verification scope
 

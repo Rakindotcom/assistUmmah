@@ -30,8 +30,14 @@ dependencies:
   sembast_web: ^2.4.6+1
   path_provider: ^2.1.6
   crypto: ^3.0.8
+  http: ^1.6.0
   file_picker: ^13.3.0
 dev_dependencies:
+  cloud_firestore_web: ^4.4.12
+  firebase_auth_web: ^5.15.3
+  firebase_core_web: ^2.24.1
+  flutter_web_plugins:
+    sdk: flutter
   integration_test:
     sdk: flutter
   flutter_test:

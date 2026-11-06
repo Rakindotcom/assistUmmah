@@ -31,3 +31,9 @@ and physical-device and iOS verification. The APK's package metadata,
 signature and ZIP alignment were checked locally. No Android emulator was
 configured on the build host and `/dev/kvm` was absent, so launch and
 interaction on Android hardware remain unverified.
+
+The isolated 6 November APK is recorded in
+`docs/release/productivity-offline-preview.json`. Its SHA-256 is
+`3bacfbb95c85ae04b95ca26391d89ab0adf58f40ad7c776da6e7ba43779fee18`.
+The earlier 5 November download path has also been replaced with this verified
+`.preview` package so it no longer distributes the shared-package build.
