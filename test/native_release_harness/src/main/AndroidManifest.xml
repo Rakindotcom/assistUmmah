@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.rakindotcom.ummah_assist" />
+    </queries>
+    <application android:label="Release audit harness" android:testOnly="true" />
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.rakindotcom.ummah_assist.release_harness"
+        android:functionalTest="false"
+        android:handleProfiling="false" />
+</manifest>
