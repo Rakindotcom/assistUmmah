@@ -6,6 +6,8 @@ import '../account/account_service.dart';
 import '../account/delete_account_page.dart';
 import '../app_repository.dart';
 import '../home_shell.dart';
+import '../reminder_service.dart';
+import 'account_access_guard.dart';
 import 'auth_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -27,6 +29,12 @@ class AuthGate extends StatelessWidget {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
+        if (snapshot.hasError) {
+          return const Scaffold(
+              body: SafeArea(
+                  child:
+                      Center(child: Text('অ্যাকাউন্টের সংযোগ পরীক্ষা করুন।'))));
+        }
         final user = snapshot.data;
         if (user == null) return const AuthScreen();
         return _AccountAccessGate(key: ValueKey(user.uid), user: user);
@@ -43,7 +51,7 @@ class _AccountAccessGate extends StatefulWidget {
 }
 
 class _AccountAccessGateState extends State<_AccountAccessGate> {
-  late Stream<DocumentSnapshot<Map<String, dynamic>>> _status;
+  late Stream<bool> _status;
   bool _signingOut = false;
   String? _signOutError;
 
@@ -57,7 +65,8 @@ class _AccountAccessGateState extends State<_AccountAccessGate> {
     _status = FirebaseFirestore.instance
         .collection('accountDeletions')
         .doc(widget.user.uid)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) => snapshot.exists);
   }
 
   Future<void> _signOut() async {
@@ -78,23 +87,16 @@ class _AccountAccessGateState extends State<_AccountAccessGate> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: _status,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-                body: Center(child: CircularProgressIndicator()));
-          }
-          if (!snapshot.hasError && snapshot.data?.exists == false) {
-            return HomeShell(
-                key: ValueKey('home-${widget.user.uid}'),
-                firebaseReady: true,
-                user: widget.user,
-                repository:
-                    AppRepository(uid: widget.user.uid, firebaseReady: true));
-          }
-          final failed = snapshot.hasError;
+  Widget build(BuildContext context) => AccountAccessGuard(
+        blockedStates: _status,
+        onAccessRevoked: ReminderService.instance.cancelAll,
+        allowedBuilder: (context) => HomeShell(
+            key: ValueKey('home-${widget.user.uid}'),
+            firebaseReady: true,
+            user: widget.user,
+            repository:
+                AppRepository(uid: widget.user.uid, firebaseReady: true)),
+        blockedBuilder: (context, failed) {
           return Scaffold(
               body: SafeArea(
                   child: Center(
@@ -126,6 +128,8 @@ class _AccountAccessGateState extends State<_AccountAccessGate> {
                     FilledButton(
                         onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
+                                settings: const RouteSettings(
+                                    name: AccountAccessGuard.deletionRoute),
                                 builder: (_) => DeleteAccountPage(
                                     usesPassword: widget.user.providerData.any(
                                         (p) => p.providerId == 'password')))),

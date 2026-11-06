@@ -4,6 +4,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ummah_assist/src/auth/account_navigation_boundary.dart';
 
 void main() {
+  testWidgets('rapid identity changes invalidate before replacement work',
+      (tester) async {
+    final sessions = StreamController<String?>();
+    addTearDown(sessions.close);
+    var invalidations = 0;
+    await tester.pumpWidget(AccountNavigationBoundary(
+      sessionIds: sessions.stream,
+      initialSessionId: 'first-user',
+      onSessionInvalidated: () {
+        invalidations++;
+        return Future<void>.error(StateError('native cancellation failed'));
+      },
+      child: const MaterialApp(home: _Home()),
+    ));
+    await tester.tap(find.text('Open history'));
+    await tester.pumpAndSettle();
+    sessions.add('second-user');
+    sessions.add('first-user');
+    await tester.pumpAndSettle();
+    expect(invalidations, 2);
+    expect(find.text('Private history', skipOffstage: false), findsNothing);
+    sessions.add('first-user');
+    await tester.pumpAndSettle();
+    expect(invalidations, 2);
+    sessions.addError(StateError('auth listener lost'));
+    await tester.pumpAndSettle();
+    expect(invalidations, 3);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('sign-out removes pushed private routes and open dialogs',
       (tester) async {
     final sessions = StreamController<String?>();
