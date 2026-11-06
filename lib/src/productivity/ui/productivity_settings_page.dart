@@ -4,7 +4,9 @@ import '../data/experience_repository.dart';
 import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
 import '../domain/planning_time_zone.dart';
+import '../notifications/task_reminder_controller.dart';
 import 'experience_strings.dart';
+import 'task_reminder_settings.dart';
 
 class ProductivitySettingsPage extends StatefulWidget {
   const ProductivitySettingsPage(
@@ -14,13 +16,15 @@ class ProductivitySettingsPage extends StatefulWidget {
       required this.backup,
       this.onOpenAccount,
       this.onOpenContacts,
-      this.onQuickAdd});
+      this.onQuickAdd,
+      this.taskReminders});
   final ExperienceRepository repository;
   final ExperienceOptions options;
   final WorkspaceBackup backup;
   final VoidCallback? onOpenAccount;
   final VoidCallback? onOpenContacts;
   final VoidCallback? onQuickAdd;
+  final TaskReminderController? taskReminders;
   @override
   State<ProductivitySettingsPage> createState() =>
       _ProductivitySettingsPageState();
@@ -239,6 +243,14 @@ class _ProductivitySettingsPageState extends State<ProductivitySettingsPage> {
                     : (value) {
                         if (value != null) _patch({'weekStartsOn': value});
                       }),
+            const Divider(height: 36),
+            if (widget.taskReminders != null)
+              TaskReminderSettings(
+                  controller: widget.taskReminders!, strings: strings)
+            else
+              Text(strings.text(
+                  'Task notifications are unavailable in this build or on this platform.',
+                  'এই সংস্করণে বা প্ল্যাটফর্মে কাজের নোটিফিকেশন চালু করা যাচ্ছে না।')),
             const Divider(height: 36),
             Text(strings.text('Backups', 'ব্যাকআপ'),
                 style: Theme.of(context).textTheme.titleMedium),

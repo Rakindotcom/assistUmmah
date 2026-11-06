@@ -297,6 +297,28 @@ New slots leave five minutes for review and reviews expire after fifteen minutes
 This is local reviewed placement; background replanning, calendar connections,
 travel/buffer allowances and recurring time-block editing remain open.
 
+## Task notification ownership
+
+The new root now connects explicit task reminder dates to the shared native
+service through an account-scoped foreground controller. Device consent is
+separate from synchronized experience preferences and defaults to off. Record
+edits, completion, occurrence state, module changes, account freezing and
+resume events replace or cancel pending native plans. A bounded nearest window
+shares iOS capacity with prayer/daily alerts and reports deferred reminders.
+Exact-alarm revocation falls back to inexact Android scheduling. Initial
+activation, opt-out and account closure clear displayed task notifications;
+foreground refills preserve already delivered messages.
+
+The offline preview still creates no notification controller. The shipped entry
+still uses the legacy shell. Protocol/widget checks do not establish OS delivery;
+relative recurring reminder rules, snooze, task tap routes, background refill
+and native device checks remain open. See
+[the notification contract](productivity-notifications.md).
+
+The root also rechecks its account epoch after asynchronous legacy preparation
+and before applying the returned migration. A widget test verifies that an
+old account's prepared migration is never applied after a switch.
+
 Today task capacity now subtracts the union of local calendar commitments
 inside the configured workday from the user's daily task budget. Overlapping
 events count once; workspaces disabled in preferences are excluded. A DST

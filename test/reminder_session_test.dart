@@ -36,7 +36,7 @@ void main() {
         'areNotificationsEnabled' ||
         'canScheduleExactNotifications' =>
           true,
-        'cancel' || 'zonedSchedule' => null,
+        'cancel' || 'cancelAll' || 'zonedSchedule' => null,
         _ => throw StateError('Unexpected method ${call.method}'),
       };
     });
@@ -152,9 +152,7 @@ void main() {
     expect((scheduled.single.arguments as Map)['id'], 1001);
     final lastSchedule =
         calls.lastIndexWhere((c) => c.method == 'zonedSchedule');
-    expect(
-        calls.skip(lastSchedule + 1).any(
-            (c) => c.method == 'cancel' && (c.arguments as Map)['id'] == 1001),
+    expect(calls.skip(lastSchedule + 1).any((c) => c.method == 'cancelAll'),
         isTrue);
   });
 }

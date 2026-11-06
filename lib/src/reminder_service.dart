@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -7,6 +10,23 @@ import 'package:timezone/timezone.dart' as tz;
 import 'models.dart';
 import 'prayer_alerts.dart';
 import 'prayer_times_service.dart';
+import 'productivity/domain/task_reminder_plan.dart';
+
+class TaskAlertScheduleResult {
+  const TaskAlertScheduleResult(
+      {required this.permissionGranted,
+      required this.exact,
+      required this.scheduledCount,
+      required this.deferredCount});
+  final bool permissionGranted, exact;
+  final int scheduledCount, deferredCount;
+}
+
+class TaskAlertDelivery {
+  const TaskAlertDelivery(this.scope, this.result);
+  final int scope;
+  final TaskAlertScheduleResult result;
+}
 
 class PrayerAlertScheduleResult {
   const PrayerAlertScheduleResult({
@@ -43,6 +63,234 @@ class ReminderService {
   int _generation = 0;
   int _dailyRevision = 0;
   int _prayerRevision = 0;
+  int _taskScope = 0, _taskRevision = 0;
+  String? _taskOwner;
+  bool _taskInitialCleanup = false;
+  TaskReminderPlan? _taskPlan;
+  final _taskIds = <int>{};
+  final taskDelivery = ValueNotifier<TaskAlertDelivery?>(null);
+
+  /// Claiming a new account invalidates old requests synchronously, before any
+  /// platform await. No native work occurs until that owner supplies its plan.
+  int claimTaskReminderScope(String uid) {
+    _taskRevision++;
+    _taskPlan = null;
+    _taskOwner = taskReminderOwner(uid);
+    _taskInitialCleanup = true;
+    return ++_taskScope;
+  }
+
+  Future<bool> requestTaskReminderPermission(int scope) => _enqueue(() async {
+        if (!supported || scope != _taskScope) return false;
+        await _initialize();
+        if (scope != _taskScope) return false;
+        final granted = await _notificationPermission(request: true);
+        return scope == _taskScope && granted;
+      });
+
+  Future<TaskAlertScheduleResult?> syncTaskAlerts(
+      int scope, TaskReminderPlan? plan) {
+    if (scope != _taskScope) return Future.value();
+    if (plan != null && plan.owner != _taskOwner) {
+      throw StateError('Reminder plan belongs to another account.');
+    }
+    final revision = ++_taskRevision;
+    final generation = _generation;
+    _taskPlan = plan;
+    return _enqueue(() async {
+      if (scope != _taskScope ||
+          revision != _taskRevision ||
+          generation != _generation) {
+        return null;
+      }
+      if (!supported) return null;
+      if (plan != null) await _initialize();
+      if (scope != _taskScope ||
+          revision != _taskRevision ||
+          generation != _generation) {
+        return null;
+      }
+      return _refreshTaskAlerts();
+    });
+  }
+
+  Future<void> releaseTaskReminderScope(int scope) {
+    if (scope != _taskScope) return Future.value();
+    _taskRevision++;
+    _taskPlan = null;
+    _taskOwner = null;
+    final released = ++_taskScope;
+    return _enqueue(() async {
+      if (!supported || released != _taskScope) return;
+      final pending = await _plugin.pendingNotificationRequests();
+      if (released != _taskScope) return;
+      await _loadTaskIds(pending, includeDisplayed: true);
+      if (released != _taskScope) return;
+      await _cancelTaskAlerts();
+    });
+  }
+
+  bool _isTaskAlertId(int? id) =>
+      id != null &&
+      id >= taskAlertIdBase &&
+      id < taskAlertIdBase + taskAlertSlotCount;
+
+  Future<void> _loadTaskIds(List<PendingNotificationRequest> pending,
+      {bool includeDisplayed = false}) async {
+    _taskIds
+      ..clear()
+      ..addAll(pending.where((r) => _isTaskAlertId(r.id)).map((r) => r.id));
+    if (includeDisplayed) {
+      final displayed = await _plugin.getActiveNotifications();
+      _taskIds.addAll(
+          displayed.where((r) => _isTaskAlertId(r.id)).map((r) => r.id!));
+    }
+  }
+
+  Future<void> _cancelTaskAlerts() async {
+    final ids = {..._taskIds};
+    Object? failure;
+    for (final id in ids) {
+      try {
+        await _plugin.cancel(id);
+        _taskIds.remove(id);
+      } catch (error) {
+        failure ??= error;
+      }
+    }
+    if (failure != null) throw failure;
+  }
+
+  Future<void> _vacateTaskSlots() async {
+    if (_taskOwner == null) return;
+    // Vacate before adding prayer/daily alerts: iOS can discard an older
+    // unrelated request as soon as a 65th notification is added. Reallocating
+    // only afterward would be too late to preserve those other reminders.
+    final pending = await _plugin.pendingNotificationRequests();
+    await _loadTaskIds(pending);
+    await _cancelTaskAlerts();
+  }
+
+  Future<TaskAlertScheduleResult?> _refreshTaskAlerts() async {
+    final scope = _taskScope, revision = _taskRevision;
+    final generation = _generation, plan = _taskPlan;
+    bool current() =>
+        scope == _taskScope &&
+        revision == _taskRevision &&
+        generation == _generation;
+    final pending = await _plugin.pendingNotificationRequests();
+    if (!current()) return null;
+    await _loadTaskIds(pending,
+        includeDisplayed: _taskInitialCleanup || plan == null);
+    if (!current()) return null;
+    await _cancelTaskAlerts();
+    if (!current()) return null;
+    _taskInitialCleanup = false;
+    final allowed =
+        plan == null || await _notificationPermission(request: false);
+    if (!current()) return null;
+    var exact = false;
+    if (allowed && plan != null && plan.totalCount > 0) {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      exact = android == null ||
+          (await android.canScheduleExactNotifications() ?? false);
+    }
+    if (!current()) return null;
+    final now = DateTime.now().toUtc();
+    final future = plan?.reminders.where((r) => r.time.isAfter(now)).toList() ??
+        const <PlannedTaskReminder>[];
+    final total = plan == null
+        ? 0
+        : plan.totalCount - (plan.reminders.length - future.length);
+    final otherCount =
+        pending.where((value) => !_isTaskAlertId(value.id)).length;
+    final capacity = defaultTargetPlatform == TargetPlatform.iOS
+        ? (64 - otherCount).clamp(0, taskAlertSlotCount)
+        : taskAlertSlotCount;
+    final count = !allowed
+        ? 0
+        : (total > capacity ? capacity - 1 : capacity).clamp(0, future.length);
+    final selected = future.take(count).toList();
+    Future<void> schedule(int id, String title, String body, DateTime time,
+        String payload) async {
+      if (!current()) return;
+      _taskIds.add(id);
+      Future<void> write(AndroidScheduleMode mode) => _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tz.TZDateTime.from(time, tz.UTC),
+          const NotificationDetails(
+              android: AndroidNotificationDetails(
+                  'task_reminders', 'Task reminders',
+                  channelDescription: 'Reminders explicitly added to tasks',
+                  importance: Importance.high,
+                  priority: Priority.high,
+                  visibility: NotificationVisibility.private),
+              iOS: DarwinNotificationDetails()),
+          androidScheduleMode: mode,
+          payload: payload);
+      try {
+        await write(exact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle);
+      } on PlatformException catch (error) {
+        if (!current()) return;
+        if (!exact || error.code != 'exact_alarms_not_permitted') rethrow;
+        // Permission can be revoked between the capability check and schedule.
+        exact = false;
+        await write(AndroidScheduleMode.inexactAllowWhileIdle);
+      }
+    }
+
+    try {
+      for (var i = 0; i < selected.length; i++) {
+        if (!current()) return null;
+        final reminder = selected[i];
+        await schedule(
+            taskAlertIdBase + i,
+            reminder.title,
+            plan!.language == 'bn' ? 'কাজের রিমাইন্ডার' : 'Task reminder',
+            reminder.time,
+            jsonEncode({
+              'type': 'productivity-task-v1',
+              'owner': plan.owner,
+              'taskId': reminder.taskId,
+              'workspaceId': reminder.workspaceId
+            }));
+      }
+      if (current() && allowed && total > selected.length && capacity > 0) {
+        // A renewal occupies a real slot too. The deferred count is exposed in
+        // Settings; background refill is not promised by a foreground session.
+        final time = selected.isEmpty
+            ? now.add(const Duration(minutes: 1))
+            : selected.last.time;
+        await schedule(
+            taskAlertRenewalId,
+            plan!.language == 'bn'
+                ? 'কাজের রিমাইন্ডার রিফ্রেশ করুন'
+                : 'Refresh task reminders',
+            plan.language == 'bn'
+                ? 'পরের রিমাইন্ডারগুলো চালু রাখতে অ্যাপটি খুলুন।'
+                : 'Open the app to schedule the remaining reminders.',
+            time,
+            jsonEncode(
+                {'type': 'productivity-task-renewal-v1', 'owner': plan.owner}));
+      }
+    } catch (_) {
+      await _cancelTaskAlerts();
+      rethrow;
+    }
+    if (!current()) return null;
+    final result = TaskAlertScheduleResult(
+        permissionGranted: allowed,
+        exact: exact,
+        scheduledCount: selected.length,
+        deferredCount: total - selected.length);
+    taskDelivery.value = TaskAlertDelivery(scope, result);
+    return result;
+  }
 
   int get dailyRevision => _dailyRevision;
   int get prayerRevision => _prayerRevision;
@@ -99,6 +347,7 @@ class ReminderService {
   }) async {
     if (!supported) return false;
     await _initialize();
+    await _vacateTaskSlots();
 
     if (requestPermission && preferences.values.any((value) => value)) {
       if (!await _notificationPermission(request: true)) return false;
@@ -110,6 +359,7 @@ class ReminderService {
         await _schedule(reminder);
       }
     }
+    if (_taskPlan != null) await _refreshTaskAlerts();
     return true;
   }
 
@@ -143,9 +393,11 @@ class ReminderService {
       );
     }
     await _initialize();
+    await _vacateTaskSlots();
 
     if (!settings.enabled) {
       await _cancelPrayerAlerts();
+      if (_taskPlan != null) await _refreshTaskAlerts();
       return const PrayerAlertScheduleResult(
         permissionGranted: true,
         exact: true,
@@ -154,6 +406,7 @@ class ReminderService {
     }
     if (config == null) {
       await _cancelPrayerAlerts();
+      if (_taskPlan != null) await _refreshTaskAlerts();
       return const PrayerAlertScheduleResult(
         permissionGranted: true,
         exact: true,
@@ -162,6 +415,7 @@ class ReminderService {
     }
     if (!await _notificationPermission(request: requestPermission)) {
       await _cancelPrayerAlerts();
+      if (_taskPlan != null) await _refreshTaskAlerts();
       return const PrayerAlertScheduleResult(
         permissionGranted: false,
         exact: false,
@@ -241,6 +495,7 @@ class ReminderService {
       await _cancelPrayerAlerts();
       rethrow;
     }
+    if (_taskPlan != null) await _refreshTaskAlerts();
     return PrayerAlertScheduleResult(
       permissionGranted: true,
       exact: exact,
@@ -288,13 +543,17 @@ class ReminderService {
     _generation++;
     _dailyRevision++;
     _prayerRevision++;
+    _taskRevision++;
+    _taskScope++;
+    _taskPlan = null;
+    _taskOwner = null;
+    _taskInitialCleanup = false;
     return _enqueue(() async {
       if (!supported) return;
-      await _initialize();
-      for (final reminder in _reminders) {
-        await _plugin.cancel(reminder.id);
-      }
-      await _cancelPrayerAlerts();
+      // Native cancellation clears pending and displayed notifications without
+      // needing timezone or notification initialization to succeed first.
+      await _plugin.cancelAll();
+      _taskIds.clear();
     });
   }
 

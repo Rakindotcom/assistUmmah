@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import '../prayer_times_service.dart';
 import '../reminder_service.dart';
 import '../productivity/data/productivity_database.dart';
 import '../productivity/data/productivity_session.dart';
+import '../productivity/notifications/task_reminder_store.dart';
 import 'deletion_plan.dart';
 import 'session_cleanup.dart';
 
@@ -28,6 +31,7 @@ class AccountService {
       await ProductivityDatabase.eraseAccountData(uid);
       await PrayerTimeStore(uid).remove();
       await PrayerAlertStore(uid).remove();
+      await TaskReminderStore(uid).remove();
     }
     // Run before any Firestore listener starts; terminating a shared instance
     // during account switching would prevent it from being reused afterward.
@@ -83,6 +87,10 @@ class AccountService {
           }
         });
         await ProductivitySession.freezeAccount(user.uid);
+        // Invalidate schedules immediately. Native failure cannot prevent
+        // cloud/identity deletion; the final sign-out retries cancellation.
+        unawaited(
+            ReminderService.instance.cancelAll().catchError((Object _) {}));
       },
       deleteCollection: (path) => _drain(db.collection(path)),
       deleteActivities: (collection, field, uid) =>
@@ -112,6 +120,7 @@ class AccountService {
       () => DiagnosticsService.setEnabled(false),
       PrayerTimeStore(user.uid).remove,
       PrayerAlertStore(user.uid).remove,
+      TaskReminderStore(user.uid).remove,
     ]) {
       try {
         await cleanup();

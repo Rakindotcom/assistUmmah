@@ -79,6 +79,12 @@ class ProductivityDatabase {
         await _meta.record('frozen').put(transaction, true);
       });
 
+  Stream<bool> watchFrozen() => _meta
+      .record('frozen')
+      .onSnapshot(_db)
+      .map((snapshot) => snapshot?.value == true)
+      .distinct();
+
   Future<void> _assertWritable(DatabaseClient transaction) async {
     if (await _meta.record('frozen').get(transaction) == true) {
       throw StateError('Account data is frozen for deletion.');

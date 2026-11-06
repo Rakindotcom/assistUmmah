@@ -401,6 +401,9 @@ class _ProductivityTaskEditorPageState
                           'Dates and reminders', 'তারিখ ও রিমাইন্ডার')),
                       children: [
                         Text(strings.text(
+                            'Enable task notifications in Settings on this device. Each reminder runs once at the chosen date and time. For a repeating task, the date targets that day\'s occurrence.',
+                            'এই ডিভাইসের সেটিংসে কাজের নোটিফিকেশন চালু করুন। প্রতিটি রিমাইন্ডার বেছে নেওয়া তারিখ ও সময়ে একবার আসবে। পুনরাবৃত্ত কাজের ক্ষেত্রে ওই দিনের কাজের জন্য রিমাইন্ডার হবে।')),
+                        Text(strings.text(
                             'Times use ${widget.options.timeZone}. A deadline stays fixed when you reschedule.',
                             'সময় দেখানো হচ্ছে ${widget.options.timeZone} অনুযায়ী। সময়সূচি বদলালেও শেষ সময় বদলাবে না।')),
                         _dateTile('startDate',

@@ -13,6 +13,7 @@ import 'package:ummah_assist/src/pages/prayer_alert_card.dart';
 import 'package:ummah_assist/src/prayer_alerts.dart';
 import 'package:ummah_assist/src/prayer_times_service.dart';
 import 'package:ummah_assist/src/productivity/data/experience_repository.dart';
+import 'package:ummah_assist/src/productivity/data/legacy_task_migration.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_database.dart';
 import 'package:ummah_assist/src/productivity/data/productivity_session.dart';
 import 'package:ummah_assist/src/productivity/data/task_repository.dart';
@@ -48,12 +49,14 @@ void main() {
   Widget root(String uid, Future<ProductivityDatabase> Function() open,
           {bool defaultFaith = false,
           bool enableNotifications = true,
+          Future<LegacyTaskMigration> Function()? migration,
           AppRepository? legacyRepository}) =>
       MaterialApp(
           home: ProductivityRoot(
               uid: uid,
               initialLanguage: 'en',
               enableNotifications: enableNotifications,
+              prepareLegacyMigration: migration,
               openDatabase: open,
               detectTimeZone: () async => 'Asia/Dhaka',
               legacyRepository: legacyRepository ??
@@ -186,6 +189,8 @@ void main() {
         'canScheduleExactNotifications' =>
           true,
         'cancel' || 'zonedSchedule' => null,
+        'pendingNotificationRequests' => <Map<String, Object?>>[],
+        'getActiveNotifications' => <Map<String, Object?>>[],
         _ => throw StateError('Unexpected notification method ${call.method}'),
       };
     });
@@ -307,6 +312,38 @@ void main() {
         .runAsync(() => ProductivitySession.closeAccount('root-switch-b'));
   });
 
+  testWidgets('a prepared migration from an ended account is never applied',
+      (tester) async {
+    final a = (await tester.runAsync(() => database('migration-old')))!;
+    final b = (await tester.runAsync(
+        () => database('migration-current', task: 'Current account task')))!;
+    addTearDown(() => ProductivitySession.closeAccount('migration-old'));
+    addTearDown(() => ProductivitySession.closeAccount('migration-current'));
+    final prepared = Completer<LegacyTaskMigration>();
+    var started = false;
+    await tester.pumpWidget(root('migration-old', () => Future.value(a),
+        enableNotifications: false, migration: () {
+      started = true;
+      return prepared.future;
+    }));
+    for (var i = 0; i < 30 && !started; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(started, isTrue);
+    await tester.pumpWidget(root('migration-current', () => Future.value(b),
+        enableNotifications: false));
+    await tester.pumpAndSettle();
+    final migration = _ObservedMigration();
+    prepared.complete(migration);
+    await tester.pumpAndSettle();
+    expect(migration.applied, 0);
+    expect(find.text('Current account task'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester
+        .runAsync(() => ProductivitySession.closeAccount('migration-current'));
+  });
+
   testWidgets(
       'a late database opening from an intermediate account cannot replace the latest account',
       (tester) async {
@@ -350,4 +387,23 @@ class _EnabledRemindersRepository extends AppRepository {
 
   @override
   Future<Map<String, dynamic>?> loadPrayerDocument(String date) async => null;
+}
+
+class _ObservedMigration implements LegacyTaskMigration {
+  final _plan =
+      LegacyTaskMigration.prepare({'productivityMigrationVersion': 1});
+  int applied = 0;
+  @override
+  String get sourceChecksum => _plan.sourceChecksum;
+  @override
+  List<RecordMutation> get records => _plan.records;
+  @override
+  int get taskCount => _plan.taskCount;
+  @override
+  int get occurrenceCount => _plan.occurrenceCount;
+  @override
+  Future<void> apply(ProductivityDatabase database) async {
+    applied++;
+    await _plan.apply(database);
+  }
 }

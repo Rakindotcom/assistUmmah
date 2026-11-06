@@ -9,6 +9,7 @@ import '../../app_repository.dart';
 import '../../app_theme.dart';
 import '../../pages/contacts_page.dart';
 import '../../reminder_session.dart';
+import '../../reminder_service.dart';
 import '../../widgets/app_brand.dart';
 import '../core/records.dart';
 import '../data/calendar_event_repository.dart';
@@ -22,6 +23,7 @@ import '../data/workspace_backup.dart';
 import '../domain/experience_options.dart';
 import '../domain/project.dart';
 import '../domain/task.dart';
+import '../notifications/task_reminder_controller.dart';
 import 'calendar_page.dart';
 import 'experience_strings.dart';
 import 'faith_module_page.dart';
@@ -108,7 +110,9 @@ class _ProductivityRootState extends State<ProductivityRoot>
                   RecordKind.workspace, LegacyTaskMigration.checkpointId) ==
               null) {
         if (!current()) throw StateError('Workspace session ended.');
-        await (await prepare()).apply(session.database);
+        final migration = await prepare();
+        if (!current()) throw StateError('Workspace session ended.');
+        await migration.apply(session.database);
       }
       if (!current()) throw StateError('Workspace session ended.');
       session.sync?.start();
@@ -314,12 +318,14 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
   late final _tasks = TaskRepository(widget.session.database);
   late final _calendar = CalendarEventRepository(widget.session.database);
   ReminderSession? _reminders;
+  TaskReminderController? _taskReminders;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _replaceReminders();
+    _replaceTaskReminders();
   }
 
   @override
@@ -330,6 +336,21 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
         !identical(oldWidget.legacyRepository, widget.legacyRepository)) {
       _replaceReminders();
     }
+    if (oldWidget.enableNotifications != widget.enableNotifications) {
+      _replaceTaskReminders();
+    } else {
+      _taskReminders?.updateOptions(widget.options);
+    }
+  }
+
+  void _replaceTaskReminders() {
+    _taskReminders?.dispose();
+    _taskReminders = null;
+    if (!widget.enableNotifications || !ReminderService.supported) return;
+    final controller = TaskReminderController(
+        database: widget.session.database, options: widget.options);
+    _taskReminders = controller;
+    unawaited(controller.start());
   }
 
   void _replaceReminders() {
@@ -365,12 +386,14 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
     if (widget.enableNotifications && state == AppLifecycleState.resumed) {
       unawaited(_refreshReminders());
     }
+    _taskReminders?.setActive(state == AppLifecycleState.resumed);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _reminders?.dispose();
+    _taskReminders?.dispose();
     super.dispose();
   }
 
@@ -489,6 +512,7 @@ class _WorkspaceHomeState extends State<_WorkspaceHome>
             repository: widget.repository,
             options: options,
             backup: WorkspaceBackup(widget.session.database),
+            taskReminders: _taskReminders,
             onQuickAdd: _adding ? null : () => unawaited(_quickAdd()),
             onOpenContacts: () => Navigator.of(context).push(MaterialPageRoute<
                     void>(
