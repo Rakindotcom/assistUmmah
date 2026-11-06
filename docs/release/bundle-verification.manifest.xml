@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="36" android:compileSdkVersionCodename="16" android:versionCode="3" android:versionName="1.0.0" package="com.rakindotcom.ummah_assist" platformBuildVersionCode="36" platformBuildVersionName="16">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="36" android:compileSdkVersionCodename="16" android:versionCode="4" android:versionName="1.0.0" package="com.rakindotcom.ummah_assist" platformBuildVersionCode="36" platformBuildVersionName="16">
 
   <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36"/>
 
@@ -20,6 +20,36 @@
       <action android:name="android.intent.action.PROCESS_TEXT"/>
 
       <data android:mimeType="text/plain"/>
+
+    </intent>
+
+    <intent>
+
+      <action android:name="android.intent.action.GET_CONTENT"/>
+
+      <data android:mimeType="*/*"/>
+
+    </intent>
+
+    <intent>
+
+      <action android:name="android.intent.action.OPEN_DOCUMENT"/>
+
+      <data android:mimeType="*/*"/>
+
+    </intent>
+
+    <intent>
+
+      <action android:name="android.intent.action.OPEN_DOCUMENT_TREE"/>
+
+    </intent>
+
+    <intent>
+
+      <action android:name="android.intent.action.CREATE_DOCUMENT"/>
+
+      <data android:mimeType="*/*"/>
 
     </intent>
 
@@ -143,10 +173,6 @@
 
     </activity>
 
-    <uses-library android:name="androidx.window.extensions" android:required="false"/>
-
-    <uses-library android:name="androidx.window.sidecar" android:required="false"/>
-
     <service android:enabled="true" android:exported="false" android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder">
 
       <meta-data android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY" android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl"/>
@@ -166,6 +192,10 @@
     <service android:enabled="true" android:exported="false" android:name="com.google.firebase.sessions.SessionLifecycleService"/>
 
     <provider android:authorities="com.rakindotcom.ummah_assist.firebaseinitprovider" android:directBootAware="true" android:exported="false" android:initOrder="100" android:name="com.google.firebase.provider.FirebaseInitProvider"/>
+
+    <uses-library android:name="androidx.window.extensions" android:required="false"/>
+
+    <uses-library android:name="androidx.window.sidecar" android:required="false"/>
 
     <provider android:authorities="com.rakindotcom.ummah_assist.androidx-startup" android:exported="false" android:name="androidx.startup.InitializationProvider">
 

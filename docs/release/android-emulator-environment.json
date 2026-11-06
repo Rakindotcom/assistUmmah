@@ -8,9 +8,26 @@
   "adbReportedPageSize": 16384,
   "screenWidth": 720,
   "screenHeight": 1280,
-  "hardwareAcceleration": "KVM",
   "physicalDevice": false,
-  "productionAppRuntimeVerified": true,
-  "productionRuntimeBundleSha256": "5e767f8db9078852558d0849dd75b0727c2758e9986035986aa74299c1a37f15",
-  "productionRuntimeScope": "Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator."
+  "productionAppRuntimeVerified": false,
+  "productionRuntimeBundleSha256": null,
+  "productionRuntimeScope": "Current signed bundle has no successful native runtime smoke.",
+  "historicalHardwareAcceleration": "KVM",
+  "currentRuntimeAttempt": {
+    "attemptedAtUtc": "2026-11-06T16:45:34.725058+00:00",
+    "hardwareAcceleration": "TCG software (-accel off); /dev/kvm unavailable",
+    "avd": "rober_pothe_audit_16k",
+    "serial": "emulator-5556",
+    "adbConnected": true,
+    "adbReportedPageSize": 16384,
+    "androidBootCompleted": false,
+    "activityServiceReady": false,
+    "apkInstalledOrLaunched": false,
+    "result": "Emulator did not finish Android boot within the observed window; exact candidate runtime remains unverified. This is not an observed app crash.",
+    "observedSystemFailures": [
+      "com.google.android.permissioncontroller: DeadSystemException",
+      "com.android.systemui: DeadSystemException"
+    ],
+    "emulatorStoppedAfterDiagnosis": true
+  }
 }

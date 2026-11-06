@@ -1,9 +1,9 @@
 {
-  "bundle": "build/app/outputs/bundle/release/app-release.aab",
-  "sha256": "5e767f8db9078852558d0849dd75b0727c2758e9986035986aa74299c1a37f15",
+  "bundle": "build/app/outputs/bundle/productionRelease/app-production-release.aab",
+  "sha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 3,
+  "versionCode": 4,
   "minSdk": 24,
   "targetSdk": 36,
   "signatureVerified": true,
@@ -14,6 +14,14 @@
         65536,
         65536,
         65536
+      ]
+    },
+    {
+      "path": "base/lib/arm64-v8a/libdartjni.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
       ]
     },
     {
@@ -41,6 +49,14 @@
       ]
     },
     {
+      "path": "base/lib/armeabi-v7a/libdartjni.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
+      ]
+    },
+    {
       "path": "base/lib/armeabi-v7a/libdatastore_shared_counter.so",
       "loadAlignments": [
         16384,
@@ -61,6 +77,14 @@
         65536,
         65536,
         65536
+      ]
+    },
+    {
+      "path": "base/lib/x86_64/libdartjni.so",
+      "loadAlignments": [
+        16384,
+        16384,
+        16384
       ]
     },
     {
@@ -95,7 +119,7 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": true,
+  "runtime16KbVerified": false,
   "apkZipAlignmentVerified": true,
   "universalApkSignatureVerified": true,
   "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"

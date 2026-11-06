@@ -92,7 +92,7 @@ The synthetic captures are written to `.local/previews/task-notifications-{bn,en
 
 Remaining gates include:
 
-- Normal app entry/route cutover and live migration/rules/privacy deployment.
+- Normal app entry/route cutover and live migration. Rules and matching privacy/deletion Hosting were deployed on 6 November 2026 for the current production release; the productivity UI and migration fence remain inactive.
 - Android/iOS delivery, permission UX, Doze, reboot, process death and exact
   alarm settings on real supported devices. The user has no physical test
   phone or Mac/iPhone environment available.

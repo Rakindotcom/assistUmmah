@@ -1,115 +1,48 @@
 # Release preparation — রবের পথে
 
-Updated 29 October 2026 (Asia/Dhaka).
+Updated 6 November 2026 (Asia/Dhaka).
 
-## Current decision
+## Current release scope and decision
 
-The current signed Android bundle passes static artifact checks. Its fresh
-runtime smoke is pending: the last attempt on an earlier bundle did not reach
-the login screen within the test window, and emulator diagnostics could not
-yet be read.
-Production approval also requires Android device testing and the Play Console
-gates below. A browser or widget pass does not establish native delivery.
-The older generated upload packet has been moved into the ignored `.local`
-archive; no packet for the current bundle will be issued until its runtime
-smoke passes.
+The owner confirmed on 6 November 2026: **finish and verify the current app for
+release**. The full `gap.md` productivity roadmap is outside this release.
+The production entry is `lib/main.dart` → `AppBootstrap` → `AuthGate` →
+`HomeShell`. The new productivity root remains hidden and the separate preview
+package must not be uploaded as this app.
 
-Verified locally through 29 October 2026:
+The current candidate is **1.0.0+4**, package
+`com.rakindotcom.ummah_assist`, target API 36 and minimum API 24. See the
+[release audit](current-release-audit.md) and the machine-readable
+[verification summary](verification-summary.json) for current results and
+remaining gates. Earlier native screenshots, profile measurements and startup
+receipts are historical evidence and do not establish this candidate's runtime.
 
-- Flutter analyzer: no issues; full Flutter suite: **322 passed**.
-- Firebase emulator integration suite: **7 passed**, covering complete deletion,
-  interrupted recovery, multiple batches, owner isolation, recent authentication,
-  immutable markers, legacy records and anonymous denial.
-- Release input checks: 45 brand exports, store graphics, support contact,
-  Spark configuration, deletion inventory, OAuth and signing inputs pass.
-- Signed AAB: `1.0.0+3`, API 36, minimum API 24, ARM64 present. Bundletool and
-  upload signature validation pass; all nine native libraries were inspected.
-- Generated universal APK: signature and `zipalign -c -P 16 -v 4` pass. All
-  64-bit native ELF load segments have at least 16 KB alignment. Startup of
-  this exact bundle needs a successful repeat smoke; Play-generated APK tests
-  remain open.
-- Live policy and deletion form load successfully; the form initializes without
-  browser console errors. Browser deletion was verified using synthetic emulator
-  data only.
-- Native Android 16 (API 36, x86_64, 16 KB pages) audit: startup, bundled policy,
-  diagnostics initially off, notification initialization/cancellation, zero
-  scheduling without notification permission, preference save/load/removal,
-  reviewer password login, own-profile server read and sign-out pass.
-- Six native 720×1280 phone captures use the normal signed-in production widgets
-  and repository with fabricated review-account records. They are profile-mode
-  captures, not captures of a Play-installed build. See
-  [capture provenance](native-captures/README.md) and
-  [native audit evidence](native-verification.json).
-- The updated profile audit also exercised live seven-day Firestore reporting and
-  recorded one emulator timing sample. Sign-in tap to ready dashboard took
-  6.46 s, the live report took 0.83 s, and 9 of 50 navigation frames exceeded
-  the raster budget. These numbers are not physical-device benchmarks. The
-  task composer was changed after this profile APK was built; its retry and
-  360 px layout are covered by widget tests.
-- A prior signed production APK was installed independently: its bytes matched
-  that prior bundle, Firebase initialized, and the login controls appeared in
-  Android's accessibility tree on API 36 / 16 KB. An earlier release attempt
-  exposed an R8 reflection bug: Firebase's manifest registrars had lost their
-  public constructors. A targeted keep rule fixed it. The
-  [prior signed release evidence](signed-release-smoke.json) is not evidence for
-  the current bundle; the release packager checks matching hashes.
-- A dedicated reviewer account is provisioned and its private credentials are
-  stored at `.local/play-reviewer-credentials.json` (0600). They are excluded
-  from Git and the upload packet. No Google account/mailbox was created and no
-  verification/reset-email API was requested.
-- Task filters use one horizontally scrollable row on small screens. Priority
-  choices and the task-card heading are more compact, keeping task content
-  visible sooner. Narrow-screen scheduling still works through a tested swipe.
-- New task drafts stay open until the write succeeds; a failed write can be
-  retried without losing text or recurrence. The task identity remains stable
-  across retries, preventing duplicates when a committed write loses its
-  response.
-- The Tasks tab refreshes server data when reopened or when the active app
-  resumes. A failed refresh keeps the last loaded list and offers retry;
-  delayed older responses cannot replace newer task data. Preview mode skips
-  the unnecessary server refresh.
-- Contacts refresh when reopened or when the active app resumes. Phone users
-  can pull to refresh without leaving the screen. A failed refresh retains
-  the previous list and offers retry; preview contacts survive a refresh.
-- Prayer statuses refresh when the tab is reopened, the active app resumes, or
-  the phone view is pulled down. Refresh waits for pending saves and keeps the
-  last known status on failure. A visible pending message accompanies prayer
-  edits, and Calendar still receives save results after its editor closes.
-- Tasks, Growth and Contacts filter chips meet the 48 px Android tap-target
-  guideline in widget semantics checks. The main mobile tabs and Contacts pass
-  labeled-target and target-size checks at 390 px, and at 320 px with 1.6×
-  Bengali text. Actual TalkBack traversal remains a device check.
-- Growth checklist edits show pending or failed save status. A tab refresh
-  preserves an unsaved draft, and failed changes can be retried in place.
-- Calendar refreshes after a delayed growth save even when its editor has
-  closed, and reports a failed save on the Calendar screen. Regression tests
-  cover both outcomes.
-- Quran goal and reading editors keep pending saves on screen. Android Back
-  cannot discard the draft during a write; a failed write stays retryable.
-- A failed Qaza refresh keeps the previously loaded backlog visible with a
-  retry action. Completion controls pause during the refresh.
-- The tasbih screen now shows Arabic phrases, Bengali reading and meaning,
-  a large tap ring and a phrase picker. It supports per-day targets, confirmed
-  reset and immediate custom phrases while preserving other counts. Anek Bangla
-  remains the Bengali font; Noto Naskh Arabic and its SIL license are bundled.
+The signed production AAB is
+`build/app/outputs/bundle/productionRelease/app-production-release.aab`.
+Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
+copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
+binds static checks to the exact AAB hash. Native runtime proof must name that
+same hash before the upload packager will issue a Play upload packet.
 
-- New prayer-first home with live local countdown, five-prayer start times, nine
-  working shortcuts, prayer status, daily dua and compact personal progress.
-- Quick location selection and today/tomorrow fasting times are calculated
-  offline using the existing prayer configuration, including manual adjustments.
-- Eight Quranic dua excerpts include Arabic, Bengali paraphrases, category/search,
-  copy with source and external complete-ayah links. See
-  [content review](../dua-content-review.md). No new user data is stored.
-- The home remains usable while account reads wait; clock ticks do not repeat
-  Firestore reads and stop while the home is inactive.
-- [Current widget phone renders](../ui-review.md) show the new home, prayer status,
-  dua library and fasting sheet. They supersede the prior home UI; prior native
-  screenshots and profile timings still refer to the earlier build.
+Current functionality includes the prayer-first home with offline prayer and
+fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
+reading goals, ready-made and custom tasbih, sourced duas, growth checklists,
+calendar history, reports and trends, manually entered contacts, settings,
+optional device reminders, authentication, privacy and account deletion.
+Bangla uses the bundled Anek Bangla font and Bangla numerals. Native Arabic
+content uses bundled Noto Naskh Arabic. Both font licenses are included.
 
-See [bundle evidence](bundle-verification.json) and
-[merged manifest](bundle-verification.manifest.xml). The signed bundle is at
-`build/app/outputs/bundle/productionRelease/app-production-release.aab`; a locally installable universal
-APK is at `.local/app-release-universal.apk`.
+Account changes remove the entire previous navigation tree and invalidate
+notification scheduling before a replacement account can initialize. A remote
+deletion marker or marker-listener failure removes pushed private screens and
+dialogs and cancels native reminders. An active named deletion route may finish;
+it cannot restore the signed-in home after deletion is marked. Optional native
+cleanup failures cannot veto sign-out or keep private screens accessible.
+
+Current phone widget captures and their scope are documented in
+[UI review](../ui-review.md). They cover the redesigned home, daily prayer
+status, dua library, fasting sheet and tasbih. They are not Play-installed
+screenshots or proof of notification delivery on a phone.
 
 ## Completed implementation
 
@@ -117,8 +50,10 @@ APK is at `.local/app-release-universal.apk`.
   same source content as the public page.
 - In-app and external account deletion with identity verification, explicit
   irreversible-action acknowledgement, paged deletion and interrupted recovery.
-- Nine account-owned document paths, four nested daily collections and legacy
-  owner-attributed activity records are removed before the Auth identity.
+- Nine account-owned document paths, four nested daily collections, four
+  additional workspace collections and legacy owner-attributed activity records
+  are removed before the Auth identity. Workspace cleanup is defensive and does
+  not enable the hidden productivity UI.
 - An empty UID-keyed marker freezes new writes during deletion and prevents old
   sessions or queued writes from recreating records. Its retained security purpose
   and absence of profile/activity fields are disclosed in the policy.
@@ -266,15 +201,15 @@ signing credentials are excluded from that packet.
 6. Confirm optional diagnostic reporting off/on/off behavior and receipt of a
    controlled test report in Crashlytics. Do not crash a real user's session.
 7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. Emulator
-   16 KB profile flows passed on an earlier build; the current signed APK startup,
-   physical ARM64 and Play-signed builds remain unverified. No physical Android
+   16 KB profile flows passed on an earlier build; the current signed APK must have its own matching startup receipt. Physical ARM64
+   and Play-signed builds remain unverified. No physical Android
    device is connected here.
 8. Review the six prepared native captures. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
    content rating, target audience, ads declaration, developer verification and
-   the [store listing](store-listing.md) in Console. Confirm version code `1`
-   is unused for this app.
+   the [store listing](store-listing.md) in Console. Confirm candidate version code `4`
+   is greater than every code already used for this app.
 10. If the personal developer account was created after 13 November 2023, complete
     the applicable 12-tester/14-day closed test and production-access application.
 

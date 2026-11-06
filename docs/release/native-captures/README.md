@@ -1,5 +1,10 @@
 # Native capture provenance
 
+**Historical captures from 28 October 2026.** These do not verify build 4 and
+must not be submitted as current artwork without comparison and re-capture of
+changed screens. The packager places unmatched captures under
+`historical-native-captures/` with an explicit screenshot requirement.
+
 Captures are produced by `integration_test/native_audit_test.dart` and the
 official Flutter integration driver, running Android on an isolated emulator.
 They are not browser renderings, generated mockups or images of real user data.
@@ -18,10 +23,10 @@ They are not browser renderings, generated mockups or images of real user data.
 The six captures are 720×1280. The release packager verifies Play-compatible pixel
 dimensions and aspect ratio.
 Original SDK captures in the workspace retain their opaque alpha channel. The
-upload packet contains lossless 24-bit RGB PNG exports, with unchanged dimensions
+packet contains lossless 24-bit RGB PNG exports, with unchanged dimensions
 and RGB pixels, as required by the [Play screenshot format](https://support.google.com/googleplay/android-developer/answer/9866151).
 `export-verification.json` in the packet records both hashes. Upload the packet's
-copies; no visual content is edited or resized.
+copies only after verifying their current-build provenance; no visual content is edited or resized.
 Review the screenshots visually before uploading. Recheck important screens
 after installing the actual Play-signed internal build; the capture test does
 not prove Google login, notification delivery, permissions, reboot recovery,

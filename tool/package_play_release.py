@@ -64,6 +64,10 @@ def main():
     native_report = docs / 'native-verification.json'
     if native_report.exists():
         report = json.loads(native_report.read_text())
+        # Old captures can document prior testing, but must never be presented
+        # as current store artwork merely because a later startup smoke passed.
+        current_captures = report.get('sourceBundleSha256') == verification['sha256']
+        capture_folder = 'native-captures' if current_captures else 'historical-native-captures'
         assert report['nativeStartup'] and report['screenCount'] >= 2
         images = sorted((docs / 'native-captures').glob('*.png'))
         assert len(images) >= 2
@@ -72,10 +76,10 @@ def main():
                 width, height = image.size
                 assert min(width, height) >= 320 and max(width, height) <= 3840
                 assert max(width, height) <= min(width, height) * 2, path.name
-        shutil.copytree(docs / 'native-captures', destination / 'native-captures')
+        shutil.copytree(docs / 'native-captures', destination / capture_folder)
         exports = []
         for path in images:
-            target = destination / 'native-captures' / path.name
+            target = destination / capture_folder / path.name
             with Image.open(path) as original:
                 if original.mode == 'RGBA':
                     assert original.getextrema()[3] == (255, 255), 'Capture has non-opaque pixels'
@@ -91,9 +95,15 @@ def main():
                 'exportSha256': hashlib.sha256(target.read_bytes()).hexdigest(),
                 'mode': 'RGB', 'rgbPixelsUnchanged': True,
             })
-        (destination / 'native-captures/export-verification.json').write_text(
+        (destination / capture_folder / 'export-verification.json').write_text(
             json.dumps(exports, indent=2) + '\n')
         shutil.copy2(native_report, destination / native_report.name)
+        if not current_captures:
+            (destination / 'SCREENSHOTS-REQUIRED.md').write_text(
+                '# Current screenshots required\n\n'
+                'historical-native-captures contains prior-build reference evidence, '
+                'not current store screenshots. Capture and verify the changed '
+                'screens from this candidate before store submission.\n')
     files = sorted(path for path in destination.rglob('*') if path.is_file())
     assert all(path.suffix not in ['.jks', '.keystore', '.p12'] for path in files)
     assert not any(path.name in ['key.properties', 'google-services.json'] for path in files)

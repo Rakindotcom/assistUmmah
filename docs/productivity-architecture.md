@@ -254,7 +254,9 @@ remote-page merge and Firestore transaction writes validate the event before
 commit; Firestore rules require a canonical fixed-width UTC interval and
 reject reversed or malformed values. Tests cover concurrent endpoint edits,
 atomic rollback of an invalid pull page, and 14 Auth/Firestore emulator cases.
-These rules remain undeployed until the broader root cutover is ready.
+The tested rules were deployed on 6 November 2026 for the current production
+release and its complete account-deletion inventory. The productivity UI and
+migration fence remain inactive; this rules deployment does not activate cutover.
 
 The sync sheet now lets the owner open a failed calendar event, correct it,
 review the resubmission, and replace its rejected outbox operations with one
