@@ -23,9 +23,12 @@ Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
 copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
 binds static checks to the exact AAB hash. The current APK passed a signed-out
 ARM64 / 16 KB [Test Lab startup check](current-testlab-startup.json). Its login
-screen and Firebase logs were inspected. An independent installed APK hash and
-page-size syscall were not captured, so the stricter direct-device receipt and
-full native-flow gates remain open before a Play upload packet can be issued.
+screen and Firebase logs were inspected. The separate-process [controlled
+startup test](current-controlled-startup.json) then verified the installed APK
+hash, measured 16 KB pages, opened bundled privacy and returned with Android
+Back. Scoped [signed-in native checks](current-native-flows.json) also passed.
+Remaining OS/deletion checks and manual Play gates remain open; the
+stronger startup evidence now permits a manual internal-test upload packet.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -161,7 +164,9 @@ Bundle verification invalidates native runtime claims when the AAB hash changes.
 A successful direct signed smoke records that exact hash in the bundle, emulator and
 summary evidence. Cloud startup receipts are separate: upload checksum, no-resigning
 mode and visual/log checks are required and their claims invalidate when either
-artifact hash changes. Cloud success does not satisfy the installed-hash gate. The upload packager requires all four records to agree.
+artifact hash changes. A Robo success does not satisfy the installed-hash gate. The separate-process
+UI Automator driver can supply an independent installed-file hash and native
+page-size measurement without modifying the production APK. The upload packager requires all four records to agree.
 
 With the dedicated `rober_pothe_audit_16k` emulator running as `emulator-5556`,
 run `python3 tool/smoke_android_release.py`. The script clears only that

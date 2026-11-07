@@ -28,8 +28,9 @@
   "universalApkZipAlignment16KiB": true,
   "nativeRuntimeVerified": true,
   "playInstalledBuildVerified": false,
-  "scope": "Signed production candidate exported for testing. Cloud startup passed; independent installed-hash receipt, signed-in native flows and manual Play gates remain open.",
-  "nativeRuntimeScope": "Firebase Test Lab signed-out startup; verified upload checksum and no-resigning mode, without an independent installed-file hash.",
-  "nativeRuntimeEvidence": "current-testlab-startup.json",
-  "independentDeviceApkHashVerified": false
+  "scope": "Signed production candidate; independent installed hash, 16 KB page-size syscall, startup and scoped signed-in flows passed. Remaining device/OS checks and manual Play gates remain open.",
+  "nativeRuntimeScope": "Independent on-device hash and page-size check, production login, bundled privacy, and Android Back on virtual ARM64 Android 16. The driver ran outside the minified app process. This startup run does not cover authenticated flows or physical/Play-installed builds.",
+  "nativeRuntimeEvidence": "current-controlled-startup.json",
+  "independentDeviceApkHashVerified": true,
+  "nativeFunctionalEvidence": "current-native-flows.json"
 }

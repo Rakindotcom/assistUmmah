@@ -58,8 +58,13 @@ def main():
                  'verification-summary.json', 'upload-certificate.pem',
                  'upload-certificate.json', 'android-emulator-environment.json',
                  'deletion-web-verification.json', 'deletion-web-proof.jpg',
-                 'signed-release-smoke.json']:
+                 'signed-release-smoke.json', 'current-release-audit.md',
+                 'current-release-artifacts.json', 'current-backend-verification.json',
+                 'current-reviewer-access.json', 'current-testlab-startup.json',
+                 'current-controlled-startup.json', 'current-native-flows.json']:
         shutil.copy2(docs / name, destination / name)
+    shutil.copytree(docs / 'current-native-startup', destination / 'current-native-startup')
+    shutil.copytree(docs / 'current-native-flows', destination / 'current-native-flows')
     shutil.copytree(docs / 'store-assets', destination / 'store-assets')
     native_report = docs / 'native-verification.json'
     if native_report.exists():

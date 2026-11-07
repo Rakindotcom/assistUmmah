@@ -9,9 +9,9 @@
   "screenWidth": 720,
   "screenHeight": 1280,
   "physicalDevice": false,
-  "productionAppRuntimeVerified": false,
-  "productionRuntimeBundleSha256": null,
-  "productionRuntimeScope": "Current candidate startup passed in Firebase Test Lab; independent installed-hash and page-size-syscall proof remains absent.",
+  "productionAppRuntimeVerified": true,
+  "productionRuntimeBundleSha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
+  "productionRuntimeScope": "Independent on-device hash and page-size check, production login, bundled privacy, and Android Back on virtual ARM64 Android 16. The driver ran outside the minified app process. Authenticated flows and physical/Play-installed builds remain unverified.",
   "historicalHardwareAcceleration": "KVM",
   "currentRuntimeAttempt": {
     "attemptedAtUtc": "2026-11-06T16:45:34.725058+00:00",
@@ -30,5 +30,12 @@
     ],
     "emulatorStoppedAfterDiagnosis": true
   },
-  "cloudProductionStartupVerified": true
+  "cloudProductionStartupVerified": true,
+  "productionRuntimeEnvironment": {
+    "provider": "Firebase Test Lab",
+    "architecture": "arm64-v8a",
+    "androidApi": 36,
+    "pageSize": 16384
+  },
+  "localImageScope": "Top-level image/architecture fields describe the historical local emulator image. Current production runtime metadata is under productionRuntimeEnvironment."
 }

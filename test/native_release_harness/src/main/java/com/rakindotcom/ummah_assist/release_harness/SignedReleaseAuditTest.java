@@ -99,7 +99,7 @@ public final class SignedReleaseAuditTest {
         }
     }
 
-    private static String required(Bundle args, String key) {
+    static String required(Bundle args, String key) {
         String value = args.getString(key);
         assertNotNull("Missing audit argument: " + key, value);
         assertFalse("Empty audit argument: " + key, value.isEmpty());
@@ -130,7 +130,7 @@ public final class SignedReleaseAuditTest {
         }
     }
 
-    private static String sha256(File path) throws Exception {
+    static String sha256(File path) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try (FileInputStream stream = new FileInputStream(path)) {
             byte[] buffer = new byte[65536];

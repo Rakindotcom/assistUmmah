@@ -64,3 +64,28 @@ never publish captures of entered credentials or account settings.
 
 References: [AndroidJUnitRunner](https://developer.android.com/training/testing/instrumented-tests/androidx-test-libraries/runner),
 [UI Automator](https://developer.android.com/training/testing/other-components/ui-automator).
+
+## Signed-in and recovery tests
+
+Select one method per fresh-device run:
+
+- `SignedInReleaseAuditTest#signedInIsolationAndPermissions`: authenticates A,
+  saves a task, navigates core screens, denies Android notification permission,
+  signs out, then checks B's own task and absence of A's tasks.
+- `SignedInReleaseAuditTest#deletionRecoveryAndRouteRevocation`: opens an
+  unsaved task dialog, creates A's deletion marker through the ordinary owner
+  REST API, checks private-route revocation and recovery, completes deletion
+  using the app's password confirmation, then cold-starts and checks B.
+
+Both require `expectedApkSha256` and runtime-only arguments `accountAEmail`,
+`accountAPassword`, `accountATask`, `accountBEmail`, `accountBPassword`,
+`accountBTask`. Deletion also requires `firebaseApiKey` and `accountAUid`.
+Only disposable `teamframecipher+native-` fixture aliases are accepted; deletion
+checks that the authenticated UID matches the explicitly supplied fixture UID.
+Never use a reviewer or real user's account. Credentials belong in private
+runner inputs, never in source, artifacts or shell command arguments. The
+operator must remove fixture identities and data after completed testing.
+
+`flows-receipt.json` reports the assertions actually completed. A UI save must
+also be confirmed through server reads before reporting persistence. Page
+navigation does not establish every feature's mutation or OS behavior.

@@ -72,8 +72,14 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
     environment['productionAppRuntimeVerified'] = current
     environment['cloudProductionStartupVerified'] = cloud_current
     environment['productionRuntimeBundleSha256'] = bundle_sha256 if current else None
+    environment['productionRuntimeEnvironment'] = ({
+        'provider': smoke.get('provider', 'local Android emulator'),
+        'architecture': smoke.get('architecture'),
+        'androidApi': smoke.get('androidApi'),
+        'pageSize': smoke.get('pageSize'),
+    } if current else None)
     environment['productionRuntimeScope'] = (
-        'Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator.'
+        smoke.get('scope', 'Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator.')
         if current else (
             'Current candidate startup passed in Firebase Test Lab; independent '
             'installed-hash and page-size-syscall proof remains absent.'
@@ -99,7 +105,8 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
             'the current signed bundle runtime is unverified.')
     else:
         summary['nativeEvidenceScope'] = (
-            'Current signed bundle startup/login passed on the dedicated 16 KB emulator; '
-            'profile audit and captures belong to a prior app build.')
+            smoke.get('scope',
+                      'Current signed bundle startup/login passed on the dedicated 16 KB emulator; '
+                      'profile audit and captures belong to a prior app build.'))
     write_json(summary_path, summary)
     return current

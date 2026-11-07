@@ -1,6 +1,6 @@
 # Current production release audit
 
-Updated 6 November 2026. Candidate: **রবের পথে 1.0.0+4**.
+Updated 7 November 2026. Candidate: **রবের পথে 1.0.0+4**.
 
 ## Scope and decision
 
@@ -22,7 +22,7 @@ OS notification delivery or an approved Console configuration.
 | Reproducible source checkpoint | Verified | `fe768742b0b8fc4854e71f3d0138811f2a72af58`; no later app-source changes. |
 | Static analysis | Passed | `flutter analyze --no-pub`: no issues. |
 | Flutter regression suite | Passed | 525 passed, 2 browser-only future migration tests skipped. Includes phone layouts, enlarged Bangla text, semantics, core feature flows and account guards. |
-| Release evidence tooling | Passed | 5 Python tests; mismatched APK/bundle hashes and resigning cloud modes cannot inherit startup proof. Cloud success cannot unlock the stronger direct-device packet gate. |
+| Release evidence tooling | Passed | 5 Python tests; mismatched APK/bundle hashes and resigning cloud modes cannot inherit startup proof. A Robo success cannot unlock the stronger direct-device packet gate; the separate-process driver now supplies that stronger proof. |
 | Deletion and ownership rules | Passed locally | 14 Auth/Firestore emulator cases after the patched lockfile install; synthetic data only. |
 | Test dependency advisories | Passed | Compatible lockfile resolution removes six moderate transitive advisories; fresh `npm ci` and audit report zero vulnerabilities. These Node packages are not shipped in the app. |
 | Live backend and legal pages | Verified | Tested rules and Hosting deployed to `assistummah`; live privacy HTML, deletion inventory, JavaScript and deletion planner match source hashes. See [backend receipt](current-backend-verification.json). |
@@ -35,11 +35,11 @@ OS notification delivery or an approved Console configuration.
 | 16 KB static compatibility | Passed | All 64-bit ELF load segments aligned; generated universal APK passes 16 KB ZIP alignment and signature validation. |
 | Private/test material exclusion | Passed | Reviewer email/password literals and the native integration-test plugin are absent from the release bundle. |
 | Exact candidate native startup | Passed in cloud | ARM64 Android 16 / 16 KB Test Lab run completed successfully. Login screenshot and Firebase logs inspected; no registrar errors or fatal crashes. Original uploaded checksum verified and no-resigning mode used. See [cloud startup receipt](current-testlab-startup.json) and [original captures](current-native-startup/README.md). |
-| Independent installed hash / page-size syscall | Open | The cloud run did not independently read the installed APK hash or execute an in-app page-size syscall. The old local runtime receipt remains invalid for this candidate, and the strict packet gate remains closed. Local TCG Android failed during boot before APK installation. |
-| Exact candidate full native flows | Unverified | No physical Android phone is available. The current candidate has no full native-flow receipt. |
+| Independent installed hash / page-size syscall | Passed | The separate-process UI Automator driver measured the installed APK SHA-256 and 16 KB native pages on the device; both match this candidate. Production login, bundled privacy and Android Back passed in one JUnit case. See [controlled receipt](current-controlled-startup.json). The earlier injected runner failed from a test/app Kotlin class collision; the isolated driver avoids that collision without modifying the app. |
+| Exact candidate signed-in native flows | Passed within scope | Real email/password login, own task read/save, server persistence, prayer/growth/Quran/tasbih navigation, Android notification permission denial, logout and A→B isolation passed on virtual ARM64 Android 16. Two disposable accounts only. See [native flow receipt](current-native-flows.json). This does not establish every native edit, OS delivery, Google OAuth or Play-installed behavior. |
 | Play-installed build and Google OAuth | Manual gate | Register the Play app-signing certificate in Firebase and test the Play-installed app. Upload-key verification alone does not prove this. |
 | Store declarations and listing | Prepared, unsubmitted | [Console handoff](console-handoff.md), [listing](store-listing.md), [Data safety](data-safety.md), artwork and release notes. Console stays manual by owner choice. |
-| Current store screenshots | Open | Two current startup/device captures exist. The complete changed-screen set still needs re-capture from the candidate; widget renders and old profile captures are not current store artwork. |
+| Current store screenshots | Open | Current signed-out and signed-in QA captures exist. The complete changed-screen set still needs re-capture from the candidate; widget renders and old profile captures are not current store artwork. |
 | GitHub hosted CI | Blocked externally | Latest observed jobs never started because the GitHub account is locked for billing. [Run 42255887870](https://github.com/Rakindotcom/assistUmmah/actions/runs/42255887870) had zero steps in all jobs. Local checks passed; no hosted CI pass is claimed. |
 | Firebase billing | Constraint preserved | Spark deployment only; no Cloud Functions or billing-plan upgrade. |
 | iOS | Unverified, outside Android publishing | No Mac/iPhone testing setup is available; do not describe this as an iOS release audit. |
@@ -48,7 +48,7 @@ The complete local analyzer, Flutter, Python, Firebase and certificate logs are
 under ignored `.local/logs/current-release-*`. The tracked JSON receipts contain
 public evidence without private credentials. Historical local/profile native evidence remains available but belongs to an
 earlier bundle. The current cloud startup receipt is independently scoped and
-does not claim authenticated-home or physical-device coverage.
+does not itself claim authenticated-home or physical-device coverage. The separate native flow receipt covers the listed authenticated checks.
 
 ## Delivered artifacts
 
@@ -57,16 +57,16 @@ does not claim authenticated-home or physical-device coverage.
 - AAB: `output/aab/rober-pothe-1.0.0-build4.aab` — signed candidate; do not promote
   until the remaining gates pass.
 - SHA-256 sidecars accompany both files. Binaries remain outside Git.
-- The strict Play upload packager is intentionally not bypassed: its rejection
-  of this candidate with a stale runtime receipt was checked. It requires a
-  native startup receipt matching the exact current bundle. Historical native
+- The strict Play upload packager was checked to reject stale native proof.
+  The current independent installed-hash/page-size receipt now satisfies its
+  startup gate. The resulting packet is for manual internal-test preparation;
+  it is not public release approval. Historical native
   captures are exported into a separate reference folder, never as current
   store screenshots.
 
 ## Remaining publishing checks
 
-1. Complete the signed-in native flows and independent installed-hash/page-size
-   receipt, then install the Play-generated build
+1. Finish native deletion/recovery and OS notification checks, then install the Play-generated build
    from an internal track. Check email and Google login, logout/account switch,
    core edits and reloads, deletion and interrupted deletion recovery.
 2. Test notification/location denial and revocation, approximate scheduling,

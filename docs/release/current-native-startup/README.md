@@ -15,5 +15,11 @@ private under `.local/testlab-results/`.
 
 The configured Robo mode uses UIAutomator without app resigning. The uploaded
 APK checksum was verified against the exported candidate. Its installed file
-hash and an in-app page-size syscall were not independently read. The stricter
-local upload-packet gate remains unsatisfied; do not describe this as that proof.
+hash and an in-app page-size syscall were not independently read. Those Robo captures alone do not satisfy the independent installed-hash gate.
+
+The later `controlled-01-sign-in.png` and `controlled-02-privacy.png` come from
+the isolated UI Automator run in `../current-controlled-startup.json`. That
+driver independently hashed the original installed APK, measured native page
+size, loaded bundled privacy and exercised Android Back. It ran in its own
+process, leaving the minified app unmodified. These remain signed-out captures,
+not authenticated-home or physical-device proof.
