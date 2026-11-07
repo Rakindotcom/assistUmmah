@@ -1,7 +1,7 @@
 name: ummah_assist
 description: A Flutter self-accountability app for Muslim daily tasks, prayers, growth, and contacts.
 publish_to: "none"
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -26,7 +26,18 @@ dependencies:
   adhan_dart: ^2.0.1
   geolocator: ^14.1.2
   shared_preferences: ^2.5.6
+  sembast: ^3.9.0
+  sembast_web: ^2.4.6+1
+  path_provider: ^2.1.6
+  crypto: ^3.0.8
+  http: ^1.6.0
+  file_picker: ^13.3.0
 dev_dependencies:
+  cloud_firestore_web: ^4.4.12
+  firebase_auth_web: ^5.15.3
+  firebase_core_web: ^2.24.1
+  flutter_web_plugins:
+    sdk: flutter
   integration_test:
     sdk: flutter
   flutter_test:
@@ -35,6 +46,7 @@ dev_dependencies:
   shared_preferences_platform_interface: ^2.4.2
 
 flutter:
+  default-flavor: production
   uses-material-design: true
   assets:
     - assets/brand/app_icon.png

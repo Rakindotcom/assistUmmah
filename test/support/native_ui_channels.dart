@@ -32,7 +32,9 @@ void configureNativeUiChannels() {
                 'isBadgeEnabled': true,
                 'isSoundEnabled': true,
               },
-            'cancel' => null,
+            'cancel' || 'cancelAll' => null,
+            'pendingNotificationRequests' => <Map<String, Object?>>[],
+            'getActiveNotifications' => <Map<String, Object?>>[],
             _ => throw UnsupportedError(
                 'Unexpected notification method: ${call.method}'),
           });

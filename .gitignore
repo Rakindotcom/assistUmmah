@@ -47,3 +47,6 @@ android/.kotlin/
 
 # Generated Play upload packets
 dist/
+
+# Generated APK, AAB and PDF handoff artifacts
+/output/

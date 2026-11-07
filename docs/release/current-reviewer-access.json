@@ -1,0 +1,59 @@
+{
+  "verifiedAtUtc": "2026-11-06T16:37:23.463Z",
+  "project": "assistummah",
+  "existingReviewerPasswordSignIn": true,
+  "ownDocuments": [
+    {
+      "path": "users/{uid}",
+      "readAllowed": true,
+      "exists": true
+    },
+    {
+      "path": "userTasks/{uid}",
+      "readAllowed": true,
+      "exists": true
+    },
+    {
+      "path": "userPrayers/{uid}",
+      "readAllowed": true,
+      "exists": false
+    },
+    {
+      "path": "userGrowth/{uid}",
+      "readAllowed": true,
+      "exists": false
+    },
+    {
+      "path": "userQuran/{uid}",
+      "readAllowed": true,
+      "exists": false
+    },
+    {
+      "path": "userDhikr/{uid}",
+      "readAllowed": true,
+      "exists": false
+    },
+    {
+      "path": "userPreferences/{uid}",
+      "readAllowed": true,
+      "exists": true
+    },
+    {
+      "path": "userContacts/{uid}",
+      "readAllowed": true,
+      "exists": true
+    },
+    {
+      "path": "userSettings/{uid}",
+      "readAllowed": true,
+      "exists": true
+    }
+  ],
+  "deletionMarkerReadAllowed": true,
+  "deletionMarkerAbsent": true,
+  "additionalDeletionCollectionsReadable": true,
+  "signOut": true,
+  "recordsModified": false,
+  "credentialsPublished": false,
+  "scope": "Client SDK against deployed production rules; not a native APK login or Google OAuth test."
+}

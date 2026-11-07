@@ -7,7 +7,8 @@ tracks, terms or publishing actions have been submitted by Codex.
 
 1. Open the official [Play Console](https://play.google.com/console/) and select
    or create the app. Keep the package `com.rakindotcom.ummah_assist`.
-2. Check whether version code **1** has already been used. If it has, rebuild
+2. This candidate uses version code **4** (`1.0.0+4`). Confirm that it is greater
+   than every code already used in Console. If it is not, rebuild
    with a new monotonically increasing code before uploading.
 3. Configure Play App Signing. Back up the local upload key and credentials to
    your secure backup destination first. Do not upload those private files as

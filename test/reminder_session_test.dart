@@ -36,7 +36,7 @@ void main() {
         'areNotificationsEnabled' ||
         'canScheduleExactNotifications' =>
           true,
-        'cancel' || 'zonedSchedule' => null,
+        'cancel' || 'cancelAll' || 'zonedSchedule' => null,
         _ => throw StateError('Unexpected method ${call.method}'),
       };
     });
@@ -109,6 +109,24 @@ void main() {
     failedSession.dispose();
   });
 
+  test('disabled Faith cancels legacy reminders without fetching settings',
+      () async {
+    final repository = _SettingsRepository();
+    final session = ReminderSession(
+        repository: repository,
+        enabledDailyKeys: const {},
+        prayerAlertsEnabled: false);
+    expect(await session.refresh(), isTrue);
+    final cancelledIds = calls
+        .where((call) => call.method == 'cancel')
+        .map((call) => (call.arguments as Map)['id'])
+        .toSet();
+    expect(cancelledIds, contains(1001));
+    expect(cancelledIds, contains(prayerAlertIdBase));
+    expect(calls.where((call) => call.method == 'zonedSchedule'), isEmpty);
+    session.dispose();
+  });
+
   test(
       'sign-out cancellation finishes in-flight work and invalidates queued schedules',
       () async {
@@ -134,9 +152,7 @@ void main() {
     expect((scheduled.single.arguments as Map)['id'], 1001);
     final lastSchedule =
         calls.lastIndexWhere((c) => c.method == 'zonedSchedule');
-    expect(
-        calls.skip(lastSchedule + 1).any(
-            (c) => c.method == 'cancel' && (c.arguments as Map)['id'] == 1001),
+    expect(calls.skip(lastSchedule + 1).any((c) => c.method == 'cancelAll'),
         isTrue);
   });
 }

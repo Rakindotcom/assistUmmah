@@ -12,10 +12,12 @@ class TrendsPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.today,
+    this.enableNotifications = true,
   });
 
   final AppRepository repository;
   final DateTime today;
+  final bool enableNotifications;
 
   @override
   State<TrendsPage> createState() => _TrendsPageState();
@@ -276,6 +278,7 @@ class _TrendsPageState extends State<TrendsPage> with WidgetsBindingObserver {
           appBar: AppBar(title: Text(compactDateLabel(day))),
           body: CalendarPage(
             repository: widget.repository,
+            enableNotifications: widget.enableNotifications,
             today: widget.today,
             initialDay: day,
           ),

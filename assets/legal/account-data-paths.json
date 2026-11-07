@@ -6,5 +6,6 @@
     "userQuran": "dailyReading",
     "userDhikr": "dailyDhikr"
   },
+  "additionalCollections": ["users/{uid}/productivity", "users/{uid}/productivityChanges", "users/{uid}/productivityGraph", "users/{uid}/productivityControl"],
   "activity": { "collection": "userActivities", "ownerField": "userId" }
 }

@@ -39,3 +39,21 @@ jobs:
       - run: npm --prefix test/firebase ci --no-fund
       - run: npm --prefix test/firebase audit --audit-level=high
       - run: npx --yes firebase-tools@15.20.0 emulators:exec --project demo-ummah --only auth,firestore 'npm --prefix test/firebase test'
+  migration-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: flutter pub get --enforce-lockfile
+      - run: tool/test_legacy_migration_browser.sh

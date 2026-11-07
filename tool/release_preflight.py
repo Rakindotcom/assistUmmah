@@ -36,7 +36,7 @@ def main():
     assert all(properties.get(key) for key in ['storeFile','storePassword','keyAlias','keyPassword'])
     assert (ROOT/'android'/properties['storeFile']).exists(),'Upload key file missing'
     if args.require_bundle:
-        path=ROOT/'build/app/outputs/bundle/release/app-release.aab'
+        path=ROOT/'build/app/outputs/bundle/productionRelease/app-production-release.aab'
         assert path.exists(),'Signed bundle missing'
     print('PASS release inputs: branding, policy, Spark-only hosting, deletion inventory, store graphics, OAuth and private signing.')
     print('Device checks, store screenshots and Play Console approval are independent required gates.')

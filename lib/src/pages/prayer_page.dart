@@ -24,6 +24,7 @@ class PrayerPage extends StatefulWidget {
     required this.day,
     this.active = true,
     this.historical = false,
+    this.enableNotifications = true,
     this.onSaved,
     this.onSaveError,
   });
@@ -32,6 +33,7 @@ class PrayerPage extends StatefulWidget {
   final DateTime day;
   final bool active;
   final bool historical;
+  final bool enableNotifications;
   final VoidCallback? onSaved;
   final ValueChanged<String>? onSaveError;
 
@@ -93,6 +95,12 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
         widget.repository.canSync) {
       _refreshPrayerStatuses();
     }
+    if (!oldWidget.enableNotifications &&
+        widget.enableNotifications &&
+        !widget.historical &&
+        ReminderService.supported) {
+      unawaited(_loadAlertSettings());
+    }
   }
 
   @override
@@ -113,7 +121,7 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
         state == AppLifecycleState.resumed &&
         _timeConfig != null) {
       setState(() => _updateSchedule(_timeConfig!));
-      unawaited(_refreshPrayerAlerts());
+      if (widget.enableNotifications) unawaited(_refreshPrayerAlerts());
     }
   }
 
@@ -244,7 +252,9 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
               ),
             ),
           ],
-          if (!widget.historical && ReminderService.supported) ...[
+          if (widget.enableNotifications &&
+              !widget.historical &&
+              ReminderService.supported) ...[
             const SizedBox(height: 16),
             PrayerAlertCard(
               settings: _alertSettings,
@@ -286,7 +296,8 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
       } catch (_) {
         _showMessage('নামাজের সময় লোড করতে সমস্যা হয়েছে');
       }
-      if (ReminderService.supported &&
+      if (widget.enableNotifications &&
+          ReminderService.supported &&
           mounted &&
           requestId == _statusRequestId) {
         unawaited(_loadAlertSettings());
@@ -354,15 +365,18 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadAlertSettings() async {
+    if (!widget.enableNotifications) return;
     try {
       final settings = await PrayerAlertStore(widget.repository.uid).load();
-      if (!mounted) return;
+      if (!mounted || !widget.enableNotifications) return;
       setState(() => _alertSettings = settings);
       await _refreshPrayerAlerts();
     } catch (_) {
       _showMessage('নামাজের অ্যালার্ট লোড করতে সমস্যা হয়েছে');
     } finally {
-      if (mounted) setState(() => _alertsLoaded = true);
+      if (mounted && widget.enableNotifications) {
+        setState(() => _alertsLoaded = true);
+      }
     }
   }
 
@@ -390,7 +404,11 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   }
 
   Future<void> _refreshPrayerAlerts() async {
-    if (!ReminderService.supported || _alertBusy) return;
+    if (!widget.enableNotifications ||
+        !ReminderService.supported ||
+        _alertBusy) {
+      return;
+    }
     try {
       final result = await ReminderService.instance.syncPrayerAlerts(
         config: _timeConfig,
@@ -411,7 +429,7 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
     PrayerAlertSettings next, {
     required bool requestPermission,
   }) async {
-    if (_alertBusy || !_alertsLoaded) return;
+    if (!widget.enableNotifications || _alertBusy || !_alertsLoaded) return;
     setState(() => _alertBusy = true);
     try {
       final result = await ReminderService.instance.syncPrayerAlerts(
@@ -433,10 +451,12 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
       });
     } catch (_) {
       try {
-        await ReminderService.instance.syncPrayerAlerts(
-          config: _timeConfig,
-          settings: _alertSettings,
-        );
+        if (widget.enableNotifications) {
+          await ReminderService.instance.syncPrayerAlerts(
+            config: _timeConfig,
+            settings: _alertSettings,
+          );
+        }
       } catch (_) {
         // The next app launch will retry the persisted settings.
       }

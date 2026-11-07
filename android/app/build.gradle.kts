@@ -39,6 +39,17 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("production") {
+            dimension = "distribution"
+        }
+        create("preview") {
+            dimension = "distribution"
+            applicationIdSuffix = ".preview"
+        }
+    }
+
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
@@ -82,6 +93,45 @@ val verifyReleaseSigning by tasks.registering {
         }
     }
 }
-tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+tasks.matching {
+    it.name.matches(Regex("^(assemble|bundle|package|sign)(Production|Preview)?Release(Bundle)?$"))
+}.configureEach {
     dependsOn(verifyReleaseSigning)
+}
+
+// The local preview has no Firebase client. Its manifest also removes the
+// native startup provider; skipping Dart initialization alone is insufficient.
+tasks.configureEach {
+    if (name.contains("Preview") &&
+        (name.contains("GoogleServices") || name.contains("Crashlytics"))) {
+        enabled = false
+    }
+}
+
+// Validate the entire packaging graph before any task executes. A Dart-only
+// entrypoint change must never package the preview under the production ID.
+gradle.taskGraph.whenReady {
+    val appTasks = allTasks.filter { it.project == project }
+    fun usesEntrypoint(taskName: String, flavor: String): Boolean =
+        taskName.matches(Regex("^(assemble|bundle|package|sign)${flavor}(Debug|Profile|Release)(Bundle)?$")) ||
+            taskName.matches(Regex("^compileFlutterBuild${flavor}(Debug|Profile|Release)$"))
+    val packagesPreview = appTasks.any {
+        usesEntrypoint(it.name, "Preview")
+    }
+    val packagesProduction = appTasks.any {
+        usesEntrypoint(it.name, "Production")
+    }
+    if (packagesPreview || packagesProduction) {
+        val flutterRoot = rootProject.projectDir.parentFile
+        val target = project.findProperty("target")?.toString()
+            ?: flutter.target ?: "lib/main.dart"
+        val targetFile = flutterRoot.resolve(target).canonicalFile
+        val previewFile = flutterRoot.resolve("lib/main_productivity_preview.dart").canonicalFile
+        if (packagesPreview && targetFile != previewFile) {
+            throw GradleException("The preview flavor requires -t lib/main_productivity_preview.dart.")
+        }
+        if (packagesProduction && targetFile == previewFile) {
+            throw GradleException("The preview entrypoint requires --flavor preview; it cannot use the production package.")
+        }
+    }
 }

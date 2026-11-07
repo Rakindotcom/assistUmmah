@@ -7,6 +7,14 @@ class AccountDeletionPlan {
     final data = jsonDecode(source) as Map<String, dynamic>;
     documents = (data['documents'] as List).cast<String>();
     subcollections = (data['subcollections'] as Map).cast<String, String>();
+    additionalCollections =
+        (data['additionalCollections'] as List? ?? []).cast<String>();
+    for (final path in additionalCollections) {
+      if (!RegExp(r'^[a-zA-Z][a-zA-Z0-9]*/\{uid\}/[a-zA-Z][a-zA-Z0-9]*$')
+          .hasMatch(path)) {
+        throw const FormatException('Invalid account collection path.');
+      }
+    }
     final activity = (data['activity'] as Map).cast<String, String>();
     activityCollection = activity['collection']!;
     activityOwnerField = activity['ownerField']!;
@@ -14,6 +22,7 @@ class AccountDeletionPlan {
 
   late final List<String> documents;
   late final Map<String, String> subcollections;
+  late final List<String> additionalCollections;
   late final String activityCollection;
   late final String activityOwnerField;
 
@@ -29,6 +38,9 @@ class AccountDeletionPlan {
   }) async {
     if (uid.isEmpty || uid.contains('/')) throw ArgumentError.value(uid, 'uid');
     await recordRequest();
+    for (final path in additionalCollections) {
+      await deleteCollection(path.replaceAll('{uid}', uid));
+    }
     for (final entry in subcollections.entries) {
       await deleteCollection('${entry.key}/$uid/${entry.value}');
     }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../auth/account_access_guard.dart';
 
 import '../app_repository.dart';
 import '../account/account_service.dart';
@@ -149,6 +150,8 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: 'অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য স্থায়ীভাবে মুছুন',
               destructive: true,
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  settings: const RouteSettings(
+                      name: AccountAccessGuard.deletionRoute),
                   builder: (_) => DeleteAccountPage(
                       usesPassword: widget.user?.providerData.any((provider) =>
                               provider.providerId == 'password') ??

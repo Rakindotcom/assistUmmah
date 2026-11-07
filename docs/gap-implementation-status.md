@@ -1,0 +1,391 @@
+# Gap implementation ledger
+
+Source: `gap.md`, SHA-256 `68f23eb183d656b645b89291ccd8901dcbcab8180937c2585c4c4afbda40ae7c`.
+
+## Completion contract
+
+- The objective includes the complete registry, integrations, six differentiators, proposed data entities, roadmap exit gates, and platform verification.
+- A code model, hidden screen, placeholder, narrow test or old release result is not proof of a finished feature.
+- Preserve existing account data and the Bengali brand/Anek Bangla. Faith becomes optional in universal onboarding.
+- Firebase remains Spark. Paid providers require explicit opt-in; keys never ship in the client. Play Console stays manual.
+- Items remain open until implemented, reachable, and verified at their stated scope. External/device gates remain open if not exercised.
+- Four checked/unchecked example subtasks in section A are illustrative content, not four product requirements.
+
+## Working sequence
+
+1. Durable local database, atomic outbox, account boundaries, migration, export/import and recovery.
+2. Universal preferences/onboarding, complete English/Bengali localization, optional Faith, theme/accessibility.
+3. Connected tasks/projects/recurrence, habits/goals, notes/reviews, focus and planning.
+4. Deterministic scheduling, learning/recovery/simulation, analytics and explainable assistance.
+5. Real integrations, sharing/permissions, capture/widgets/extensions, platform/native verification.
+6. Requirement-by-requirement audit and updated release artifacts.
+
+## Requirement status
+
+Status is **open** until there is feature-specific implementation and verification evidence.
+
+
+### A. Task management and capture
+
+- **A-01 - open** (gap.md:212): Universal Inbox for capturing ideas and tasks without immediately organizing them.
+- **A-02 - open** (gap.md:213): Natural-language input, such as "Send proposal to John next Friday at 3 PM."
+- **A-03 - open** (gap.md:214): Voice-to-task creation.
+- **A-04 - open** (gap.md:215): Quick Add available from anywhere in the application.
+- **A-05 - open** (gap.md:216): Android sharing integration for creating tasks from links, text, and files.
+- **A-06 - open** (gap.md:217): Projects and nested task groups.
+- **A-07 - open** (gap.md:218): Subtasks and multilevel checklists.
+- **A-08 - open** (gap.md:219): Four or five configurable priority levels.
+- **A-09 - open** (gap.md:220): Tags, labels, and custom categories.
+- **A-10 - open** (gap.md:221): Separate start date, scheduled date, and hard deadline.
+- **A-11 - open** (gap.md:222): Time estimates for individual tasks.
+- **A-12 - open** (gap.md:223): Advanced recurring schedules, including monthly, yearly, and custom intervals.
+- **A-13 - open** (gap.md:224): Recurrence exceptions, skipping, and pausing.
+- **A-14 - open** (gap.md:225): Multiple reminders per task.
+- **A-15 - open** (gap.md:226): Snooze and postpone actions.
+- **A-16 - open** (gap.md:227): Task descriptions, links, and attachments.
+- **A-17 - open** (gap.md:228): Task templates and recurring checklists.
+- **A-18 - open** (gap.md:229): Smart filters, saved searches, and custom task views.
+- **A-19 - open** (gap.md:230): Bulk editing, duplication, moving, and archiving.
+- **A-20 - open** (gap.md:231): Undo, recoverable trash, and edit history.
+- **A-21 - open** (gap.md:232): Task statuses such as Not Started, In Progress, Waiting, Blocked, and Completed.
+- **A-22 - open** (gap.md:233): Task dependencies and blocking relationships.
+- **A-23 - illustrative example** (gap.md:252): Collect financial information
+- **A-24 - illustrative example** (gap.md:253): Prepare presentation outline
+- **A-25 - illustrative example** (gap.md:254): Design presentation slides
+- **A-26 - illustrative example** (gap.md:255): Review and rehearse
+
+### B. Calendar and intelligent daily planning
+
+- **B-01 - open** (gap.md:269): Hourly day timeline.
+- **B-02 - open** (gap.md:270): Weekly time-grid calendar.
+- **B-03 - open** (gap.md:271): Monthly and yearly planning views.
+- **B-04 - open** (gap.md:272): Integration with Google Calendar.
+- **B-05 - open** (gap.md:273): Microsoft Outlook Calendar integration.
+- **B-06 - open** (gap.md:274): Apple Calendar support through a suitable calendar connection.
+- **B-07 - open** (gap.md:275): Multiple calendar accounts.
+- **B-08 - open** (gap.md:276): Drag-and-drop task scheduling.
+- **B-09 - open** (gap.md:277): Manual time blocking.
+- **B-10 - open** (gap.md:278): Recurring focus blocks.
+- **B-11 - open** (gap.md:279): Working hours and nonworking days.
+- **B-12 - open** (gap.md:280): Scheduling buffers between commitments.
+- **B-13 - open** (gap.md:281): Calendar conflict detection.
+- **B-14 - open** (gap.md:282): Capacity calculation based on available time.
+- **B-15 - open** (gap.md:283): Warnings when planned work exceeds available capacity.
+- **B-16 - open** (gap.md:284): Priority-aware automatic task placement.
+- **B-17 - open** (gap.md:285): Automatic rescheduling of incomplete work.
+- **B-18 - open** (gap.md:286): Protected personal and family time.
+- **B-19 - open** (gap.md:287): Travel-time allowances for location-based events.
+- **B-20 - open** (gap.md:288): A daily planning assistant.
+- **B-21 - open** (gap.md:289): A guided end-of-day shutdown.
+- **B-22 - open** (gap.md:290): Weekly planning and review.
+- **B-23 - open** (gap.md:291): Time zone and daylight-saving-time handling.
+- **B-24 - open** (gap.md:292): Calendar event creation, editing, and synchronization.
+- **B-25 - open** (gap.md:293): Separate display of externally imported events and internally planned work.
+
+### C. Projects, workflows, and collaboration
+
+- **C-01 - open** (gap.md:311): Projects containing tasks, subtasks, and milestones.
+- **C-02 - open** (gap.md:312): Personal workspaces such as Work, Personal, Study, and Family.
+- **C-03 - open** (gap.md:313): Project status and progress tracking.
+- **C-04 - open** (gap.md:314): Project descriptions, documents, and attachments.
+- **C-05 - open** (gap.md:315): List, Kanban, calendar, and timeline project views.
+- **C-06 - open** (gap.md:316): Task relationships and dependencies.
+- **C-07 - open** (gap.md:317): Project templates.
+- **C-08 - open** (gap.md:318): Milestone tracking.
+- **C-09 - open** (gap.md:319): Project completion history.
+- **C-10 - open** (gap.md:320): Shared projects and shared task lists.
+- **C-11 - open** (gap.md:321): Task assignment to collaborators.
+- **C-12 - open** (gap.md:322): Comments and mentions.
+- **C-13 - open** (gap.md:323): Member permissions.
+- **C-14 - open** (gap.md:324): Activity logs.
+- **C-15 - open** (gap.md:325): Shared household or family planning.
+
+### D. Advanced habits and routines
+
+- **D-01 - open** (gap.md:339): Standalone habit creation independent of checklist profiles.
+- **D-02 - open** (gap.md:340): Daily, weekly, monthly, and custom habit frequency.
+- **D-03 - open** (gap.md:341): Quantitative habits, such as reading 20 pages.
+- **D-04 - open** (gap.md:342): Duration-based habits, such as exercising for 30 minutes.
+- **D-05 - open** (gap.md:343): Reduction habits, such as limiting social media to 30 minutes.
+- **D-06 - open** (gap.md:344): Habit streaks.
+- **D-07 - open** (gap.md:345): Longest-streak and completion-consistency statistics.
+- **D-08 - open** (gap.md:346): Habit heatmaps.
+- **D-09 - open** (gap.md:347): Habit skipping and rest days.
+- **D-10 - open** (gap.md:348): Temporary habit pausing.
+- **D-11 - open** (gap.md:349): Flexible targets that change over time.
+- **D-12 - open** (gap.md:350): Morning and evening routine builders.
+- **D-13 - open** (gap.md:351): Habit stacking, where one activity triggers another.
+- **D-14 - open** (gap.md:352): Habit reminders at appropriate times.
+- **D-15 - open** (gap.md:353): Habit notes and reflections.
+- **D-16 - open** (gap.md:354): Habit templates.
+- **D-17 - open** (gap.md:355): Habit grouping by life area.
+- **D-18 - open** (gap.md:356): Optional health-app integrations.
+- **D-19 - open** (gap.md:357): Habit challenges with friends.
+- **D-20 - open** (gap.md:358): Trend reports showing improvement over time.
+
+### E. Goals and personal development
+
+- **E-01 - open** (gap.md:374): Short-term and long-term goals.
+- **E-02 - open** (gap.md:375): Weekly, monthly, quarterly, and annual goals.
+- **E-03 - open** (gap.md:376): Goal categories such as Career, Health, Education, Finance, and Relationships.
+- **E-04 - open** (gap.md:377): Goal descriptions and personal motivations.
+- **E-05 - open** (gap.md:378): Measurable targets with units.
+- **E-06 - open** (gap.md:379): Milestones.
+- **E-07 - open** (gap.md:380): Goal progress percentages.
+- **E-08 - open** (gap.md:381): Goal-to-project connections.
+- **E-09 - open** (gap.md:382): Goal-to-task connections.
+- **E-10 - open** (gap.md:383): Goal-to-habit connections.
+- **E-11 - open** (gap.md:384): Automatic progress updates from completed activities.
+- **E-12 - open** (gap.md:385): Manual progress logging.
+- **E-13 - open** (gap.md:386): Goal deadlines.
+- **E-14 - open** (gap.md:387): Goal trajectory and estimated completion.
+- **E-15 - open** (gap.md:388): Goal review reminders.
+- **E-16 - open** (gap.md:389): Paused, abandoned, and completed goal states.
+- **E-17 - open** (gap.md:390): Annual personal development plans.
+- **E-18 - open** (gap.md:391): Optional OKR-style planning.
+
+### F. Focus, distraction management, and time tracking
+
+- **F-01 - open** (gap.md:416): Pomodoro timer.
+- **F-02 - open** (gap.md:417): Customizable work/break intervals.
+- **F-03 - open** (gap.md:418): Stopwatch-based focus sessions.
+- **F-04 - open** (gap.md:419): Focus sessions directly attached to tasks.
+- **F-05 - open** (gap.md:420): Pause, resume, and interruption logging.
+- **F-06 - open** (gap.md:421): Manual time entries.
+- **F-07 - open** (gap.md:422): Planned versus actual effort.
+- **F-08 - open** (gap.md:423): Focus-time goals.
+- **F-09 - open** (gap.md:424): Deep Work mode.
+- **F-10 - open** (gap.md:425): Full-screen, one-task-at-a-time interface.
+- **F-11 - open** (gap.md:426): Break reminders.
+- **F-12 - open** (gap.md:427): Optional ambient sounds.
+- **F-13 - open** (gap.md:428): Focus history.
+- **F-14 - open** (gap.md:429): Focus session tagging.
+- **F-15 - open** (gap.md:430): Daily and weekly focus summaries.
+- **F-16 - open** (gap.md:431): Distraction tracking.
+- **F-17 - open** (gap.md:432): Optional app/website blocking, subject to operating-system capabilities.
+- **F-18 - open** (gap.md:433): Optional desktop activity tracking.
+- **F-19 - open** (gap.md:434): Privacy controls for automatic activity monitoring.
+- **F-20 - open** (gap.md:435): Focus sessions involving accountability partners.
+
+### G. Journaling, notes, and knowledge management
+
+- **G-01 - open** (gap.md:455): Daily journal entries.
+- **G-02 - open** (gap.md:456): Rich-text or Markdown editor.
+- **G-03 - open** (gap.md:457): Private journals and notebooks.
+- **G-04 - open** (gap.md:458): Journal templates.
+- **G-05 - open** (gap.md:459): Gratitude prompts.
+- **G-06 - open** (gap.md:460): Daily accomplishments.
+- **G-07 - open** (gap.md:461): Challenges and lessons learned.
+- **G-08 - open** (gap.md:462): Mood and energy check-ins.
+- **G-09 - open** (gap.md:463): Photos and attachments.
+- **G-10 - open** (gap.md:464): Voice notes.
+- **G-11 - open** (gap.md:465): Optional speech-to-text transcription.
+- **G-12 - open** (gap.md:466): Meeting notes.
+- **G-13 - open** (gap.md:467): Study notes.
+- **G-14 - open** (gap.md:468): Linked notes and backlinks.
+- **G-15 - open** (gap.md:469): Tags and folders.
+- **G-16 - open** (gap.md:470): Full-text note search.
+- **G-17 - open** (gap.md:471): Notes linked to tasks and goals.
+- **G-18 - open** (gap.md:472): Convert highlighted text into tasks.
+- **G-19 - open** (gap.md:473): Daily note and calendar integration.
+- **G-20 - open** (gap.md:474): Journal history and memory resurfacing.
+- **G-21 - open** (gap.md:475): Journal export.
+- **G-22 - open** (gap.md:476): Biometric lock or additional protection for sensitive content.
+
+### H. Productivity analytics and performance intelligence
+
+- **H-01 - open** (gap.md:490): Task completion reports.
+- **H-02 - open** (gap.md:491): Project progress reports.
+- **H-03 - open** (gap.md:492): Habit consistency reports.
+- **H-04 - open** (gap.md:493): Goal achievement reports.
+- **H-05 - open** (gap.md:494): Focus-time reports.
+- **H-06 - open** (gap.md:495): Estimated versus actual duration comparisons.
+- **H-07 - open** (gap.md:496): Planned versus completed work.
+- **H-08 - open** (gap.md:497): Overdue-task patterns.
+- **H-09 - open** (gap.md:498): Task postponement frequency.
+- **H-10 - open** (gap.md:499): Project workload distribution.
+- **H-11 - open** (gap.md:500): Daily, weekly, monthly, quarterly, and yearly reporting.
+- **H-12 - open** (gap.md:501): Calendar heatmaps.
+- **H-13 - open** (gap.md:502): Personal productivity trends.
+- **H-14 - open** (gap.md:503): Most productive time-of-day analysis.
+- **H-15 - open** (gap.md:504): Focus versus interruption analysis.
+- **H-16 - open** (gap.md:505): Goal contribution reports.
+- **H-17 - open** (gap.md:506): Burnout-risk or overload indicators, carefully presented as workload signals rather than diagnoses.
+- **H-18 - open** (gap.md:507): Weekly achievement summaries.
+- **H-19 - open** (gap.md:508): Custom dashboard widgets.
+- **H-20 - open** (gap.md:509): CSV and PDF report exports.
+- **H-21 - open** (gap.md:510): Historical comparisons.
+- **H-22 - open** (gap.md:511): Clear distinctions between missing data, skipped work, and actual failure.
+
+### I. AI and intelligent assistance
+
+- **I-01 - open** (gap.md:523): Natural-language task capture.
+- **I-02 - open** (gap.md:524): AI task breakdown.
+- **I-03 - open** (gap.md:525): AI project-plan generation.
+- **I-04 - open** (gap.md:526): Priority recommendations.
+- **I-05 - open** (gap.md:527): Smart daily scheduling.
+- **I-06 - open** (gap.md:528): Automatic replanning after disruptions.
+- **I-07 - open** (gap.md:529): Scheduling conflict explanations.
+- **I-08 - open** (gap.md:530): Workload prediction.
+- **I-09 - open** (gap.md:531): Personalized daily briefing.
+- **I-10 - open** (gap.md:532): Suggested next action.
+- **I-11 - open** (gap.md:533): Task duplication detection.
+- **I-12 - open** (gap.md:534): Deadline-risk warnings.
+- **I-13 - open** (gap.md:535): AI-assisted weekly reviews.
+- **I-14 - open** (gap.md:536): Journal summarization.
+- **I-15 - open** (gap.md:537): Goal progress interpretation.
+- **I-16 - open** (gap.md:538): Meeting-note summarization.
+- **I-17 - open** (gap.md:539): Action-item extraction from notes and documents.
+- **I-18 - open** (gap.md:540): Voice interaction.
+- **I-19 - open** (gap.md:541): Natural-language search across the user's permitted data.
+- **I-20 - open** (gap.md:542): Productivity coaching based on actual activity history.
+- **I-21 - open** (gap.md:543): Suggested improvements to recurring routines.
+- **I-22 - open** (gap.md:544): User approval before consequential AI changes.
+- **I-23 - open** (gap.md:545): Undo support for approved AI actions.
+- **I-24 - open** (gap.md:546): Clear explanations of AI recommendations.
+
+### K. Social productivity and accountability
+
+- **K-01 - open** (gap.md:589): Shared goals.
+- **K-02 - open** (gap.md:590): Accountability partners.
+- **K-03 - open** (gap.md:591): Shared habit challenges.
+- **K-04 - open** (gap.md:592): Private accountability groups.
+- **K-05 - open** (gap.md:593): Progress sharing with user consent.
+- **K-06 - open** (gap.md:594): Collaborative focus sessions.
+- **K-07 - open** (gap.md:595): Family task lists.
+- **K-08 - open** (gap.md:596): Encouragement and celebration.
+- **K-09 - open** (gap.md:597): Optional achievement badges.
+- **K-10 - open** (gap.md:598): Community challenges.
+- **K-11 - open** (gap.md:599): Privacy controls for shared information.
+
+### L. User experience and global readiness
+
+- **L-01 - open** (gap.md:609): Complete English-language interface.
+- **L-02 - open** (gap.md:610): Bengali and English switching.
+- **L-03 - open** (gap.md:611): Proper international date and number formatting.
+- **L-04 - open** (gap.md:612): Configurable week start.
+- **L-05 - open** (gap.md:613): Twelve-hour and twenty-four-hour clock formats.
+- **L-06 - open** (gap.md:614): Correct daylight-saving-time handling.
+- **L-07 - open** (gap.md:615): Country-specific holidays where enabled.
+- **L-08 - open** (gap.md:616): Dark mode.
+- **L-09 - open** (gap.md:617): System-theme following.
+- **L-10 - open** (gap.md:618): Customizable home dashboard.
+- **L-11 - open** (gap.md:619): Configurable navigation.
+- **L-12 - open** (gap.md:620): Onboarding based on user goals.
+- **L-13 - open** (gap.md:621): Starter templates for students, professionals, parents, and freelancers.
+- **L-14 - open** (gap.md:622): Minimal interface for beginners.
+- **L-15 - open** (gap.md:623): Advanced workspace for power users.
+- **L-16 - open** (gap.md:624): Consistent empty, loading, and error states.
+- **L-17 - open** (gap.md:625): Global search.
+- **L-18 - open** (gap.md:626): Better keyboard shortcuts.
+- **L-19 - open** (gap.md:627): Accessible text sizes and contrast.
+- **L-20 - open** (gap.md:628): Screen-reader support.
+- **L-21 - open** (gap.md:629): Home-screen widgets.
+- **L-22 - open** (gap.md:630): Quick actions.
+- **L-23 - open** (gap.md:631): Reduced-motion accessibility settings.
+- **L-24 - open** (gap.md:632): Configurable notification frequency.
+- **L-25 - open** (gap.md:633): Easy import from competing apps.
+
+### M. Platform support
+
+- **M-01 - open** (gap.md:645): Production-ready Android app.
+- **M-02 - open** (gap.md:646): Production-ready iOS app.
+- **M-03 - open** (gap.md:647): Full-featured web application.
+- **M-04 - open** (gap.md:648): Tablet-responsive interface.
+- **M-05 - open** (gap.md:649): Desktop application or installable web experience.
+- **M-06 - open** (gap.md:650): Cross-device synchronization.
+- **M-07 - open** (gap.md:651): Native notification behavior.
+- **M-08 - open** (gap.md:652): Android home-screen widgets.
+- **M-09 - open** (gap.md:653): iOS widgets.
+- **M-10 - open** (gap.md:654): Android and iOS quick capture.
+- **M-11 - open** (gap.md:655): Watch integrations where justified.
+- **M-12 - open** (gap.md:656): Browser extension.
+- **M-13 - open** (gap.md:657): Offline functionality across supported platforms.
+- **M-14 - open** (gap.md:658): Cross-platform deep linking.
+
+### N. Reliability, privacy, and data ownership
+
+- **N-01 - open** (gap.md:668): Durable offline task and habit editing.
+- **N-02 - open** (gap.md:669): Local persistence for pending operations.
+- **N-03 - open** (gap.md:670): Automatic synchronization after reconnection.
+- **N-04 - open** (gap.md:671): Conflict-resolution rules.
+- **N-05 - open** (gap.md:672): Duplicate-write protection.
+- **N-06 - open** (gap.md:673): Reliable recurrence processing across time zones.
+- **N-07 - open** (gap.md:674): Recoverable deleted tasks and notes.
+- **N-08 - open** (gap.md:675): Data export in documented formats.
+- **N-09 - open** (gap.md:676): Data import with validation.
+- **N-10 - open** (gap.md:677): Reliable backups.
+- **N-11 - open** (gap.md:678): Data migration between app versions.
+- **N-12 - open** (gap.md:679): Account deletion verification.
+- **N-13 - open** (gap.md:680): Protection against stale-account data appearing after sign-out.
+- **N-14 - open** (gap.md:681): Sensitive-record access controls.
+- **N-15 - open** (gap.md:682): Optional additional encryption for journals.
+- **N-16 - open** (gap.md:683): Clear analytics and AI consent settings.
+- **N-17 - open** (gap.md:684): Reliable notification rescheduling.
+- **N-18 - open** (gap.md:685): Device-loss and reinstall recovery tests.
+- **N-19 - open** (gap.md:686): Crash recovery and interrupted-save testing.
+- **N-20 - open** (gap.md:687): Sync status visible to users.
+- **N-21 - open** (gap.md:688): Automated monitoring for sync failures.
+- **N-22 - open** (gap.md:689): Accessibility and performance regression tests.
+
+## Additional explicit requirements
+
+- **X-01 - open**: Calendar/email/communication/document/project/health/browser/automation/device-assistant/developer integrations from section J
+- **X-02 - open**: Unified goal-to-execution relationships
+- **X-03 - open**: Adaptive availability-, priority-, deadline- and dependency-aware planning
+- **X-04 - open**: Historical duration learning with consent
+- **X-05 - open**: Manageable recovery plan after missed days
+- **X-06 - open**: Future-commitment simulation before applying changes
+- **X-07 - open**: Manual, assisted and explicitly authorized automatic modes; explanations and undo
+- **X-08 - open**: Task, TaskOccurrence, Project, Goal, GoalMetric, Habit, HabitLog, CalendarEvent, TimeBlock, FocusSession, Note, DailyReview, IntegrationConnection, ChangeEvent, SyncOperation entities
+- **X-09 - open**: Tested preservation and migration of existing users
+- **X-10 - open**: Phase 0 real-device reliability exit condition
+- **X-11 - open**: Phase 1 task/habit foundation exit condition
+- **X-12 - open**: Phase 2 calendar/execution exit condition
+- **X-13 - open**: Phase 3 goals/journal/analytics exit condition
+- **X-14 - open**: Phase 4 controlled intelligence exit condition
+- **X-15 - open**: Phase 5 ecosystem/platform exit condition
+- **X-16 - open**: Goal-oriented activation/planning/execution/reliability/trust/usability validation
+
+## Evidence log
+
+- Initial source inspected at `8bcf6bb`. The supplied gap file and prior PDF are preserved.
+- Existing baseline has 322 Flutter tests. Build 3 signed APK startup/login was verified on the dedicated Android API 36 x86_64, 16 KiB emulator on 30 October 2026; hashes are recorded in `docs/release/signed-release-smoke.json`. This predates the productivity code and added plugins.
+- New productivity suite: 100 unit/widget tests pass after offline storage, sync, task graph, recurrence, restartable migration, preferences/onboarding, backup gateway, account lifecycle, universal root/rapid account switching, conflict review, project draft retries, Bangla grapheme limits, strict UTC import handling and phone-width/large-text task UI changes. These tests do not establish whole-app cutover or release readiness.
+- The full regression suite passed all 422 tests after graph/deletion and field-conflict integration (`.local/logs/gap-full-followon.log`). Repository-wide Flutter analysis reports no issues. The legacy shell is still the main entry point.
+- Firebase emulator suite: 13 tests passed after adding graph record/edge/control pairing, forged-write rejection and concurrent revision retry checks. An Android emulator integration test passed with two signed-in Dart clients: a cross-device graph cycle was rejected, the accepted edit was pulled, then the corrected task was resubmitted (`.local/logs/gap-native-graph.log`). New rules/hosting assets are not yet deployed.
+- The signed release APK with the added native plugin built, passed signature and 16 KiB ZIP alignment checks, and reached the login screen on a clean API 36 x86_64 emulator start after its System UI recovered from a startup stall. The installed APK hash matched the build; evidence is `docs/release/productivity-packaging-smoke.json`. This verifies packaging/startup only. The new productivity root remains hidden behind the legacy entry point.
+- `docs/productivity-architecture.md` records the current implementation and limitations, including the Sembast IO single-owner/memory constraint, foreground-only automatic sync, unencrypted JSON backups and remaining root integration.
+- User reports no physical Android phone or Mac/iPhone setup. Physical Android/iOS gates remain unverified; software work continues.
+- Bangla/English phone previews were rendered with bundled fonts and inspected. Labeled controls and Android tap-target guidelines pass in `tool/productivity_preview_test.dart`; previews are `.local/previews/productivity-{bn,en}-phone.png`.
+- Before main-entry activation: finish notification delivery and conflict validation for future record kinds, complete legacy route adapters/migration, deploy deletion/privacy/rules together, and test longer multi-device reconnection. Sembast IO indexing/background ownership also remains an explicit architecture gate.
+- Foundation checkpoint `1d14967` is pushed on `codex/productivity-gap` with draft PR https://github.com/Rakindotcom/assistUmmah/pull/1. Both Flutter and account-lifecycle quality jobs passed in run `41015592891`. The PR remains a draft and is not merged.
+- Follow-on graph work now shares an iterative validator across local policy and the Firestore adapter. The adapter writes a minimal edge and account graph revision with each task change; rules require them to match. A rejected create blocks later patches to that task while other records sync. User-reviewed resubmission preserves an audit trail, and the new sync status sheet exposes conflicts on phone width. Pure graph tests, focused Flutter tests, 13 Firebase emulator rules tests and the Android Dart adapter integration test pass. The broader task engine and full release remain open.
+- Same-field rejected edits now remain in a durable local conflict store with both local and cloud values. The user can keep cloud or retry their reviewed value with a fresh logical clock; stale review selections fail safely. The Bangla sync sheet exposes that choice on phone width. Backup format 2 carries open conflicts and imports format 1. File-restart, validation rollback, archive integrity and mobile widget tests pass. The two-client Android/Firebase emulator test also confirms rejection, review and retry. This applies to the hidden productivity workspace; future record kinds still need domain validators.
+- The universal root now has a default Faith adapter for existing Prayer, Quran, Dhikr, Growth and Dua screens. It excludes legacy task routes and resets the day on resume; phone-width and enlarged-text widget tests pass. The root scopes legacy notifications so Faith off cancels daily and prayer alerts, and Faith on never schedules the old task alert. A root option-toggle test verifies those native calls. All 427 Flutter tests and repository-wide analysis pass at this checkpoint. The main app still starts the legacy shell, Faith content is not yet fully bilingual, and notification delivery on a physical device is unverified.
+- Existing emergency contacts are now reachable from the universal root's Settings through an account-matched legacy repository. The route has a root widget test and static analysis passes. A later source audit confirmed the legacy calendar/reports query prayer and growth, not legacy tasks; those data-preserving routes are now exposed through Faith history and reports.
+- The universal root now starts at a cross-workspace Inbox with search, workspace filters and a selectable capture destination. Its widget tests cover multiple workspaces, exclusion of completed/planned tasks, and saving to a chosen workspace at 320 px with enlarged text. Bengali and English 390 px previews pass semantic labels and Android tap targets. A-01 remains open because the universal root is not yet the shipped entry point.
+- Quick add now opens the current workspace's local task editor from Faith and Settings; Inbox and Tasks retain their own add actions. Root widget tests cover both new entry points, while A-04 remains open until the root is the shipped app entry and the remaining routes are audited.
+- The hidden Tasks/Today view now computes scheduled task estimates across enabled workspaces in the configured time zone, bounded by the workday and daily-capacity setting. It excludes deadlines without planned time and completed occurrences, flags overrun and missing estimates, and has domain plus 320 px enlarged-text widget coverage. B-14/B-15 remain open because calendar events, buffers and external commitments are not yet included and this root is not shipped.
+- One-off tasks in the hidden workspace can now be moved to tomorrow without changing their deadline. The action avoids duplicate postponement writes, requires confirmation when it crosses the deadline in the configured time zone, and stays hidden for completed, recurring and already-future tasks. Repository and mobile UI tests pass. A-15 remains open because reminder snoozing and shipped-route coverage remain incomplete.
+- The hidden root now has a local Calendar tab with event create/edit/delete, a day list across enabled workspaces, overlap warnings, UTC plus IANA-zone storage, explicit DST-gap/overlap handling, and backup field validation. Repository/backup tests and a 320 px enlarged-text widget edit test pass; all 441 Flutter tests and repository-wide analysis passed at this checkpoint. B-01/B-13/B-23/B-24 remain open at their full scope: there is no hourly grid, connected calendar account, external synchronization or shipped-root activation.
+- The hidden Today capacity estimate now subtracts the union of local calendar events during configured work hours, across enabled workspaces. Overlaps are counted once and a DST transition test checks elapsed work time; a 320 px enlarged-text widget test verifies the capacity update after saving a meeting. B-14/B-15 remain open until external commitments, buffers, shipped route and broader scheduling are verified.
+- Calendar event timing now syncs as one atomic interval field. The local merge and Firestore adapter validate event invariants; Firestore rules accept canonical UTC intervals and reject malformed or reversed endpoints. A pre-shipped legacy-field reader and edit/delete upgrade preserve old preview records. Concurrent merge, atomic pull-rollback and microsecond-ordering tests pass, as do all 14 Auth/Firestore emulator cases. All 445 Flutter tests passed before the final two focused legacy/precision tests; those and repository-wide analysis passed afterward. Live rules are not deployed and external calendar integration remains open.
+- The sync sheet can now open a failed calendar event for correction and reviewed resubmission. The old outbox entries remain in audit history with a supersession link, and the new patch carries a complete valid interval. An invalid event write does not stop unrelated task writes in that sync batch. Database/coordinator tests and a 320 px enlarged-text recovery flow pass. These checks do not replace a live multi-device test or deployment.
+- The hidden calendar editor now writes only changed fields, preserving concurrent updates to untouched event details. Its day selector, time display and workspace labels use Bangla localization; 320 px widget tests cover stale-form edits and the localized day list. B-24 stays open until the route is shipped and live sync is verified.
+- The hidden Calendar tab now offers a mobile hourly grid for local events and timed tasks with estimates alongside its agenda. It positions overlapping blocks in separate lanes, clips cross-day events and models 23/25-hour daylight-saving days; enlarged-text 320 px interaction, task-opening and DST layout tests pass. B-01 stays open until the root ships and broader task planning is verified.
+- The complete Flutter suite passes 455 tests with the timeline and task-block wiring; repository-wide `flutter analyze` and `git diff --check` pass. This is widget evidence, not physical-device or live-sync verification.
+- A separate offline-only Android preview entrypoint builds a signed APK of the hidden productivity root without Firebase initialization or legacy migration writes. The package signature matches the previous preview, and APK signature and 16 KB alignment verify. It shares the Android package ID but uses a separate local account namespace; no Android emulator or hardware launch was available, so this does not close production cutover or native-verification gates. See `docs/productivity-preview.md`.
+- The earlier Dart-only preview isolation claim above was incomplete: Android's Firebase startup provider still existed and Prayer could touch shared notification IDs. The corrected `preview` Android flavor has its own `.preview` package, removes that provider, skips Firebase build/upload tasks, enforces entrypoint/flavor pairing and disables every preview notification path. Production keeps its package/provider and is the default flavor. Manifest, packaging-graph and zero-native-call widget checks cover these boundaries; a rebuilt APK is verified separately.
+- Short timeline entries now reserve separate rendered/tap extents while their timing rails retain the actual duration. Tests cover adjacent five-minute entries at 320 px/1.6x text and a 23:59 entry; the current-time marker refreshes each minute and on resume without timers in fixed snapshots.
+- The Calendar daily planner now proposes contiguous priority/deadline-aware slots around local events and fixed work, respects daily capacity, work hours/days, start dates, dependencies and completed occurrences, and explains rejected candidates. Reviewed application is atomic, account-scoped and rejected after any planning-context change or expired slot. Domain, concurrent/stale/rollback repository and 320 px mobile tests cover the path, including repeated-hour DST labels. B-16/B-20 remain open until shipped activation and the broader connected-calendar planning scope are verified.
+- Faith history, daily/weekly/monthly reports and trends are reachable from the new root with preserved repository identity and scoped notifications. A 320 px/1.6x navigation test traverses actual prayer/growth and trend-day routes. Bundled/public privacy copy now describes local retention, unencrypted backups and the isolated preview; JSON/HTML parity and narrow-screen policy checks pass. These source changes are not live-deployment evidence.
+- The integrated Flutter suite passes 493 tests after daily planning, Faith history, preview notification isolation, timeline interaction and privacy changes. Repository-wide analysis is clean. A separate visual fixture rendered and inspected Bengali/English planning screens with bundled Anek Bangla and passed labeled-control/Android tap-target checks. Native preview packaging is checked by `tool/verify_productivity_preview.py`; hardware and live migration/sync gates remain open.
+- The isolated preview APK built successfully from runtime source checkpoint `d785826`. Package `com.rakindotcom.ummah_assist.preview`, absent native Firebase startup provider/integration-test plugin, release signature and 16 KB ZIP alignment all verify. Artifact hash and scope are in `docs/release/productivity-offline-preview.json`; both 5/6 November download filenames now contain the isolated APK. Native launch is still unverified.
+
+- The actual legacy migration adapter now has a two-client browser suite against disposable Auth/Firestore emulators. It verifies exact microsecond timestamp archives, fenced-source replay after later edits/tombstones, stale-client rejection and invalid/account/deletion boundaries. The SDK rounding and JS callback error-boxing issues exposed by this test are fixed with typed owner-authenticated REST snapshots and domain results outside the callback. CI is configured to run this separately; native migration and live deployment remain open.
+- The full Flutter regression suite passes 499 tests with two browser-only cases skipped on the VM; all six typed-value decoder tests run in that total. The separate browser suite passes two actual SDK cases. Repository analysis and the three Python tooling tests pass. This is local verification; current-head remote CI results are not yet asserted.
+- Explicit task reminder dates now connect to an account-scoped native notification controller in the new root. Device consent defaults off; edits, completion, occurrence state, module changes, deletion freeze and resume replace/cancel pending plans. The scheduler protects prayer/daily requests before reallocating iOS slots, exposes deferred counts, handles exact-alarm revocation and clears account notifications without timezone initialization. The offline preview still performs no notification operations. Relative recurring reminder rules, snooze, task tap routing, background refill, shipped entry and physical/native delivery gates remain open. See `docs/productivity-notifications.md`.
+- A root lifecycle test verifies that an asynchronous migration prepared for an ended account is never applied after a switch. Bengali/English notification controls pass 320 px/1.6x interaction, labeled-control and Android tap-target checks; the bundled-font captures were inspected. These are protocol/widget checks, not native OS delivery evidence.
+- GitHub Actions run [42179185561](https://github.com/Rakindotcom/assistUmmah/actions/runs/42179185561) for `af8bcb7` failed before any job steps started. The runner annotation reports an account lock due to a billing issue. Hosted CI is blocked; local checks continue.
+- The integrated local suite passes 521 Flutter tests with two browser-only cases skipped on the VM, and repository analysis reports no issues after task notification integration. The final Bengali/English bundled-font phone fixture separately passes both interaction/semantics checks; three Python tooling tests also pass. The browser adapter test from the previous checkpoint is separate evidence, and no native OS notification delivery is claimed by these results.

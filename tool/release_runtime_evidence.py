@@ -34,6 +34,24 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
                    and smoke.get('firebaseCrashlyticsInitialized')
                    and smoke.get('firebaseRegistrarErrorsAbsent')
                    and smoke.get('pageSize') == 16384)
+    cloud_path = docs / 'current-testlab-startup.json'
+    cloud = read_json(cloud_path) if cloud_path.exists() else None
+    summary_path = docs / 'verification-summary.json'
+    summary = read_json(summary_path)
+    cloud_current = bool(
+        cloud and cloud.get('sourceBundleSha256') == bundle_sha256
+        and cloud.get('uploadedApkSha256')
+        and cloud.get('uploadedApkSha256') == summary.get('universalApkSha256')
+        and cloud.get('uploadMd5VerifiedByGoogleCloudStorage')
+        and cloud.get('matrixId') and cloud.get('matrixState') == 'FINISHED'
+        and cloud.get('outcome') == 'SUCCESS'
+        and cloud.get('roboMode') == 'ROBO_VERSION_1'
+        and cloud.get('pageSizeByCatalogModel') == 16384
+        and cloud.get('loginScreenVisuallyVerified')
+        and cloud.get('firebaseInitialized')
+        and cloud.get('firebaseCrashlyticsInitialized')
+        and cloud.get('firebaseRegistrarErrorsAbsent')
+        and cloud.get('fatalExceptionsAbsentInRunLog'))
     if smoke is not None:
         smoke['currentBundleVerified'] = current
         if current:
@@ -46,32 +64,49 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
     bundle = read_json(bundle_path)
     assert bundle['sha256'] == bundle_sha256, 'Bundle evidence changed during reconciliation'
     bundle['runtime16KbVerified'] = current
+    bundle['cloudRuntime16KbStartupVerified'] = cloud_current
     write_json(bundle_path, bundle)
 
     environment_path = docs / 'android-emulator-environment.json'
     environment = read_json(environment_path)
     environment['productionAppRuntimeVerified'] = current
+    environment['cloudProductionStartupVerified'] = cloud_current
     environment['productionRuntimeBundleSha256'] = bundle_sha256 if current else None
+    environment['productionRuntimeEnvironment'] = ({
+        'provider': smoke.get('provider', 'local Android emulator'),
+        'architecture': smoke.get('architecture'),
+        'androidApi': smoke.get('androidApi'),
+        'pageSize': smoke.get('pageSize'),
+    } if current else None)
     environment['productionRuntimeScope'] = (
-        'Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator.'
-        if current else 'Current signed bundle has no successful native runtime smoke.')
+        smoke.get('scope', 'Fresh signed universal APK startup and login accessibility tree on the dedicated 16 KB emulator.')
+        if current else (
+            'Current candidate startup passed in Firebase Test Lab; independent '
+            'installed-hash and page-size-syscall proof remains absent.'
+            if cloud_current else 'Current signed bundle has no successful native runtime smoke.'))
     write_json(environment_path, environment)
 
-    summary_path = docs / 'verification-summary.json'
-    summary = read_json(summary_path)
     summary['bundleSha256'] = bundle_sha256
-    summary['nativeRuntimeTested'] = current
+    summary['nativeRuntimeTested'] = current or cloud_current
+    summary['cloudSignedApkStartupVerified'] = cloud_current
     summary['signedReleaseStartupSmokePassed'] = current
     summary['signedReleaseLoginVisible'] = current
     summary['firebaseRegistrarErrorsAbsent'] = current
     summary['priorRuntimeEvidenceAvailable'] = smoke is not None
-    if not current:
+    if cloud_current and not current:
+        summary['nativeEvidenceScope'] = (
+            'Current signed APK startup/login visually verified in ARM64 / 16 KB '
+            'Firebase Test Lab using upload checksum and no-resigning mode. '
+            'Independent installed APK hash and page-size syscall were not read; '
+            'the stricter direct runtime receipt and full signed-in flows remain open.')
+    elif not current:
         summary['nativeEvidenceScope'] = (
             'Profile audit and captures belong to a prior app build; '
             'the current signed bundle runtime is unverified.')
     else:
         summary['nativeEvidenceScope'] = (
-            'Current signed bundle startup/login passed on the dedicated 16 KB emulator; '
-            'profile audit and captures belong to a prior app build.')
+            smoke.get('scope',
+                      'Current signed bundle startup/login passed on the dedicated 16 KB emulator; '
+                      'profile audit and captures belong to a prior app build.'))
     write_json(summary_path, summary)
     return current

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +10,9 @@ import '../diagnostics/diagnostics_service.dart';
 import '../prayer_alerts.dart';
 import '../prayer_times_service.dart';
 import '../reminder_service.dart';
+import '../productivity/data/productivity_database.dart';
+import '../productivity/data/productivity_session.dart';
+import '../productivity/notifications/task_reminder_store.dart';
 import 'deletion_plan.dart';
 import 'session_cleanup.dart';
 
@@ -22,8 +27,11 @@ class AccountService {
       return;
     }
     for (final uid in uids) {
+      await ProductivitySession.closeAccount(uid);
+      await ProductivityDatabase.eraseAccountData(uid);
       await PrayerTimeStore(uid).remove();
       await PrayerAlertStore(uid).remove();
+      await TaskReminderStore(uid).remove();
     }
     // Run before any Firestore listener starts; terminating a shared instance
     // during account switching would prevent it from being reused afterward.
@@ -72,11 +80,18 @@ class AccountService {
         await rootBundle.loadString('assets/legal/account-data-paths.json'));
     await plan.execute(
       uid: user.uid,
-      recordRequest: () => db.runTransaction((transaction) async {
-        if (!(await transaction.get(marker)).exists) {
-          transaction.set(marker, <String, Object?>{});
-        }
-      }),
+      recordRequest: () async {
+        await db.runTransaction((transaction) async {
+          if (!(await transaction.get(marker)).exists) {
+            transaction.set(marker, <String, Object?>{});
+          }
+        });
+        await ProductivitySession.freezeAccount(user.uid);
+        // Invalidate schedules immediately. Native failure cannot prevent
+        // cloud/identity deletion; the final sign-out retries cancellation.
+        unawaited(
+            ReminderService.instance.cancelAll().catchError((Object _) {}));
+      },
       deleteCollection: (path) => _drain(db.collection(path)),
       deleteActivities: (collection, field, uid) =>
           _drain(db.collection(collection).where(field, isEqualTo: uid)),
@@ -98,9 +113,14 @@ class AccountService {
             _deletedUidsKey, {...uids, user.uid}.toList());
       },
       () => preferences.setBool(_clearCacheKey, true),
+      () async {
+        await ProductivitySession.closeAccount(user.uid);
+        await ProductivityDatabase.eraseAccountData(user.uid);
+      },
       () => DiagnosticsService.setEnabled(false),
       PrayerTimeStore(user.uid).remove,
       PrayerAlertStore(user.uid).remove,
+      TaskReminderStore(user.uid).remove,
     ]) {
       try {
         await cleanup();

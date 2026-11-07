@@ -18,6 +18,6 @@ flutter analyze --no-pub
 flutter test --no-pub --concurrency=2
 # Flutter 3.44 regenerates build-mode plugin registration only with pub enabled.
 # Reusing the profile/test registrant would reference dev-only native plugins.
-flutter build appbundle --release
+flutter build appbundle --release --flavor production
 python3 tool/verify_android_bundle.py
 python3 tool/verify_android_apk.py

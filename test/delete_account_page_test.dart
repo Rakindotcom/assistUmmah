@@ -90,7 +90,8 @@ void main() {
       expect(tester.takeException(), isNull);
     }
     await tester.scrollUntilVisible(find.text('নীতির পরিবর্তন'), 500,
-        scrollable: find.byType(Scrollable).first);
+        maxScrolls: 150, scrollable: find.byType(Scrollable).first);
     expect(find.text('নীতির পরিবর্তন'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

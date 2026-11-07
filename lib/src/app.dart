@@ -6,6 +6,7 @@ import 'app_identity.dart';
 import 'app_localization.dart';
 import 'auth/auth_gate.dart';
 import 'auth/account_navigation_boundary.dart';
+import 'reminder_service.dart';
 
 class UmmahAssistApp extends StatelessWidget {
   const UmmahAssistApp({super.key, required this.firebaseReady, this.home});
@@ -29,6 +30,7 @@ class UmmahAssistApp extends StatelessWidget {
     return AccountNavigationBoundary(
       sessionIds: auth.authStateChanges().map((user) => user?.uid),
       initialSessionId: auth.currentUser?.uid,
+      onSessionInvalidated: ReminderService.instance.cancelAll,
       child: app,
     );
   }

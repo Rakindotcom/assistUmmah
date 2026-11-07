@@ -1,0 +1,293 @@
+package com.rakindotcom.ummah_assist.release_harness;
+
+import static org.junit.Assert.*;
+import static com.rakindotcom.ummah_assist.release_harness.SignedReleaseAuditTest.required;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.system.Os;
+import android.system.OsConstants;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Configurator;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import org.json.JSONObject;
+import org.junit.Test;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
+/** Controlled UI actions against disposable fixture accounts only. */
+public final class SignedInReleaseAuditTest {
+    private static final String APP = "com.rakindotcom.ummah_assist";
+    private final JSONObject report = new JSONObject();
+    private UiDevice device;
+    private Context context;
+    private File output;
+    private String stage = "initialization";
+
+    @Test
+    public void signedInIsolationAndPermissions() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash);
+            report.put("installedApkSha256", hash);
+            report.put("pageSize", Os.sysconf(OsConstants._SC_PAGESIZE));
+            assertEquals(16384L, Os.sysconf(OsConstants._SC_PAGESIZE));
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch);
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(launch);
+
+            stage = "fixture A sign-in";
+            signIn(required(args, "accountAEmail"), required(args, "accountAPassword"));
+            report.put("nativePasswordSignIn", true);
+            capture("03-home");
+
+            stage = "fixture A task read";
+            nav("কাজ");
+            reveal(required(args, "accountATask"));
+            report.put("accountATaskVisible", true);
+            capture("04-tasks");
+
+            stage = "task save";
+            reveal("কাজ যোগ").click();
+            waitLabel("নতুন কাজ যোগ করুন", 10000);
+            List<UiObject2> editors = editors();
+            assertFalse(editors.isEmpty());
+            editors.get(0).setText("Native audit saved task");
+            device.pressBack();
+            click("যোগ করুন");
+            waitAbsent("নতুন কাজ যোগ করুন", 30000);
+            reveal("Native audit saved task");
+            report.put("nativeTaskSaveVisible", true);
+
+            stage = "core navigation";
+            nav("নামাজ"); waitLabel("নামাজ ট্র্যাকিং", 30000); capture("05-prayer");
+            nav("গ্রোথ"); waitLabel("গ্রোথ চেকলিস্ট", 30000); capture("06-growth");
+            nav("আরও"); reveal("কুরআন রিডিং"); capture("07-more");
+            stage = "Quran navigation";
+            reveal("কুরআন রিডিং").click(); waitLabel("কুরআন রিডিং", 20000); capture("08-quran");
+            nav("আরও"); reveal("যিকিরের লক্ষ্য").click();
+            stage = "tasbih navigation";
+            waitContains("তসবিহ", 20000); capture("09-dhikr");
+            report.put("coreNavigationOpened", true);
+
+            stage = "native permission denial";
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            UiObject2 reminders = reveal("দৈনিক রিমাইন্ডার");
+            assertEquals(PackageManager.PERMISSION_DENIED,
+                    context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS", APP));
+            reminders.click();
+            long deadline = SystemClock.uptimeMillis() + 15000;
+            UiObject2 deny = null;
+            while (deny == null && SystemClock.uptimeMillis() < deadline) {
+                deny = device.findObject(By.res(Pattern.compile(".*:id/permission_deny_button")));
+                SystemClock.sleep(200);
+            }
+            assertNotNull("Expected Android notification permission dialog", deny);
+            deny.click();
+            waitContains("রিমাইন্ডার চালু করতে নোটিফিকেশন অনুমতি দিন", 10000);
+            assertEquals(PackageManager.PERMISSION_DENIED,
+                    context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS", APP));
+            report.put("notificationDenialHandled", true);
+
+            stage = "fixture A sign-out";
+            signOut();
+            report.put("nativeSignOut", true);
+            stage = "fixture B sign-in and isolation";
+            signIn(required(args, "accountBEmail"), required(args, "accountBPassword"));
+            nav("কাজ");
+            reveal(required(args, "accountBTask"));
+            assertNull(find(required(args, "accountATask"), true));
+            assertNull(find("Native audit saved task", true));
+            report.put("secondAccountOwnDataVisible", true);
+            report.put("previousAccountDataAbsent", true);
+            capture("10-other-account-tasks");
+            stage = "fixture B sign-out";
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); signOut();
+            report.put("secondAccountSignOut", true);
+            report.put("success", true);
+            save();
+        } catch (Throwable failure) {
+            report.put("success", false); report.put("failedStage", stage);
+            report.put("failureType", failure.getClass().getSimpleName()); save();
+            try {capture("failure-private");} catch (Throwable ignored) { }
+            throw new AssertionError("Native flow audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+        }
+    }
+
+    /** Simulates an interrupted owner deletion while an unsaved private dialog is open. */
+    @Test
+    public void deletionRecoveryAndRouteRevocation() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash);
+            report.put("installedApkSha256", hash);
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(launch);
+            stage = "disposable owner sign-in";
+            String email = required(args, "accountAEmail"), password = required(args, "accountAPassword");
+            signIn(email, password);
+            nav("কাজ"); reveal("কাজ যোগ").click(); waitLabel("নতুন কাজ যোগ করুন", 10000);
+            stage = "owner deletion marker";
+            JSONObject login = ownerRequest("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + required(args, "firebaseApiKey"),
+                "POST", new JSONObject().put("email", email).put("password", password).put("returnSecureToken", true), null);
+            assertEquals(required(args, "accountAUid"), login.getString("localId"));
+            String token = login.getString("idToken");
+            ownerRequest("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/" + login.getString("localId"),
+                "PATCH", new JSONObject().put("fields", new JSONObject()), token);
+            stage = "private route revocation";
+            waitContains("অ্যাকাউন্ট মুছে ফেলা বাকি আছে", 30000);
+            assertNull(find("নতুন কাজ যোগ করুন", true));
+            report.put("remoteDeletionClosesPrivateDialog", true);
+            device.pressBack();
+            context.startActivity(launch);
+            waitContains("অ্যাকাউন্ট মুছে ফেলা বাকি আছে", 20000);
+            assertNull(find("আজকের কাজ", false));
+            report.put("backCannotRestorePrivateHome", true);
+            capture("11-deletion-recovery");
+            stage = "native deletion completion";
+            reveal("মুছে ফেলা সম্পন্ন করুন").click();
+            waitLabel("অ্যাকাউন্ট মুছে ফেলুন", 15000);
+            UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP));
+            if (field == null) { reveal("বর্তমান পাসওয়ার্ড"); field = editors().get(0); }
+            field.click(); field.setText(password); device.pressBack();
+            reveal("আমি বুঝেছি, আমার অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য স্থায়ীভাবে মুছে ফেলা হবে।").click();
+            reveal("স্থায়ীভাবে মুছে ফেলার অনুরোধ করুন").click();
+            waitLabel("লগইন", 90000);
+            report.put("nativeDeletionReturnsToLogin", true);
+            // A pre-deletion owner token can still read the empty anti-resurrection marker.
+            JSONObject marker = ownerRequest("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/" + login.getString("localId"), "GET", null, token);
+            assertTrue(!marker.has("fields") || marker.getJSONObject("fields").length() == 0);
+            report.put("emptyDeletionMarkerRetained", true);
+            stage = "cold restart and second account";
+            device.executeShellCommand("am force-stop " + APP);
+            context.startActivity(launch);
+            signIn(required(args, "accountBEmail"), required(args, "accountBPassword"));
+            nav("কাজ"); reveal(required(args, "accountBTask"));
+            assertNull(find(required(args, "accountATask"), true));
+            report.put("coldRestartOtherAccountUnaffected", true);
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); signOut();
+            report.put("success", true); save();
+        } catch (Throwable failure) {
+            report.put("success", false); report.put("failedStage", stage);
+            report.put("failureType", failure.getClass().getSimpleName()); save();
+            try {capture("failure-private");} catch (Throwable ignored) { }
+            throw new AssertionError("Native deletion audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+        }
+    }
+
+    private JSONObject ownerRequest(String url, String method, JSONObject body, String token) throws Exception {
+        assertTrue(url.startsWith("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=") ||
+            url.startsWith("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/"));
+        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        connection.setConnectTimeout(15000); connection.setReadTimeout(15000); connection.setRequestMethod(method);
+        connection.setRequestProperty("Content-Type", "application/json");
+        if (token != null) connection.setRequestProperty("Authorization", "Bearer " + token);
+        try {
+            if (body != null) {
+                connection.setDoOutput(true);
+                try (java.io.OutputStream stream = connection.getOutputStream()) {stream.write(body.toString().getBytes(StandardCharsets.UTF_8));}
+            }
+            int status = connection.getResponseCode();
+            assertTrue("Owner request failed during " + stage + " (HTTP " + status + ")", status >= 200 && status < 300);
+            try (java.io.InputStream stream = connection.getInputStream(); java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[4096]; int count;
+                while ((count = stream.read(buffer)) != -1) bytes.write(buffer, 0, count);
+                return new JSONObject(bytes.toString("UTF-8"));
+            }
+        } finally {connection.disconnect();}
+    }
+
+    private void signIn(String email, String password) throws Exception {
+        assertTrue("Only disposable fixture identities are allowed", email.startsWith("teamframecipher+native-"));
+        waitLabel("লগইন", 30000);
+        List<UiObject2> fields = editors(); assertEquals(2, fields.size());
+        fields.get(0).click(); fields.get(0).setText(email);
+        fields = editors(); fields.get(1).click(); fields.get(1).setText(password);
+        device.pressBack(); click("লগইন");
+        waitLabel("আসসালামু আলাইকুম", 60000);
+    }
+
+    private void signOut() {
+        reveal("সাইন আউট").click();
+        waitContains("আপনি কি সাইন আউট করতে চান?", 10000);
+        click("সাইন আউট"); waitLabel("লগইন", 30000);
+    }
+
+    private List<UiObject2> editors() {
+        return device.findObjects(By.clazz("android.widget.EditText").pkg(APP));
+    }
+
+    private UiObject2 find(String label, boolean contains) {
+        List<UiObject2> nodes = new ArrayList<>(device.findObjects(contains ? By.textContains(label).pkg(APP) : By.text(label).pkg(APP)));
+        nodes.addAll(device.findObjects(contains ? By.descContains(label).pkg(APP) : By.desc(label).pkg(APP)));
+        UiObject2 selected = null;
+        for (UiObject2 node : nodes) {
+            if (selected == null || node.getVisibleBounds().centerY() > selected.getVisibleBounds().centerY()) selected = node;
+        }
+        return selected;
+    }
+
+    private UiObject2 wait(String label, boolean contains, long timeout) {
+        long deadline = SystemClock.uptimeMillis() + timeout;
+        do { UiObject2 node = find(label, contains); if (node != null) return node; SystemClock.sleep(200); }
+        while (SystemClock.uptimeMillis() < deadline);
+        throw new AssertionError("Missing required UI during " + stage);
+    }
+    private UiObject2 waitLabel(String label, long timeout) {return wait(label, false, timeout);}
+    private UiObject2 waitContains(String label, long timeout) {return wait(label, true, timeout);}
+    private void waitAbsent(String label, long timeout) {
+        long deadline = SystemClock.uptimeMillis() + timeout;
+        while (find(label, false) != null && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
+        assertNull("Pending editor did not finish during " + stage, find(label, false));
+    }
+    private void click(String label) {waitLabel(label, 10000).click();}
+    private void nav(String label) {waitContains(label, 10000).click();}
+    private UiObject2 reveal(String label) {
+        for (int i = 0; i < 7; i++) {
+            UiObject2 node = find(label, true); if (node != null) return node;
+            int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
+            device.swipe(x, h*3/4, x, h/3, 25);
+        }
+        // The destination may be above the current scroll position.
+        for (int i = 0; i < 7; i++) {
+            UiObject2 node = find(label, true); if (node != null) return node;
+            int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
+            device.swipe(x, h/3, x, h*3/4, 25);
+        }
+        throw new AssertionError("Required action unavailable during " + stage);
+    }
+    private void capture(String name) throws Exception {
+        assertTrue(device.takeScreenshot(new File(output, name + ".png")));
+        device.dumpWindowHierarchy(new File(output, name + ".xml"));
+    }
+    private void save() throws Exception {
+        try (FileOutputStream stream = new FileOutputStream(new File(output, "flows-receipt.json"))) {
+            stream.write((report.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
+        }
+    }
+}

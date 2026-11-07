@@ -1,0 +1,41 @@
+{
+  "project": "assistummah",
+  "hosting": {
+    "privacy.html": {
+      "httpStatus": 200,
+      "matchesSource": true,
+      "sha256": "daacf6dbd649bae39a10b48fb0ccb7741487b524fff4a3974d12028b211a7055"
+    },
+    "account-data-paths.json": {
+      "httpStatus": 200,
+      "matchesSource": true,
+      "sha256": "b07ed999f67b88c34c5337d85ff66cfd2d442b3faceb6b9449ea6c3429037821"
+    },
+    "delete-account.js": {
+      "httpStatus": 200,
+      "matchesSource": true,
+      "sha256": "85742713210cbe46e82df01f6c2426d588c57b30cf6e5e9ca3f164f8b6c8b4f5"
+    },
+    "deletion-plan.mjs": {
+      "httpStatus": 200,
+      "matchesSource": true,
+      "sha256": "d7c2479179f6608b3e1d93b45bcebfb2f465999df2df3397ac62f993a6219977"
+    }
+  },
+  "firestoreRulesDeployed": true,
+  "firestoreRulesDeploymentEvidence": "Firebase CLI completed deployment successfully in this session after all 14 emulator cases passed.",
+  "billingPlanChanged": false,
+  "verifiedAtUtc": "2026-11-06T16:35:33.147279+00:00",
+  "firestoreRulesSha256": "edb46c5b4d5e95a188ac085ddfa41ec5a4fbc0527d2e26106800b8e62b55b7f0",
+  "deploymentScope": [
+    "firestore:rules",
+    "hosting"
+  ],
+  "cloudFunctionsUsed": false,
+  "playConsoleAccessed": false,
+  "publicDeletionPageBrowserInitialization": "pass: email and Google login controls loaded; no warning/error console entries observed; no form submitted",
+  "browserVerificationScope": "Read-only production page initialization, not an account deletion attempt.",
+  "testLabResultsApiEnabledForVerification": true,
+  "testLabFreeStartupCompleted": true,
+  "billingEnabledAfterCloudTest": false
+}

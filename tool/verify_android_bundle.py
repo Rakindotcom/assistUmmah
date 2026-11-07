@@ -36,7 +36,7 @@ def elf_load_alignments(data):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--bundle',type=Path,default=Path('build/app/outputs/bundle/release/app-release.aab'))
+    parser.add_argument('--bundle',type=Path,default=Path('build/app/outputs/bundle/productionRelease/app-production-release.aab'))
     parser.add_argument('--bundletool',type=Path,default=Path('.local/bundletool.jar'))
     parser.add_argument('--output',type=Path,default=Path('docs/release/bundle-verification.json'))
     args = parser.parse_args()
