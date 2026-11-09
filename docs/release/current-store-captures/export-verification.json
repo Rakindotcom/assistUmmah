@@ -7,19 +7,21 @@
       "file": "store-01-home.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "232f7077eee7c04f36f2e64204cecbeaeff08bc39c5e0139f748eda2d025767c",
-      "exportSha256": "32408abac5c3ba32542b1c3ec0e167ccfb64f813440164fd884976b91f761bb8",
+      "sourceSha256": "f9a1ab38493592a3e83af89a30c44dab66fd26e82b259b4945c0c8e60f11cc52",
+      "exportSha256": "b69d38ff0f59da2d9cccf8d673832e28d85710efe1c20e24d709a67a076a3f25",
       "rgbPixelsUnchanged": true,
-      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+      "visualReview": "Loaded calculated Dhaka prayer state following actual manual UI configuration; no credentials.",
+      "sourceMatrixId": "matrix-vklgs67ok48ea"
     },
     {
       "file": "store-02-prayer.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "a3ae881f4f2d0dd2589c9f3bb450fbb1cd6c9513133a06f603d5281c68bf2557",
-      "exportSha256": "cd1087e5806c818201b09813b4ab8d093fb21266e9839c126a639c99b64f0762",
+      "sourceSha256": "c3e35fdda74a4ae5690b2132ab244a432f1e6e7fc561db03e1c79ab9d7908dd9",
+      "exportSha256": "0769c31dc9e9da53d3c77e85edb3f53b43ba33a5d6a3f37944881a356afcc40a",
       "rgbPixelsUnchanged": true,
-      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+      "visualReview": "Loaded calculated Dhaka prayer state following actual manual UI configuration; no credentials.",
+      "sourceMatrixId": "matrix-vklgs67ok48ea"
     },
     {
       "file": "store-03-growth.png",

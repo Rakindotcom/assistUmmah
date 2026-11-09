@@ -17,11 +17,11 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
             'productionRuntimeBundleSha256': 'old',
         })
         write_json(self.docs / 'verification-summary.json', {
-            'bundleSha256': 'old', 'nativeRuntimeTested': True,
+            'bundleSha256': 'old', 'nativeRuntimeTested': True, 'universalApkSha256': 'apk',
             'signedReleaseStartupSmokePassed': True,
         })
         self.smoke = {
-            'sourceBundleSha256': 'old', 'currentBundleVerified': True,
+            'sourceBundleSha256': 'old', 'currentBundleVerified': True, 'universalApkSha256': 'apk',
             'productionReleaseBinary': True, 'installedApkHashMatches': True,
             'loginScreenVisibleInAccessibilityTree': True, 'firebaseInitialized': True,
             'firebaseCrashlyticsInitialized': True,
@@ -118,6 +118,52 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
         self.assertFalse(reconcile_runtime_evidence(self.docs, 'new'))
         self.assertFalse(read_json(self.docs / 'verification-summary.json')[
             'cloudSignedApkStartupVerified'])
+
+    def test_same_bundle_with_different_apk_invalidates_startup(self):
+        self.smoke['sourceBundleSha256'] = 'new'
+        write_json(self.docs / 'signed-release-smoke.json', self.smoke)
+        summary = read_json(self.docs / 'verification-summary.json')
+        summary['universalApkSha256'] = 'replacement'
+        write_json(self.docs / 'verification-summary.json', summary)
+        self.assertFalse(reconcile_runtime_evidence(self.docs, 'new'))
+        self.assertFalse(read_json(self.docs / 'verification-summary.json')['signedReleaseStartupSmokePassed'])
+
+    def test_functional_flags_cannot_survive_changed_bundle_or_apk(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'SUCCESS', 'physicalDevice': True,
+                  'nativePasswordSignIn': True, 'coreNavigationOpened': True,
+                  'secondAccountOwnDataVisible': True, 'previousAccountDataAbsent': True,
+                  'serverVerification': [{'nativeSavedTaskOnServer': True}]}
+        path = self.docs / 'current-native-physical-flows.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        self.assertTrue(read_json(self.docs / 'verification-summary.json')['physicalNativeTaskPersistenceVerified'])
+        for key in ['sourceBundleSha256', 'installedApkSha256', 'matrixOutcome']:
+            with self.subTest(changed=key):
+                changed = {**record, key: 'different'}
+                write_json(path, changed)
+                reconcile_runtime_evidence(self.docs, 'new')
+                summary = read_json(self.docs / 'verification-summary.json')
+                self.assertFalse(summary['physicalNativeTaskPersistenceVerified'])
+                self.assertFalse(summary['physicalDeviceTested'])
+
+    def test_expected_crash_needs_passing_junit_and_received_report(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'FAILURE',
+                  'matrixFailureExpectedFromControlledCrash': True,
+                  'junitTestsPassed': 1, 'junitFailures': 0,
+                  'explicitDiagnosticsOptInBeforeCrash': True,
+                  'postCrashRestartSucceeded': True, 'diagnosticsDisabledAfterTest': True,
+                  'serverReportVerification': {'receivedByCrashlytics': True}}
+        path = self.docs / 'current-native-location-diagnostics.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        self.assertTrue(read_json(self.docs / 'verification-summary.json')['controlledCrashlyticsServerReceiptVerified'])
+        for changed in [{**record, 'junitFailures': 1},
+                        {**record, 'serverReportVerification': {'receivedByCrashlytics': False}}]:
+            write_json(path, changed)
+            reconcile_runtime_evidence(self.docs, 'new')
+            self.assertFalse(read_json(self.docs / 'verification-summary.json')['controlledCrashlyticsServerReceiptVerified'])
 
 
 if __name__ == '__main__':

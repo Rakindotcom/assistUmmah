@@ -28,7 +28,9 @@ startup test](current-controlled-startup.json) then verified the installed APK
 hash, measured 16 KB pages, opened bundled privacy and returned with Android
 Back. Scoped [signed-in native checks](current-native-flows.json) also passed.
 Native deletion/recovery, alarm registration/cancellation and diagnostics consent
-also passed. Timed OS delivery and manual Play gates remain open; the
+also passed. The original alarm reached Android System UI under a controlled
+clock change; location denial/manual setup and a received opt-in diagnostic
+report were verified. Natural-clock latency, reboot/Doze and manual Play gates remain open; the
 stronger startup evidence now permits a manual internal-test upload packet.
 
 Current functionality includes the prayer-first home with offline prayer and
@@ -214,8 +216,9 @@ signing credentials are excluded from that packet.
    controlled test report in Crashlytics. Do not crash a real user's session.
 7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. The current
    APK has matching ARM64 Android16/16 KB, Android8/4 KB and physical Pixel8
-   Android14 startup receipts. Physical authenticated/OS flows and the
-   Play-signed build still require verification.
+   Android14 startup receipts, plus physical GalaxyA15 Android16 login,
+   task persistence, navigation and isolation. Reboot/Doze, long-session
+   performance and the Play-signed build still require verification.
 8. Review the five current `current-store-captures/` phone images. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,

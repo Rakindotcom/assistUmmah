@@ -64,7 +64,8 @@ def main():
                  'current-controlled-startup.json', 'current-native-flows.json',
                  'current-native-deletion.json', 'current-native-legacy.json',
                  'current-native-reminders.json', 'current-native-physical.json',
-                 'current-native-delivery.json', 'current-native-physical-flows.json']:
+                 'current-native-delivery.json', 'current-native-physical-flows.json',
+                 'current-native-location-diagnostics.json']:
         shutil.copy2(docs / name, destination / name)
     shutil.copytree(docs / 'current-native-startup', destination / 'current-native-startup')
     shutil.copytree(docs / 'current-native-flows', destination / 'current-native-flows')

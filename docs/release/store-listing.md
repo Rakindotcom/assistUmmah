@@ -42,7 +42,7 @@ Support contact provided by the app owner: **teamframecipher@gmail.com**.
 - `store-assets/feature-graphic-1024x500.png`: 1024×500 RGB PNG.
 - `current-store-captures/store-01-home.png` through `store-05-dhikr.png`:
   five actual 720×1280 opaque RGB phone captures of the current signed APK.
-  Synthetic starter data; initial location-not-selected state. Read
+  Synthetic starter data; home/prayer show actual manually configured Dhaka times. Read
   `current-store-captures/README.md` and its export hashes. Inspect the
   final Play-installed app and Console locale preview before submission.
 - `native-captures/` belongs to a prior profile build and is historical reference.

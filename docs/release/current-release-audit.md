@@ -10,9 +10,11 @@ separate offline preview are outside this release. Production continues through
 `lib/main.dart` → `AppBootstrap` → `AuthGate` → `HomeShell`.
 
 **The signed candidate is prepared; public release approval remains open.**
-Local checks establish source behavior, deployed backend compatibility and
-artifact identity. They do not prove physical Android behavior, Play signing,
-OS notification delivery or an approved Console configuration.
+Local and cloud checks establish source behavior, deployed backend compatibility,
+artifact identity and scoped native flows on virtual and physical phones.
+Controlled OS alarm delivery and received optional diagnostics are verified.
+Natural-clock latency, reboot/Doze, long-session behavior and Play-delivered
+signing/OAuth/Console configuration remain open.
 
 ## Evidence by requirement
 
@@ -22,7 +24,7 @@ OS notification delivery or an approved Console configuration.
 | Reproducible source checkpoint | Verified | `fe768742b0b8fc4854e71f3d0138811f2a72af58`; no later app-source changes. |
 | Static analysis | Passed | `flutter analyze --no-pub`: no issues. |
 | Flutter regression suite | Passed | 525 passed, 2 browser-only future migration tests skipped. Includes phone layouts, enlarged Bangla text, semantics, core feature flows and account guards. |
-| Release evidence tooling | Passed | 5 Python tests; mismatched APK/bundle hashes and resigning cloud modes cannot inherit startup proof. A Robo success cannot unlock the stronger direct-device packet gate; the separate-process driver now supplies that stronger proof. |
+| Release evidence tooling | Passed | 8 Python tests; mismatched APK/bundle hashes and resigning cloud modes cannot inherit startup proof. A Robo success cannot unlock the stronger direct-device packet gate; the separate-process driver supplies that stronger proof. Scoped functional flags and store-capture counts invalidate when their APK/bundle identity changes; expected diagnostic crashes require passing JUnit and a received report. |
 | Deletion and ownership rules | Passed locally | 14 Auth/Firestore emulator cases after the patched lockfile install; synthetic data only. |
 | Test dependency advisories | Passed | Compatible lockfile resolution removes six moderate transitive advisories; fresh `npm ci` and audit report zero vulnerabilities. These Node packages are not shipped in the app. |
 | Live backend and legal pages | Verified | Tested rules and Hosting deployed to `assistummah`; live privacy HTML, deletion inventory, JavaScript and deletion planner match source hashes. See [backend receipt](current-backend-verification.json). |
@@ -41,8 +43,10 @@ OS notification delivery or an approved Console configuration.
 | Physical Android startup | Passed within scope | Physical Pixel 8 / Android14 API34: original installed APK hash, login, bundled privacy and Back passed. [Receipt](current-native-physical.json). This Pixel startup run does not cover authentication; the separate Galaxy A15 row covers core signed-in flows. Reboot/Doze and Play-installed behavior remain open. |
 | Physical signed-in core flows | Passed within scope | Samsung Galaxy A15 / Android16: native login, task save with server confirmation, core navigation, permission denial, logout and account isolation passed. [Receipt](current-native-physical-flows.json). A 68-second functional session does not establish long-session performance or reboot/Doze behavior. |
 | Native deletion and interrupted recovery | Passed | Remote deletion marker closed an unsaved private dialog; Back did not restore private home. Native password confirmation finished deletion, then a cold restart allowed the other account. Server checks found nine root documents absent, eight owned collections empty, no activities, deleted Auth identity absent and only an empty anti-resurrection marker retained. Both synthetic fixtures were cleaned afterward. See [deletion receipt](current-native-deletion.json). |
-| Native reminders and diagnostics consent | Passed within scope | Permission grant, pending OS alarm registration, sign-out cancellation and diagnostics off/on/restart/off passed. [Receipt](current-native-reminders.json). Natural-clock latency, reboot/Doze and a received crash report remain unverified; the separate controlled-clock delivery row covers the native dispatch path. |
+| Native reminders and diagnostics consent | Passed within scope | Permission grant, pending OS alarm registration, sign-out cancellation and diagnostics off/on/restart/off passed. [Receipt](current-native-reminders.json). Natural-clock latency and reboot/Doze remain unverified; separate rows cover controlled delivery and the received diagnostic report. |
 | OS notification delivery and revocation | Passed under controlled clock | An original pending task alarm reached Android System UI after a disposable-device wall-clock advance. Clock restored; OS permission revoked; explicit opt-out cancelled alarms. [Receipt](current-native-delivery.json). Natural-clock latency, reboot/Doze and other OEM behavior remain open. |
+| Location denial and manual configuration | Passed | Native Android denial handled; advanced manual Dhaka coordinates and Asia/Dhaka timezone saved and reflected in calculated prayer views. [Receipt](current-native-location-diagnostics.json). |
+| Received optional diagnostics report | Passed with deliberate crash | Explicit opt-in, controlled synthetic Android crash, restart and opt-out passed. Server report matched build 4, package, time and shell-induced exception; no fixture identifiers/content or custom user identifiers found. JUnit passed; Test Lab reports matrix FAILURE for the expected deliberate crash. [Receipt](current-native-location-diagnostics.json). No real user session was crashed. |
 | Play-installed build and Google OAuth | Manual gate | Register the Play app-signing certificate in Firebase and test the Play-installed app. Upload-key verification alone does not prove this. |
 | Store declarations and listing | Prepared, unsubmitted | [Console handoff](console-handoff.md), [listing](store-listing.md), [Data safety](data-safety.md), artwork and release notes. Console stays manual by owner choice. |
 | Current phone store screenshots | Prepared and reviewed | Five actual 720×1280 native captures of this APK: home, prayer, growth, Quran and tasbih. Opaque RGB exports preserve original pixels. [Capture provenance](current-store-captures/README.md). Final Play-installed/Console preview remains manual. |
@@ -78,7 +82,8 @@ does not itself claim authenticated-home or physical-device coverage. The separa
 2. Test notification/location denial and revocation, approximate scheduling,
    reboot/Doze, timezone/day changes, keyboard/back navigation, large text,
    TalkBack, edge-to-edge layout, launcher/splash and modest-phone performance.
-3. Verify optional diagnostics off/on/off and a controlled Crashlytics receipt.
+3. Recheck optional diagnostics behavior in the Play-installed build; the original APK
+   now has a correlated received controlled-crash report and verified opt-out.
 4. Inspect the current phone screenshots in Console. Complete app access, Data safety, content
    rating, target audience, ads and developer identity in Console. Confirm code
    **4** is greater than every previously used code before uploading.
