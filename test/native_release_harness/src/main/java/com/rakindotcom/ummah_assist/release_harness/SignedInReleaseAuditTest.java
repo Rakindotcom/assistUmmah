@@ -193,6 +193,93 @@ public final class SignedInReleaseAuditTest {
         } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
     }
 
+    /** Uses the platform alarm queue and notification shade; never sends a synthetic app broadcast. */
+    @Test
+    public void scheduledDeliveryAndOsRevocation() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        long originalWall = System.currentTimeMillis(), originalElapsed = SystemClock.elapsedRealtime();
+        String autoTime = device.executeShellCommand("settings get global auto_time").trim();
+        boolean clockChanged = false;
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash); report.put("installedApkSha256", hash);
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); context.startActivity(launch);
+            signIn(required(args, "accountAEmail"), required(args, "accountAPassword"));
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            stage = "notification permission grant";
+            reveal("দৈনিক রিমাইন্ডার").click();
+            long deadline = SystemClock.uptimeMillis() + 15000; UiObject2 allow = null;
+            while (allow == null && SystemClock.uptimeMillis() < deadline) {
+                allow = device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button"))); SystemClock.sleep(200);
+            }
+            assertNotNull("Expected native permission dialog", allow); allow.click();
+            deadline = SystemClock.uptimeMillis() + 20000;
+            while (!appAlarmPresent() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
+            assertTrue("No registered alarm", appAlarmPresent());
+            report.put("nativeDailyAlarmRegistered", true);
+            stage = "background OS alarm delivery with controlled wall clock";
+            java.util.Calendar due = java.util.Calendar.getInstance();
+            due.set(java.util.Calendar.HOUR_OF_DAY, 8); due.set(java.util.Calendar.MINUTE, 0);
+            due.set(java.util.Calendar.SECOND, 0); due.set(java.util.Calendar.MILLISECOND, 0);
+            if (due.getTimeInMillis() <= System.currentTimeMillis()) due.add(java.util.Calendar.DAY_OF_MONTH, 1);
+            long advanced = due.getTimeInMillis() + 70L * 60L * 1000L;
+            device.pressHome();
+            device.executeShellCommand("settings put global auto_time 0");
+            device.executeShellCommand("cmd alarm set-time " + advanced);
+            clockChanged = Math.abs(System.currentTimeMillis() - advanced) < 10000;
+            assertTrue("Provider did not allow a controlled device clock", clockChanged);
+            report.put("wallClockAdvancedPastInexactWindow", true);
+            device.openNotification();
+            deadline = SystemClock.uptimeMillis() + 90000;
+            UiObject2 notification = null;
+            while (notification == null && SystemClock.uptimeMillis() < deadline) {
+                notification = device.findObject(By.text("আজকের কাজ").pkg("com.android.systemui"));
+                if (notification == null) SystemClock.sleep(300);
+            }
+            assertNotNull("Registered reminder did not reach the native notification shade", notification);
+            report.put("nativeNotificationShadeDelivery", true);
+            report.put("deliveryMethod", "Original app pending alarm dispatched by Android after controlled wall-clock advance; no broadcast/notification injected by harness");
+            capture("12-native-notification-delivery");
+            device.pressBack();
+            device.executeShellCommand("cmd alarm set-time " + (originalWall + SystemClock.elapsedRealtime() - originalElapsed));
+            clockChanged = false;
+            if (autoTime.matches("[01]")) device.executeShellCommand("settings put global auto_time " + autoTime);
+            stage = "OS notification permission revocation";
+            device.executeShellCommand("pm revoke " + APP + " android.permission.POST_NOTIFICATIONS");
+            assertEquals(PackageManager.PERMISSION_DENIED, context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS", APP));
+            report.put("notificationPermissionRevokedThroughOs", true);
+            context.startActivity(launch); waitLabel("আসসালামু আলাইকুম", 60000);
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            // The saved preference may remain on while OS permission is off. Disable it explicitly.
+            reveal("দৈনিক রিমাইন্ডার").click();
+            deadline = SystemClock.uptimeMillis() + 15000;
+            while (appAlarmPresent() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
+            assertFalse("Alarms survived explicit opt-out after OS revocation", appAlarmPresent());
+            report.put("optOutAfterOsRevocationCancelsAlarms", true);
+            stage = "native tasbih capture";
+            nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitLabel("যিকিরসমূহ", 20000);
+            device.executeShellCommand("wm size 720x1280"); device.executeShellCommand("wm density 320");
+            capture("store-05-dhikr");
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); signOut();
+            report.put("success", true); save();
+        } catch (Throwable failure) {
+            report.put("success", false); report.put("failedStage", stage); report.put("failureType", failure.getClass().getSimpleName()); save();
+            try {capture("failure-private");} catch (Throwable ignored) { }
+            throw new AssertionError("Native delivery audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+        } finally {
+            if (clockChanged) device.executeShellCommand("cmd alarm set-time " + (originalWall + SystemClock.elapsedRealtime() - originalElapsed));
+            if (autoTime.matches("[01]")) device.executeShellCommand("settings put global auto_time " + autoTime);
+            device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");
+        }
+    }
+
     private boolean appAlarmPresent() throws Exception {
         String alarms = device.executeShellCommand("dumpsys alarm");
         // Only inspect pending alarm entries; historical Alarm Stats survive cancellation.
@@ -368,6 +455,8 @@ public final class SignedInReleaseAuditTest {
         throw new AssertionError("Required action unavailable during " + stage);
     }
     private void capture(String name) throws Exception {
+        device.waitForIdle(1000);
+        SystemClock.sleep(700); // Accessibility updates can precede presentation of the Flutter frame.
         assertTrue(device.takeScreenshot(new File(output, name + ".png")));
         device.dumpWindowHierarchy(new File(output, name + ".xml"));
     }

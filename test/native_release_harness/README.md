@@ -76,6 +76,14 @@ Select one method per fresh-device run:
   notification permission, verifies a pending OS alarm and cancellation on
   sign-out, checks diagnostics off/on/restart/off, and captures actual
   720×1280 device viewports. Alarm registration is not proof of timed delivery.
+- `SignedInReleaseAuditTest#scheduledDeliveryAndOsRevocation`: grants daily
+  reminder permission, backgrounds the app, advances the disposable device's
+  wall clock past the next task reminder's inexact window, and checks the
+  original app's notification in System UI. It restores wall clock/automatic
+  time, revokes notification permission through Android, checks explicit opt-out
+  cancellation, and captures the loaded tasbih view. No app broadcast or
+  notification is injected. This establishes a controlled clock-change path,
+  not natural-clock latency, reboot/Doze or all OEM behavior.
 - `SignedInReleaseAuditTest#deletionRecoveryAndRouteRevocation`: opens an
   unsaved task dialog, creates A's deletion marker through the ordinary owner
   REST API, checks private-route revocation and recovery, completes deletion
@@ -93,3 +101,10 @@ operator must remove fixture identities and data after completed testing.
 `flows-receipt.json` reports the assertions actually completed. A UI save must
 also be confirmed through server reads before reporting persistence. Page
 navigation does not establish every feature's mutation or OS behavior.
+
+The delivery test uses Android's documented implementation of the
+[`alarm` shell commands](https://android.googlesource.com/platform/frameworks/base/+/ff7e31ff9683287af050a9d96c431146017808e3/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java).
+Run it only on a disposable test device. Finally blocks restore clock settings
+and viewport, including on failure. Screenshots wait for accessibility idle and
+an additional presentation frame interval because Flutter semantics can appear
+before the rendered frame reaches the screenshot compositor.
