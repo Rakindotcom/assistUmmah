@@ -343,7 +343,7 @@ public final class SignedInReleaseAuditTest {
 
     private void setField(String label, String value) throws Exception {
         reveal(label);
-        UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP).descContains(label));
+        UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP).hint(label));
         if (field == null) {
             UiObject2 node = find(label, true);
             field = node == null ? null : node.getParent().findObject(By.clazz("android.widget.EditText"));
@@ -511,6 +511,9 @@ public final class SignedInReleaseAuditTest {
     private UiObject2 find(String label, boolean contains) {
         List<UiObject2> nodes = new ArrayList<>(device.findObjects(contains ? By.textContains(label).pkg(APP) : By.text(label).pkg(APP)));
         nodes.addAll(device.findObjects(contains ? By.descContains(label).pkg(APP) : By.desc(label).pkg(APP)));
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            nodes.addAll(device.findObjects(contains ? By.hintContains(label).pkg(APP) : By.hint(label).pkg(APP)));
+        }
         UiObject2 selected = null;
         for (UiObject2 node : nodes) {
             if (selected == null || node.getVisibleBounds().centerY() > selected.getVisibleBounds().centerY()) selected = node;
