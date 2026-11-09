@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_identity.dart';
+
 class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
   static final Uri publicPolicy = Uri.https('assistummah.web.app', '/privacy');
@@ -44,7 +46,7 @@ class PrivacyPage extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 720),
                   child: ListView(padding: const EdgeInsets.all(24), children: [
-                    Text('রবের পথে',
+                    Text(AppIdentity.name,
                         style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 8),
                     Text('হালনাগাদ: ${policy['updated']}'),

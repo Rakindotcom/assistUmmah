@@ -1,4 +1,4 @@
-# Play Store readiness audit — রবের পথে
+# Play Store readiness audit — দ্বীন ও দুনিয়া
 
 > **Implementation update — 27 October 2026:** The original audit below is a
 > historical baseline. Account deletion, privacy pages, sign-out recovery,

@@ -1,4 +1,4 @@
-# রবের পথে
+# দ্বীন ও দুনিয়া
 
 Mobile-first Flutter app inspired by the `muhasaba.org` accountability flow: tasks, prayer tracking, iman/life growth checklists, emergency contacts, settings, and report summaries.
 
@@ -191,7 +191,7 @@ files are ignored by Git. Without these values, release output is unsigned.
 
 ## App Name
 
-The Flutter and native app labels are `রবের পথে`.
+The Flutter and native app labels are `দ্বীন ও দুনিয়া`.
 
 The supplied app artwork is used for in-app branding, Android/iOS launcher and
 launch-screen assets, notifications, and web icons. See

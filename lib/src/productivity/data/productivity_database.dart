@@ -291,8 +291,8 @@ class ProductivityDatabase {
         final conflicts = await _conflicts.find(transaction,
             finder: Finder(sortOrders: [SortOrder(Field.key)]));
         final payload = <String, Object?>{
-          'format': 'rober-pothe-workspace',
-          'formatVersion': 2,
+          'format': 'workspace-archive',
+          'formatVersion': 3,
           'ownerId': uid,
           'exportedAt': _clock().toUtc().toIso8601String(),
           'records': records.map((row) => _decode(row.value).toJson()).toList(),
@@ -317,14 +317,19 @@ class ProductivityDatabase {
     }
     final data = jsonDecode(source);
     if (data is! Map<String, dynamic> ||
-        data['format'] != 'rober-pothe-workspace' ||
-        (data['formatVersion'] != 1 && data['formatVersion'] != 2) ||
+        data['format'] is! String ||
+        (data['formatVersion'] != 1 &&
+            data['formatVersion'] != 2 &&
+            data['formatVersion'] != 3) ||
+        (data['formatVersion'] == 3 && data['format'] != 'workspace-archive') ||
         data['ownerId'] != uid ||
         data['records'] is! List ||
         data['history'] is! List ||
-        (data['formatVersion'] == 2 && data['conflicts'] is! List)) {
+        (data['formatVersion'] != 1 && data['conflicts'] is! List)) {
       throw const FormatException('Unsupported backup or a different account.');
     }
+    // Earlier versions used a branded format tag. Their checksum, ownership
+    // and complete record/history schema still validate before any writes.
     final payload = {...data}..remove('checksum');
     if (data['checksum'] !=
         sha256.convert(utf8.encode(canonicalJson(payload))).toString()) {
@@ -366,7 +371,7 @@ class ProductivityDatabase {
       }
       return item;
     }).toList(growable: false);
-    final rawConflicts = data['formatVersion'] == 2
+    final rawConflicts = data['formatVersion'] != 1
         ? data['conflicts'] as List
         : const <Object?>[];
     if (rawConflicts.length > 20000) {

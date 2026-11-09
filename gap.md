@@ -1,8 +1,8 @@
-# রবের পথে: Global Productivity App Competitive Gap Analysis
+# দ্বীন ও দুনিয়া: Global Productivity App Competitive Gap Analysis
 
 **Market research | 30 October 2026 | Strategic product audit**
 
-**My conclusion: রবের পথে has a solid foundation, but it is still far from competing with the strongest international productivity apps.**
+**My conclusion: দ্বীন ও দুনিয়া has a solid foundation, but it is still far from competing with the strongest international productivity apps.**
 
 The good news is that you already have several valuable building blocks: daily tracking, recurring tasks, personal growth checklists, historical records, progress reports, notifications, user accounts, and cloud synchronization.
 
@@ -59,7 +59,7 @@ This is a broad market benchmark, not an assertion that these are every producti
 
 These apps establish what users expect from a capable to-do system.
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Todoist | Natural-language tasks, projects, priorities, subtasks, filters, labels, reminders, collaboration | Nearly all advanced task organization |
 | TickTick | Tasks, calendar, habits, Pomodoro, Eisenhower Matrix, multiple views | Integrated execution and planning tools |
@@ -76,7 +76,7 @@ Todoist provides sophisticated task filtering and scheduling. TickTick combines 
 
 These are especially important because they increasingly compete on helping users actually complete work.
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Motion | Automatically schedules tasks, reprioritizes work, identifies deadline risk | Intelligent, capacity-aware scheduling |
 | Reclaim.ai | Protects focus time, routines, buffers, and meeting availability | Adaptive calendar automation |
@@ -93,7 +93,7 @@ Your calendar currently lets users select dates and inspect historical records. 
 
 ### C. Project management and all-in-one workspaces
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Notion | Documents, databases, customizable views, knowledge management, AI | Connected information and flexible workspaces |
 | ClickUp | Tasks, projects, goals, dashboards, time tracking, automations | Advanced project and goal execution |
@@ -104,11 +104,11 @@ Your calendar currently lets users select dates and inspect historical records. 
 
 Notion links documents and databases with task workflows. ClickUp connects tasks, time estimates, dependencies, and goals. Asana and monday.com add project-level planning and resource visibility. [Official sources: Notion, ClickUp, Asana, monday.com]
 
-**Biggest lesson:** রবের পথে can manage individual tasks, but it lacks the organizational structure to manage complex goals and projects.
+**Biggest lesson:** দ্বীন ও দুনিয়া can manage individual tasks, but it lacks the organizational structure to manage complex goals and projects.
 
 ### D. Habit building, self-improvement, and motivation
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Habitify | Flexible habit targets, streaks, mood tracking, detailed insights | Advanced habit management |
 | Streaks | Simple habit tracking, Apple Health integration, flexible frequency | Habit automation and streaks |
@@ -122,7 +122,7 @@ Habitify supports richer habit measurement and health integrations. Finch connec
 
 ### E. Focus and time management
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Forest | Focus timer, app blocking, rewards, visual progress | Distraction-resistant work sessions |
 | Freedom | Scheduled app and website blocking, locked sessions | Digital distraction control |
@@ -135,7 +135,7 @@ Forest pairs focus sessions with visible rewards. RescueTime identifies time-use
 
 ### F. Notes, journaling, and personal knowledge
 
-| Competitor | What it does well | Gap in রবের পথে |
+| Competitor | What it does well | Gap in দ্বীন ও দুনিয়া |
 |---|---|---|
 | Day One | Rich journaling, prompts, media, memories, encryption | Dedicated journaling and reflection |
 | Obsidian | Linked notes, Markdown, graph view, plugins, local storage | Personal knowledge management |
@@ -953,7 +953,7 @@ Optional experiences:
 - Faith
 - Family
 
-If you retain the name রবের পথে, I would consider positioning that as a specialized spiritual productivity experience built on the universal engine. A separately branded general-purpose product may be easier to communicate to users who have no connection to the religious concept.
+If you retain the name দ্বীন ও দুনিয়া, I would consider positioning that as a specialized spiritual productivity experience built on the universal engine. A separately branded general-purpose product may be easier to communicate to users who have no connection to the religious concept.
 
 ### My first 10 development priorities
 
@@ -974,7 +974,7 @@ I would not start by adding dozens of disconnected features. I would make these 
 
 The application architecture and existing feature baseline used for this analysis came from your 12-page architecture catalogue.
 
-**Bottom line:** রবের পথে currently has the foundation of a daily self-improvement tracker. With the right architecture and development sequence, it could evolve into a serious personal productivity platform that combines the strengths of traditional to-do apps, planning systems, habit trackers, and reflection tools.
+**Bottom line:** দ্বীন ও দুনিয়া currently has the foundation of a daily self-improvement tracker. With the right architecture and development sequence, it could evolve into a serious personal productivity platform that combines the strengths of traditional to-do apps, planning systems, habit trackers, and reflection tools.
 
 The most promising goal is not simply to have more features than TickTick, Todoist, Motion, or Notion. It is to create a system where users can move from an important life goal to a realistic plan, focused execution, measurable progress, and continuous improvement with as little friction as possible.
 

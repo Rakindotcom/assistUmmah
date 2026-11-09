@@ -34,7 +34,7 @@ void main() {
         supportedLocales: AppLocalization.supportedLocales,
         localizationsDelegates: AppLocalization.delegates,
         home: Scaffold(
-          appBar: AppBar(title: const Text('রবের পথে')),
+          appBar: AppBar(title: const Text('দ্বীন ও দুনিয়া')),
           body: DhikrPage(
               repository: UiPreviewRepository(today: day), today: day),
         ),

@@ -598,7 +598,7 @@ void main() {
     await createTitleConflict(original);
     final archive = await original.exportArchive();
     final decoded = jsonDecode(archive) as Map<String, dynamic>;
-    expect(decoded['formatVersion'], 2);
+    expect(decoded['formatVersion'], 3);
     expect(decoded['conflicts'], hasLength(1));
     expect(
         await restored.importArchive(archive,
@@ -626,6 +626,22 @@ void main() {
     expect((await legacy.get(RecordKind.task, 'proposal'))!.fields['title'],
         'Cloud title');
     expect(await legacy.fieldConflicts(), isEmpty);
+
+    final previous = await memory();
+    addTearDown(previous.close);
+    final previousPayload = {...decoded}
+      ..remove('checksum')
+      ..['format'] = 'legacy-workspace'
+      ..['formatVersion'] = 2;
+    expect(
+        await previous.importArchive(jsonEncode({
+          ...previousPayload,
+          'checksum': sha256
+              .convert(utf8.encode(canonicalJson(previousPayload)))
+              .toString()
+        })),
+        1);
+    expect(await previous.fieldConflicts(), hasLength(1));
   });
 
   test('recomputed checksum cannot hide inconsistent conflict values',

@@ -2,7 +2,7 @@
 
 **Date:** 29 October 2026 (Asia/Dhaka)
 
-**Scope:** `রবের পথে` Android and Flutter source at this checkout. Scores are
+**Scope:** `দ্বীন ও দুনিয়া` Android and Flutter source at this checkout. Scores are
 engineering judgments, not ratings from users or a claim that Play has approved
 the app. The numeric table is retained as a historical assessment and is
 superseded by the benchmark correction below.

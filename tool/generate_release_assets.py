@@ -15,11 +15,11 @@ STORE = ROOT / 'docs/release/store-assets'
 def page(title, content, script=''):
     return f'''<!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#054639"><title>{html.escape(title)} — রবের পথে</title>
+<meta name="theme-color" content="#054639"><title>{html.escape(title)} — দ্বীন ও দুনিয়া</title>
 <link rel="icon" href="/assets/icon.png"><link rel="stylesheet" href="/site.css"></head>
-<body><header><a class="brand" href="/"><img src="/assets/icon.png" alt="" width="44" height="44">রবের পথে</a>
+<body><header><a class="brand" href="/"><img src="/assets/icon.png" alt="" width="44" height="44">দ্বীন ও দুনিয়া</a>
 <nav aria-label="মূল নেভিগেশন"><a href="/privacy">গোপনীয়তা</a><a href="/delete-account">অ্যাকাউন্ট মুছুন</a></nav></header>
-<main>{content}</main><footer>রবের পথে · Rakindotcom · <a href="/privacy">গোপনীয়তা নীতি</a></footer>{script}</body></html>'''
+<main>{content}</main><footer>দ্বীন ও দুনিয়া · Rakindotcom · <a href="/privacy">গোপনীয়তা নীতি</a></footer>{script}</body></html>'''
 
 
 def main():
@@ -39,11 +39,11 @@ def main():
     (PUBLIC / 'privacy.html').write_text(page('গোপনীয়তা নীতি',
         f'<h1>গোপনীয়তা নীতি</h1><p class="muted">হালনাগাদ: {policy["updated"]}</p>{sections}{contact}<p><a href="/delete-account">ওয়েব থেকে অ্যাকাউন্ট মুছে ফেলার অনুরোধ করুন</a></p>'))
     (PUBLIC / 'index.html').write_text(page('প্রতিদিনের আমল ও আত্মপর্যালোচনা', '''
-<section class="hero"><img src="/assets/icon.png" alt="রবের পথে অ্যাপের প্রতীক" width="128" height="128">
-<h1>প্রতিদিন রবের পথে</h1><p>কাজ, নামাজ, গ্রোথ, কুরআন ও যিকিরের হিসাব এক জায়গায়।</p>
+<section class="hero"><img src="/assets/icon.png" alt="দ্বীন ও দুনিয়া অ্যাপের প্রতীক" width="128" height="128">
+<h1>দ্বীন ও দুনিয়া</h1><p>কাজ, নামাজ, গ্রোথ, কুরআন ও যিকিরের হিসাব এক জায়গায়।</p>
 <div class="actions"><a class="button" href="/privacy">গোপনীয়তা নীতি</a><a class="button secondary" href="/delete-account">অ্যাকাউন্ট মুছুন</a></div></section>'''))
     (PUBLIC / 'delete-account.html').write_text(page('অ্যাকাউন্ট মুছে ফেলার অনুরোধ', '''
-<h1>অ্যাকাউন্ট মুছে ফেলার অনুরোধ</h1><p>অ্যাপ ইনস্টল না থাকলেও এখান থেকে রবের পথে অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য মুছে ফেলার অনুরোধ করতে পারেন।</p>
+<h1>অ্যাকাউন্ট মুছে ফেলার অনুরোধ</h1><p>অ্যাপ ইনস্টল না থাকলেও এখান থেকে দ্বীন ও দুনিয়া অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য মুছে ফেলার অনুরোধ করতে পারেন।</p>
 <section><h2>কী মুছে যাবে</h2><p>আপনার প্রোফাইল, কাজ, নামাজ ও জামাতের হিসাব, গ্রোথ চেকলিস্ট, কুরআন পড়া, যিকির, পরিচিতি, পছন্দ ও অ্যাকাউন্ট মুছে যাবে। মোছা শুরু হলে নতুন তথ্য রাখা বন্ধ হবে। এটি ফিরিয়ে নেওয়া যাবে না।</p>
 <p>মোছা শেষ না হওয়া পর্যন্ত এই পৃষ্ঠা খোলা রাখুন। সংযোগ বিচ্ছিন্ন হলে আবার প্রবেশ করে মোছা সম্পন্ন করুন। আগের ধাপগুলো নিরাপদে আবার চলবে। পুরনো সেশন থেকে তথ্য আবার তৈরি ঠেকাতে শুধু অ্যাকাউন্ট পরিচিতির একটি খালি রোধচিহ্ন রাখা হয়; এতে প্রোফাইল বা আমলের তথ্য থাকে না। সেবা প্রদানকারীর নিরাপত্তা লগ ও প্রযোজ্য ব্যাকআপ তাদের সংরক্ষণ নীতির অধীন। অন্য ডিভাইসে অ্যাপের তথ্য পরিষ্কার করুন বা অ্যাপ সরিয়ে দিন। <a href="/privacy">পুরো নীতি পড়ুন</a>।</p></section>
 <noscript><p role="alert">এই ফর্ম ব্যবহার করতে JavaScript চালু করুন। অ্যাপের সেটিংস থেকেও অনুরোধ করতে পারেন।</p></noscript>
@@ -69,7 +69,7 @@ def main():
     image.paste(source.convert('RGB').resize((300, 300), Image.Resampling.LANCZOS), (56, 100))
     draw = ImageDraw.Draw(image)
     font = str(ROOT / 'assets/fonts/AnekBangla.ttf')
-    draw.text((402, 147), 'রবের পথে', font=ImageFont.truetype(font, 86), fill='#FFF3DB')
+    draw.text((402, 147), 'দ্বীন ও দুনিয়া', font=ImageFont.truetype(font, 86), fill='#FFF3DB')
     draw.text((408, 278), 'প্রতিদিনের আমল ও আত্মপর্যালোচনা',
               font=ImageFont.truetype(font, 30), fill='#E0C17B')
     image.save(STORE / 'feature-graphic-1024x500.png', optimize=True)

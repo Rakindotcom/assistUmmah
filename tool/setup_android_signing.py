@@ -21,12 +21,12 @@ def main():
     # Save recovery information before keytool creates the private key.
     with PROPERTIES.open('x') as stream:
         stream.write(f'storeFile=upload-keystore.jks\nstorePassword={password}\nkeyAlias=upload\nkeyPassword={password}\n')
-    environment = {**os.environ, 'ROBER_UPLOAD_KEY_PASSWORD': password}
+    environment = {**os.environ, 'APP_UPLOAD_KEY_PASSWORD': password}
     result = subprocess.run([
         'keytool', '-genkeypair', '-keystore', str(KEY), '-storetype', 'JKS',
         '-alias', 'upload', '-keyalg', 'RSA', '-keysize', '3072', '-validity', '10000',
-        '-dname', 'CN=Rober Pothe Upload',
-        '-storepass:env', 'ROBER_UPLOAD_KEY_PASSWORD', '-keypass:env', 'ROBER_UPLOAD_KEY_PASSWORD',
+        '-dname', 'CN=Android App Upload',
+        '-storepass:env', 'APP_UPLOAD_KEY_PASSWORD', '-keypass:env', 'APP_UPLOAD_KEY_PASSWORD',
     ], env=environment, capture_output=True)
     if result.returncode:
         raise SystemExit('Key generation failed. Preserve the private properties file and inspect keytool locally.')

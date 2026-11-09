@@ -5,6 +5,7 @@ import '../firebase_options.dart';
 import 'account/account_service.dart';
 import 'account/privacy_page.dart';
 import 'app.dart';
+import 'app_identity.dart';
 import 'diagnostics/diagnostics_service.dart';
 
 class AppBootstrap extends StatefulWidget {
@@ -92,7 +93,7 @@ class _StartupStatus extends StatelessWidget {
                     ? const [
                         CircularProgressIndicator(),
                         SizedBox(height: 20),
-                        Text('রবের পথে চালু হচ্ছে…'),
+                        Text('${AppIdentity.name} চালু হচ্ছে…'),
                       ]
                     : [
                         const Icon(Icons.cloud_off_outlined, size: 48),

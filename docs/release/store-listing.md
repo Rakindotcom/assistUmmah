@@ -1,8 +1,8 @@
-# Play listing — রবের পথে
+# Play listing — দ্বীন ও দুনিয়া
 
 ## Metadata
 
-- App name: **রবের পথে**
+- App name: **দ্বীন ও দুনিয়া**
 - Suggested category: **Lifestyle**
 - Language: Bengali (Bangladesh)
 - Ads: **No**, subject to confirming the final artifact and Console inventory.
@@ -20,7 +20,7 @@ Support contact provided by the app owner: **teamframecipher@gmail.com**.
 
 ## Full description
 
-রবের পথে আপনার দৈনন্দিন কাজ ও আমল পর্যালোচনার সঙ্গী। কী করলেন, কী বাকি থাকল এবং আগের দিনের তুলনায় কোথায় এগোলেন—নিজের হিসাব নিজেই রাখুন।
+দ্বীন ও দুনিয়া আপনার দৈনন্দিন কাজ ও আমল পর্যালোচনার সঙ্গী। কী করলেন, কী বাকি থাকল এবং আগের দিনের তুলনায় কোথায় এগোলেন—নিজের হিসাব নিজেই রাখুন।
 
 • আজকের কাজ, ভবিষ্যতের সময়সূচি এবং দৈনিক বা সাপ্তাহিক পুনরাবৃত্তি সাজান।
 • পাঁচ ওয়াক্ত নামাজের অবস্থা, জামাত ও কাযার হিসাব রাখুন।

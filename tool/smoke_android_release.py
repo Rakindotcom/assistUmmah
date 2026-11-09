@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SDK = Path(os.environ.get('ANDROID_HOME', ROOT / '.local/android-sdk'))
 ADB = SDK / 'platform-tools/adb'
 DEVICE = 'emulator-5556'
-AVD = 'rober_pothe_audit_16k'
+AVD = 'android_release_audit_16k'
 APK = ROOT / '.local/app-release-universal.apk'
 DOCS = ROOT / 'docs/release'
 
@@ -70,9 +70,9 @@ def main() -> None:
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         time.sleep(2)
-        adb('shell', 'uiautomator', 'dump', '/sdcard/rober-pothe-smoke.xml')
-        ui = adb('shell', 'cat', '/sdcard/rober-pothe-smoke.xml')
-        if 'লগইন' in ui and 'রবের পথে' in ui:
+        adb('shell', 'uiautomator', 'dump', '/sdcard/deen-o-duniya-smoke.xml')
+        ui = adb('shell', 'cat', '/sdcard/deen-o-duniya-smoke.xml')
+        if 'লগইন' in ui and 'দ্বীন ও দুনিয়া' in ui:
             ready = True
             break
         if 'অ্যাপ চালু করা যায়নি' in ui:

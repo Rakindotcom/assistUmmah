@@ -18,7 +18,7 @@ void main() {
   testWidgets('shows app title in offline preview', (tester) async {
     await tester.pumpWidget(const UmmahAssistApp(firebaseReady: false));
 
-    expect(find.text('রবের পথে'), findsOneWidget);
+    expect(find.text('দ্বীন ও দুনিয়া'), findsOneWidget);
     expect(find.byType(DashboardPage), findsOneWidget);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));

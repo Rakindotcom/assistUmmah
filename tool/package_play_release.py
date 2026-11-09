@@ -161,7 +161,7 @@ def main():
     (destination / 'SHA256SUMS.txt').write_text(''.join(
         f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(destination).as_posix()}\n'
         for path in files))
-    archive_path = destination.parent / f'rober-pothe-{version}.zip'
+    archive_path = destination.parent / f'deen-o-duniya-{version}.zip'
     with zipfile.ZipFile(archive_path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(destination.rglob('*')):
             if path.is_file():
