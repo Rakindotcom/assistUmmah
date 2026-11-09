@@ -3,8 +3,10 @@
 The owner chose to keep Console work manual. No Console settings, declarations,
 tracks, terms or publishing actions have been submitted by Codex.
 
-Build 7 verification is still in progress. Use the current audit and wait for
-the matching upload packet before following the upload steps.
+The build 7 preparation packet contains the validated AAB and matching
+core-suite and received-diagnostics evidence. Remaining lifecycle/accessibility
+and manual gates are listed in `current-release-audit.md`. This packet does
+not approve production publication. Follow the steps below for internal testing.
 
 ## Start with internal testing
 

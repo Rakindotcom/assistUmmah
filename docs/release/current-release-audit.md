@@ -3,7 +3,7 @@
 Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+7**.
 
 **Build 7 passes source/static checks, Android 8 / 16 KB startup and the complete
-physical release suite. Optional diagnostics verification is in progress.
+physical release suite. Received optional diagnostics verification also passed.
 Public release is not approved; builds 5 and 6 are rejected.**
 
 ## Scope and constraints
@@ -50,11 +50,11 @@ Firebase remains Spark. Play Console stays manual. Support:
 | Native 16 KB startup | Passed | Post-boundary matrix `matrix-1v4ft6yd9muzy`: exact installed APK hash, native 16 KB pages, login/privacy/Back, initialized Firebase and clean registrar logs. |
 | Physical functional suite | Passed | Matrix `matrix-3df6vrt78lucs`: all six cases passed. Server reads confirmed the earlier native task save, nine absent roots, eight empty owned collections, deleted Auth identity, retained empty marker and unaffected other-account data. |
 | Native screenshots | Prepared | Five inspected 720×1280 captures from successful complete matrix `matrix-3df6vrt78lucs`; pixel-preserving RGB exports and exact APK/AAB hashes recorded. |
-| Received optional diagnostics | Pending | Explicit opt-in, controlled crash, restart/opt-out and a server event correlated to this build. |
+| Received optional diagnostics | Passed within scope | Physical Pixel 8 matrix `matrix-2nvwkc87k5oas`: explicit opt-in, controlled shell crash, restart and opt-out; JUnit 1 test, zero failures/errors. Provider FAILURE is expected from the deliberate crash. Independently received report matches package/build/time, with no fixture identifiers/content or custom user fields. Both test accounts cleaned. |
 | Older Android | Passed | Build 7 Android 8 matrix `matrix-2jpepjmsmorsb`: original installed hash, native 4 KB pages, login, bundled privacy and Back. Firebase initialization/log checks pass. |
 | Existing review account | Live access passed | Normal SDK password login, nine own-document reads, eight owned collection queries, marker absent and legacy-log enumeration denied before deletion. No app records changed. |
 | Backend and policy pages | Live readback passed | Five public HTML/script assets exactly match source; active default Firestore release source matches the tested rules. Billing remains disabled. No deployment or account change in this recheck. |
-| Hosted CI | Externally blocked | Last inspected run [42576553855](https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855) had zero steps in all jobs; annotation confirms an account billing lock. |
+| Hosted CI | Externally blocked | Last inspected run [42594358975](https://github.com/Rakindotcom/assistUmmah/actions/runs/42594358975) had zero steps in all jobs; annotation confirms an account billing lock. |
 | Play-installed build / Console | Manual gate | Owner requested manual Play work. |
 
 ## Historical tests and cleanup
@@ -69,17 +69,17 @@ records were cleaned through the normal deletion protocol before fresh fixtures.
 
 ## Remaining gates
 
-1. Complete build 7 native checks, independently verify server persistence and
-   deletion, then clean disposable fixtures.
-2. Inspect/export current screenshots and update all binary-bound receipts;
-   generate the strict upload packet after its gates pass.
-3. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
+The complete core suite, independent server persistence/deletion checks,
+received diagnostics and disposable fixture cleanup are complete. The generated
+packet passes its binary/startup/screenshot gates and remains preparation material.
+
+1. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. Controlled
    clock delivery is a distinct, narrower check.
-4. Manual Play gates: app-signing certificate, Play-installed password/Google
+2. Manual Play gates: app-signing certificate, Play-installed password/Google
    login, internal-track/pre-launch reports, listing/declarations, content rating,
    audience, developer identity and applicable closed testing.
-5. Resolve the hosted CI account lock before merging under a required-CI policy.
+3. Resolve the hosted CI account lock before merging under a required-CI policy.
 
 [Firebase's documented Spark quotas](https://firebase.google.com/docs/test-lab/usage-quotas-pricing)
 are project-wide daily limits of ten virtual and five physical runs. No billing
@@ -92,5 +92,6 @@ upgrade or quota bypass is authorized. Exact reset time has not been established
 - APK: `output/apk/rober-pothe-1.0.0-build7.apk`.
 - AAB: `output/aab/rober-pothe-1.0.0-build7.aab`.
 - SHA-256 sidecars accompany both; binaries remain outside Git.
-- No approved build 7 upload packet exists yet. Replace the previously shared
-  build 6 APK with build 7 for further testing.
+- Prepared packet: `dist/play-store/rober-pothe-1.0.0-7.zip`. Its validation
+  checks artifact identity and packet contents; it is not production approval.
+- Replace the previously shared build 6 APK with build 7 for further testing.

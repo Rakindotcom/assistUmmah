@@ -21,8 +21,11 @@ The production package remains `com.rakindotcom.ummah_assist`.
 The signed production AAB is generated at
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
 The corrected test APK is `output/apk/rober-pothe-1.0.0-build7.apk`;
-its native release checks are pending. Older startup/capture receipts retain their original
-binary identity and do not authorize build 7. Public release remains unapproved.
+its six-case physical release suite and Android 8 / Android 16 with 16 KB
+startup checks passed. Optional diagnostics opt-in/crash/restart/opt-out also
+passed, including an independently received report correlated to this build.
+Older receipts retain their original binary identity; only matching build 7
+receipts establish current behavior. Public release remains unapproved.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -206,18 +209,20 @@ signing credentials are excluded from that packet.
    another account remains isolated. Confirm local/cache behavior on two devices.
 5. Verify Android 16 edge-to-edge, actual IME, system back, large text, TalkBack,
    launcher/splash/themed/status icons, and modest-device performance/ANRs.
-6. Confirm optional diagnostic reporting off/on/off behavior and receipt of a
-   controlled test report in Crashlytics. Do not crash a real user's session.
+6. The original signed build passed optional diagnostics off/on/off persistence,
+   explicit opt-in, controlled crash, restart and opt-out; a correlated report was
+   received. Preserve default-off consent and recheck it in the Play-installed
+   build. Do not crash a real user's session.
 7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. The current
-   APK has matching ARM64 Android16/16 KB, Android8/4 KB and physical Pixel8
-   Android14 startup receipts, plus physical GalaxyA15 Android16 login,
+   APK has matching ARM64 Android16/16 KB and Android8/4 KB startup
+   receipts, plus physical GalaxyA15 Android16 login,
    task persistence, navigation and isolation. Reboot/Doze, long-session
    performance and the Play-signed build still require verification.
 8. Review the five current `current-store-captures/` phone images. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
    content rating, target audience, ads declaration, developer verification and
-   the [store listing](store-listing.md) in Console. Confirm candidate version code `4`
+   the [store listing](store-listing.md) in Console. Confirm candidate version code `7`
    is greater than every code already used for this app.
 10. If the personal developer account was created after 13 November 2023, complete
     the applicable 12-tester/14-day closed test and production-access application.

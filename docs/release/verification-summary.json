@@ -60,8 +60,8 @@
   "productionReleaseApproved": false,
   "backendDeploymentVerified": true,
   "existingReviewerLiveAccessVerified": true,
-  "githubCiStatus": "blocked: current run 42576553855 had zero steps; annotation confirms account billing lock",
-  "historicalVisualEvidenceScope": "Existing widget/profile captures retain their original provenance; they do not verify build 5.",
+  "githubCiStatus": "blocked: run 42594358975 completed with failed jobs and no steps; account billing lock annotation verified separately",
+  "historicalVisualEvidenceScope": "Existing widget/profile captures retain their original provenance; they do not verify build 7.",
   "historicalVisualEvidence": {
     "phoneCaptureCount": 6,
     "homeFontAndPreviewChecksPassed": 9,
@@ -85,7 +85,7 @@
   "nativeDeletionRecoveryVerified": true,
   "nativeDeletionRouteRevocationVerified": true,
   "nativeDeletionServerCleanupVerified": true,
-  "disposableNativeFixturesCleaned": false,
+  "disposableNativeFixturesCleaned": true,
   "android8StartupVerified": true,
   "nativeNotificationPermissionGrantVerified": true,
   "nativeDailyAlarmRegistrationVerified": true,
@@ -103,9 +103,9 @@
   "physicalCoreNavigationVerified": true,
   "nativeLocationDenialVerified": true,
   "nativeManualLocationFallbackVerified": true,
-  "controlledCrashlyticsServerReceiptVerified": false,
-  "nativePostCrashRestartVerified": false,
-  "timedNotificationDeliveryScope": "Natural-clock latency remains unverified. The build 5 virtual suite passed the controlled-clock case, but the aggregate suite failed at a test parser; complete native verification is pending.",
+  "controlledCrashlyticsServerReceiptVerified": true,
+  "nativePostCrashRestartVerified": true,
+  "timedNotificationDeliveryScope": "Build 7 physical release suite passed controlled-clock delivery into Android System UI. Natural-clock latency, reboot and Doze remain unverified.",
   "nativeStartupEvidenceScope": "Original signed build 7 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
   "nativeFunctionalEvidence": {
     "current-controlled-startup.json": {
@@ -146,15 +146,18 @@
     },
     "current-native-location-diagnostics.json": {
       "current": true,
-      "scope": "Native location denial and advanced manual Dhaka coordinates/timezone saved and reflected in calculated prayer views. No crash injected by this suite; diagnostics receipt remains separate."
+      "scope": "Original build 7 on physical Pixel 8: native location denial/manual Dhaka setup, explicit diagnostics opt-in, synthetic shell crash, restart and opt-out. JUnit passed; provider matrix FAILURE records the deliberate crash. Independently received report matched package, version and crash time; fixture identifiers/content and custom user fields absent. No real user session was crashed."
     }
   },
   "nativeDailyTimezoneIsolationVerified": true,
   "nativeDailyTimezoneRefreshVerified": true,
-  "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855",
+  "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42594358975",
   "currentSourcePackaged": true,
-  "releaseCandidateStatus": "pending-native-verification",
+  "releaseCandidateStatus": "core-and-diagnostics-verified-manual-release-gates-pending",
   "currentNativeReleaseSuitePassed": true,
   "completedReleaseSuiteFixturesCleaned": true,
-  "diagnosticsVerificationStatus": "running with separate disposable fixtures"
+  "diagnosticsVerificationStatus": "verified: native opt-in/crash/restart/opt-out, correlated received server report and disposable fixture cleanup",
+  "diagnosticsObservationBlocked": false,
+  "diagnosticsFixtureCleanupPending": false,
+  "evidenceReconciledAtUtc": "2026-11-09T15:55:41.694022+00:00"
 }
