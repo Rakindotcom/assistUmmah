@@ -449,7 +449,10 @@ public final class SignedInReleaseAuditTest {
                     entry.append(' ').append(lines[n]);
                 }
                 if(!entry.toString().contains(APP)||!entry.toString().contains("ScheduledNotificationReceiver"))continue;
-                java.util.regex.Matcher when=Pattern.compile("origWhen=(\\d+)").matcher(entry);
+                // The Alarm header contains the locale-independent epoch as
+                // "origWhen <millis>". The following "origWhen=" field is a
+                // localized date (including Bangla digits on this device).
+                java.util.regex.Matcher when=Pattern.compile("\\borigWhen\\s+([0-9]+)\\b").matcher(lines[i]);
                 if(!when.find())continue;
                 java.util.Calendar calendar=java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone(zone));
                 calendar.setTimeInMillis(Long.parseLong(when.group(1)));
