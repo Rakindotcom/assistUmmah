@@ -1,9 +1,9 @@
 {
   "bundle": "build/app/outputs/bundle/productionRelease/app-production-release.aab",
-  "sha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
+  "sha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 6,
+  "versionCode": 7,
   "minSdk": 24,
   "targetSdk": 36,
   "signatureVerified": true,
@@ -119,11 +119,27 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": true,
+  "runtime16KbVerified": false,
   "apkZipAlignmentVerified": true,
+  "compiledDartLibraryBuildIdsVerified": true,
+  "compiledDartLibraries": [
+    {
+      "abi": "arm64-v8a",
+      "buildId": "b718850985217222f90d3cfa89f9a6c4",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/arm64-v8a/app.so"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "buildId": "3931dddaa80a7bce0e1bf313bedb136f",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/armeabi-v7a/app.so"
+    },
+    {
+      "abi": "x86_64",
+      "buildId": "3d49a0ba7d5b1ca4a88e279813f6f27f",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
+    }
+  ],
   "cloudRuntime16KbStartupVerified": false,
   "universalApkSignatureVerified": true,
-  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify",
-  "compiledDartLibraryBuildIdsVerified": false,
-  "rejectedReason": "Packaged Dart GNU build ID differs from current compiler output"
+  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"
 }

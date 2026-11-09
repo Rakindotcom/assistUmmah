@@ -10,23 +10,19 @@ The production entry is `lib/main.dart` → `AppBootstrap` → `AuthGate` →
 `HomeShell`. The new productivity root remains hidden and the separate preview
 package must not be uploaded as this app.
 
-The current candidate is **1.0.0+6**, package
-`com.rakindotcom.ummah_assist`, target API 36 and minimum API 24. See the
-[release audit](current-release-audit.md) and the machine-readable
-[verification summary](verification-summary.json) for current results and
-remaining gates. Earlier native screenshots, profile measurements and startup
-receipts are historical evidence and do not establish this candidate's runtime.
+**Builds 5 and 6 are rejected.** Their Android manifests changed while stale
+native packaging intermediates retained the older Dart snapshot. The previously
+shared build 6 APK does not contain the intended fixes. Build 7 was built
+from clean generated outputs and passed compiler-to-package identity checks. The verifier now compares packaged Dart GNU
+build IDs against the current compiler output for every ABI and rejects stale
+libraries before export. See the [current audit](current-release-audit.md).
+The production package remains `com.rakindotcom.ummah_assist`.
 
-The signed production AAB is
+The signed production AAB is generated at
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
-Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
-copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
-binds static checks to the exact AAB hash. Build 6 fixes reproduced daily
-reminder timezone errors and prayer-settings system-navigation overlap. It
-passes 529 Flutter tests and analysis. **Native verification is in progress.**
-See the [current audit](current-release-audit.md). Older native receipts and
-screenshots retain their original binary identity and cannot authorize this
-candidate's upload packet. No build 6 public release approval is claimed.
+The corrected test APK is `output/apk/rober-pothe-1.0.0-build7.apk`;
+its native release checks are pending. Older startup/capture receipts retain their original
+binary identity and do not authorize build 7. Public release remains unapproved.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -153,7 +149,10 @@ Its SHA-256 is
 The workflow downloads and checks this digest before use.
 
 `tool/verify_android_bundle.py` validates the bundle, upload signature, package,
-API target, ARM64 presence and 64-bit ELF load alignment. It writes a manifest
+API target, ARM64 presence and 64-bit ELF load alignment. It also requires every
+packaged Dart library's GNU build ID to match the current flavor's compiler
+output. Keep those outputs in the same checkout until validation finishes;
+version/signature checks alone cannot detect stale merged native code. It writes a manifest
 and a JSON result. `tool/verify_android_apk.py` then generates a signed universal
 APK using temporary private password files, checks its signature and 16 KB ZIP
 alignment, and adds those results to the report. A 16 KB device run and testing

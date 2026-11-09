@@ -1,22 +1,22 @@
 {
-  "verifiedAtUtc": "2026-11-09T06:59:35.717383+00:00",
+  "verifiedAtUtc": "2026-11-09T07:39:25.474840+00:00",
   "entrypoint": "lib/main.dart",
   "flavor": "production",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 6,
+  "versionCode": 7,
   "targetSdk": 36,
   "minSdk": 24,
   "artifacts": {
     "apk": {
-      "path": "output/apk/rober-pothe-1.0.0-build6.apk",
-      "sha256": "c650f24bf4ce08dd35a0233713fcea0c5d6f5e1f7987d623fe621dc96083c121",
+      "path": "output/apk/rober-pothe-1.0.0-build7.apk",
+      "sha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
       "bytes": 64633779
     },
     "aab": {
-      "path": "output/aab/rober-pothe-1.0.0-build6.aab",
-      "sha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
-      "bytes": 63643939
+      "path": "output/aab/rober-pothe-1.0.0-build7.aab",
+      "sha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
+      "bytes": 63644103
     }
   },
   "signatureMatchesExistingUploadCertificate": true,
@@ -25,17 +25,34 @@
   "anekBanglaAndFontLicensesBundled": true,
   "native64BitElfAlignmentAtLeast16KiB": true,
   "universalApkZipAlignment16KiB": true,
-  "nativeRuntimeVerified": true,
+  "nativeRuntimeVerified": false,
   "playInstalledBuildVerified": false,
-  "scope": "Rejected: native packaging reused an older Dart snapshot. APK version, signature and startup do not prove the intended source fixes are included. Do not use this APK as the corrected candidate.",
-  "nativeRuntimeScope": "Original signed build 6 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
-  "nativeRuntimeEvidence": "current-controlled-startup.json",
-  "independentDeviceApkHashVerified": true,
+  "scope": "Build 7 fixes daily reminder timezone resolution and the reproduced advanced prayer-settings system-navigation overlap. Source/static checks pass; current binary native checks are pending.",
+  "nativeRuntimeScope": "Previous binary native receipts are historical and cannot verify this changed candidate.",
+  "nativeRuntimeEvidence": null,
+  "independentDeviceApkHashVerified": false,
   "nativeFunctionalEvidence": null,
-  "exportedAtUtc": "2026-11-09T06:59:35.717383+00:00",
+  "exportedAtUtc": "2026-11-09T07:39:25.474840+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e",
-  "intendedSourceCommit": "9df46cd731ed33333e465a5f4719a4ae471594b5",
-  "sourceCommit": null,
-  "currentSourcePackaged": false,
-  "releaseCandidateStatus": "rejected-stale-dart-snapshot"
+  "sourceCommit": "7cd3d349cc718f39e0f6c99fa6f5432ab1798703",
+  "currentSourcePackaged": true,
+  "releaseCandidateStatus": "pending-native-verification",
+  "compiledDartLibraryBuildIdsVerified": true,
+  "compiledDartLibraries": [
+    {
+      "abi": "arm64-v8a",
+      "buildId": "b718850985217222f90d3cfa89f9a6c4",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/arm64-v8a/app.so"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "buildId": "3931dddaa80a7bce0e1bf313bedb136f",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/armeabi-v7a/app.so"
+    },
+    {
+      "abi": "x86_64",
+      "buildId": "3d49a0ba7d5b1ca4a88e279813f6f27f",
+      "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
+    }
+  ]
 }

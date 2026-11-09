@@ -25,6 +25,7 @@
   "architecture": "arm64-v8a",
   "productionReleaseBinary": true,
   "loginScreenVisibleInAccessibilityTree": true,
-  "currentBundleVerified": true,
-  "evidence": "current-controlled-startup.json"
+  "currentBundleVerified": false,
+  "evidence": "current-controlled-startup.json",
+  "supersededByBundleSha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b"
 }
