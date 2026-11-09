@@ -70,7 +70,7 @@ public final class SignedInReleaseAuditTest {
             List<UiObject2> editors = editors();
             assertFalse(editors.isEmpty());
             editors.get(0).setText("Native audit saved task");
-            device.pressBack();
+            dismissKeyboardIfShown();
             click("যোগ করুন");
             waitAbsent("নতুন কাজ যোগ করুন", 30000);
             reveal("Native audit saved task");
@@ -303,7 +303,8 @@ public final class SignedInReleaseAuditTest {
             while (deny == null && SystemClock.uptimeMillis() < deadline) {
                 deny = device.findObject(By.res(Pattern.compile(".*:id/permission_deny_button"))); SystemClock.sleep(200);
             }
-            assertNotNull("Expected Android location permission dialog", deny); deny.click();
+            assertNotNull("Expected Android location permission dialog", deny);
+            dismissNativePermissionDialog("permission_deny_button");
             waitContains("শহর বেছে নিন বা হাতে স্থান লিখুন", 15000);
             assertEquals(PackageManager.PERMISSION_DENIED, context.getPackageManager().checkPermission("android.permission.ACCESS_FINE_LOCATION", APP));
             report.put("locationPermissionDenialHandled", true);
@@ -340,7 +341,7 @@ public final class SignedInReleaseAuditTest {
         } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
     }
 
-    private void setField(String label, String value) {
+    private void setField(String label, String value) throws Exception {
         reveal(label);
         UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP).descContains(label));
         if (field == null) {
@@ -348,7 +349,28 @@ public final class SignedInReleaseAuditTest {
             field = node == null ? null : node.getParent().findObject(By.clazz("android.widget.EditText"));
         }
         assertNotNull("Missing manual location field", field);
-        field.click(); field.setText(value); device.pressBack();
+        field.click(); field.setText(value); dismissKeyboardIfShown();
+    }
+
+    private void dismissKeyboardIfShown() throws Exception {
+        device.waitForIdle(1000);
+        String state = device.executeShellCommand("dumpsys input_method");
+        if (Pattern.compile("(?:mInputShown|mIsInputViewShown|mInputViewShown|isInputViewShown)=true").matcher(state).find()) {
+            device.pressBack(); device.waitForIdle(1000); SystemClock.sleep(300);
+        }
+    }
+
+    private void dismissNativePermissionDialog(String resource) throws Exception {
+        Pattern id = Pattern.compile(".*:id/" + Pattern.quote(resource));
+        for (int attempt = 0; attempt < 3; attempt++) {
+            // A permission node may be published while its opening window is still input-blocked.
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            UiObject2 button = device.findObject(By.res(id));
+            if (button == null) return;
+            button.click(); SystemClock.sleep(400);
+            if (device.findObject(By.res(id)) == null) return;
+        }
+        assertNull("Native permission dialog remained after settled input", device.findObject(By.res(id)));
     }
 
     private boolean appAlarmPresent() throws Exception {
@@ -418,7 +440,7 @@ public final class SignedInReleaseAuditTest {
             waitLabel("অ্যাকাউন্ট মুছে ফেলুন", 15000);
             UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP));
             if (field == null) { reveal("বর্তমান পাসওয়ার্ড"); field = editors().get(0); }
-            field.click(); field.setText(password); device.pressBack();
+            field.click(); field.setText(password); dismissKeyboardIfShown();
             reveal("আমি বুঝেছি, আমার অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য স্থায়ীভাবে মুছে ফেলা হবে।").click();
             reveal("স্থায়ীভাবে মুছে ফেলার অনুরোধ করুন").click();
             waitLabel("লগইন", 90000);
@@ -472,7 +494,7 @@ public final class SignedInReleaseAuditTest {
         List<UiObject2> fields = editors(); assertEquals(2, fields.size());
         fields.get(0).click(); fields.get(0).setText(email);
         fields = editors(); fields.get(1).click(); fields.get(1).setText(password);
-        device.pressBack(); click("লগইন");
+        dismissKeyboardIfShown(); click("লগইন");
         waitLabel("আসসালামু আলাইকুম", 60000);
     }
 
