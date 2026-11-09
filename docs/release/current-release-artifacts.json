@@ -1,23 +1,23 @@
 {
-  "verifiedAtUtc": "2026-11-09T06:40:00.417813+00:00",
-  "sourceCommit": "5c88292f2eb91c1e899b0d811073125e782b0e00",
+  "verifiedAtUtc": "2026-11-09T06:59:35.717383+00:00",
+  "sourceCommit": "9df46cd731ed33333e465a5f4719a4ae471594b5",
   "entrypoint": "lib/main.dart",
   "flavor": "production",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 5,
+  "versionCode": 6,
   "targetSdk": 36,
   "minSdk": 24,
   "artifacts": {
     "apk": {
-      "path": "output/apk/rober-pothe-1.0.0-build5.apk",
-      "sha256": "d42713c69a0fbd899f167a3aec62cd519ce55d912634cb28880733ff4f087cd3",
+      "path": "output/apk/rober-pothe-1.0.0-build6.apk",
+      "sha256": "c650f24bf4ce08dd35a0233713fcea0c5d6f5e1f7987d623fe621dc96083c121",
       "bytes": 64633779
     },
     "aab": {
-      "path": "output/aab/rober-pothe-1.0.0-build5.aab",
-      "sha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
-      "bytes": 63643931
+      "path": "output/aab/rober-pothe-1.0.0-build6.aab",
+      "sha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
+      "bytes": 63643939
     }
   },
   "signatureMatchesExistingUploadCertificate": true,
@@ -28,11 +28,11 @@
   "universalApkZipAlignment16KiB": true,
   "nativeRuntimeVerified": false,
   "playInstalledBuildVerified": false,
-  "scope": "Candidate 5 fixes reproduced device-timezone/global-timezone daily reminder scheduling errors. Source analysis and 528 Flutter tests pass; current candidate native verification remains pending.",
-  "nativeRuntimeScope": "Build 4 native receipts are historical and do not verify this changed binary.",
+  "scope": "Build 6 fixes daily reminder timezone resolution and the reproduced advanced prayer-settings system-navigation overlap. Source/static checks pass; current binary native checks are pending.",
+  "nativeRuntimeScope": "Previous binary native receipts are historical and cannot verify this changed candidate.",
   "nativeRuntimeEvidence": null,
   "independentDeviceApkHashVerified": false,
   "nativeFunctionalEvidence": null,
-  "exportedAtUtc": "2026-11-09T02:28:18.760454+00:00",
+  "exportedAtUtc": "2026-11-09T06:59:35.717383+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e"
 }

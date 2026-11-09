@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     docs = ROOT / 'docs/release'
     verification = json.loads((docs / 'bundle-verification.json').read_text())
+    source_version = re.search(r'^version:\s*(\S+)\s*$',
+                               (ROOT / 'pubspec.yaml').read_text(), re.MULTILINE)
+    assert source_version and source_version.group(1) == (
+        f"{verification['versionName']}+{verification['versionCode']}"
+    ), 'Bundle version is superseded by current source: rebuild and revalidate first'
     bundle = ROOT / verification['bundle']
     assert hashlib.sha256(bundle.read_bytes()).hexdigest() == verification['sha256'], 'Bundle changed: revalidate first'
     assert verification['signatureVerified'] and verification['apkZipAlignmentVerified']
@@ -67,6 +72,10 @@ def main():
                  'current-native-delivery.json', 'current-native-physical-flows.json',
                  'current-native-location-diagnostics.json']:
         shutil.copy2(docs / name, destination / name)
+    for name in ['current-native-suite.json', 'current-native-timezone.json']:
+        path = docs / name
+        if path.exists():
+            shutil.copy2(path, destination / name)
     shutil.copytree(docs / 'current-native-startup', destination / 'current-native-startup')
     shutil.copytree(docs / 'current-native-flows', destination / 'current-native-flows')
     capture_inventory = json.loads((docs / 'current-store-captures/export-verification.json').read_text())

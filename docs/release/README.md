@@ -10,7 +10,7 @@ The production entry is `lib/main.dart` → `AppBootstrap` → `AuthGate` →
 `HomeShell`. The new productivity root remains hidden and the separate preview
 package must not be uploaded as this app.
 
-The current candidate is **1.0.0+5**, package
+The current candidate is **1.0.0+6**, package
 `com.rakindotcom.ummah_assist`, target API 36 and minimum API 24. See the
 [release audit](current-release-audit.md) and the machine-readable
 [verification summary](verification-summary.json) for current results and
@@ -21,14 +21,12 @@ The signed production AAB is
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
 Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
 copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
-binds static checks to the exact AAB hash. Build 5 fixes reproduced daily
-reminder timezone errors and passes 528 Flutter tests plus analysis and static
-Android checks. **Native verification is in progress.** Its first complete
-virtual-device attempt passed core cases but failed at an incorrect alarm-dump
-parser; that test is fixed and a physical-device rerun is pending. See the
-[current audit](current-release-audit.md) for authoritative results. Previous
-build 4 native receipts are historical and cannot authorize this candidate's
-upload packet. No build 5 public release approval is claimed.
+binds static checks to the exact AAB hash. Build 6 fixes reproduced daily
+reminder timezone errors and prayer-settings system-navigation overlap. It
+passes 529 Flutter tests and analysis. **Native verification is in progress.**
+See the [current audit](current-release-audit.md). Older native receipts and
+screenshots retain their original binary identity and cannot authorize this
+candidate's upload packet. No build 6 public release approval is claimed.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran

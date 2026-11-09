@@ -1,10 +1,10 @@
 {
-  "verifiedAtUtc": "2026-11-07T06:34:17.736884+00:00",
-  "flutterTestsPassed": 528,
+  "verifiedAtUtc": "2026-11-09T06:59:35.717383+00:00",
+  "flutterTestsPassed": 529,
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 14,
   "releaseInputs": "pass",
-  "nativeRuntimeTested": true,
+  "nativeRuntimeTested": false,
   "playConsoleVerified": false,
   "supportEmail": "teamframecipher@gmail.com",
   "billingPlanChanged": false,
@@ -40,19 +40,19 @@
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
-  "bundleSha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
+  "bundleSha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
   "signedReleaseLoginVisible": false,
   "firebaseRegistrarErrorsAbsent": false,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Scoped native functional receipts match this candidate; the stronger startup/16 KB gate remains open. See nativeFunctionalEvidence for per-run scope and limits: current-native-legacy.json.",
+  "nativeEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
   "releaseToolTestsPassed": 9,
-  "universalApkSha256": "d42713c69a0fbd899f167a3aec62cd519ce55d912634cb28880733ff4f087cd3",
+  "universalApkSha256": "c650f24bf4ce08dd35a0233713fcea0c5d6f5e1f7987d623fe621dc96083c121",
   "signingIdentityMatchesPriorTestApk": true,
-  "sourceCommit": "5c88292",
+  "sourceCommit": "9df46cd731ed33333e465a5f4719a4ae471594b5",
   "releaseScope": "Current production HomeShell app; full gap.md roadmap excluded by owner.",
   "versionName": "1.0.0",
-  "versionCode": 5,
+  "versionCode": 6,
   "flutterTestsSkipped": 2,
   "flutterSkippedScope": "Browser-only future productivity migration tests; outside this production release.",
   "productionReleaseApproved": false,
@@ -84,7 +84,7 @@
   "nativeDeletionRouteRevocationVerified": false,
   "nativeDeletionServerCleanupVerified": false,
   "disposableNativeFixturesCleaned": false,
-  "android8StartupVerified": true,
+  "android8StartupVerified": false,
   "nativeNotificationPermissionGrantVerified": false,
   "nativeDailyAlarmRegistrationVerified": false,
   "nativeSignOutAlarmCancellationVerified": false,
@@ -119,8 +119,8 @@
       "scope": null
     },
     "current-native-legacy.json": {
-      "current": true,
-      "scope": "Original signed build 5 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
+      "current": false,
+      "scope": null
     },
     "current-native-physical.json": {
       "current": false,
@@ -134,6 +134,10 @@
       "current": false,
       "scope": null
     },
+    "current-native-timezone.json": {
+      "current": false,
+      "scope": null
+    },
     "current-native-delivery.json": {
       "current": false,
       "scope": null
@@ -142,5 +146,7 @@
       "current": false,
       "scope": null
     }
-  }
+  },
+  "nativeDailyTimezoneIsolationVerified": false,
+  "nativeDailyTimezoneRefreshVerified": false
 }

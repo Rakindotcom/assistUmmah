@@ -1,60 +1,73 @@
 # Current production release audit
 
-Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+5**.
+Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+6**.
 
-**Verification is in progress; public release is not approved.**
+**Native verification is in progress; public release is not approved.**
 
 ## Scope
 
 Finish and verify the current production app for Android release. The full
 `gap.md` roadmap, hidden productivity root and separate offline preview remain
 outside this release. Production starts at `lib/main.dart` → `AppBootstrap` →
-`AuthGate` → `HomeShell`. Firebase must remain Spark; Play Console stays manual.
+`AuthGate` → `HomeShell`. Firebase stays Spark; Play Console stays manual.
+Support: **teamframecipher@gmail.com**.
 
-## Current evidence
+## Fixes established by release testing
 
-- Source checkpoint: `5c88292f2eb91c1e899b0d811073125e782b0e00`.
-- Fixed two reproduced daily reminder defects: device timezone changes were
-  cached, and prayer timezone initialization could reset global scheduling to UTC.
-  Daily scheduling now resolves the device zone explicitly for every enabled sync.
-- Flutter: **528 passed**, two browser-only future migration tests skipped.
-  Analyzer: no issues. Three new regression cases cover timezone changes,
-  cross-module initialization and opt-out when timezone lookup fails.
-- Signed APK/AAB: version 1.0.0+5, target API 36, minimum API 24; signatures,
-  existing upload certificate, ARM64, 16 KB ELF and ZIP alignment verified.
-  Artifact hashes are in [the current receipt](current-release-artifacts.json).
-- Cloud virtual Android 16 / 16 KB matrix `matrix-iu0sqm17mwmaa`: installed
-  APK hash, startup/privacy/Back, authentication, native task creation, account
-  isolation, reminder permission/cancellation, diagnostics consent, manual
-  location fallback and controlled-clock notification delivery passed their
-  individual cases. **The aggregate suite failed** at the timezone assertion
-  because its test parser expected `origWhen=` rather than Android's epoch
-  header `origWhen <millis>`. Deletion was not reached. This run does not unlock
-  the complete-suite release gate.
-- The parser is corrected in `9fdac0e`. A full physical Galaxy A15/API 36 run
-  (`matrix-39fdcivgv0dor`) and a separate Android 8 startup check are pending.
-- Existing backend/rules and legal-page evidence is unchanged. Support:
-  **teamframecipher@gmail.com**. No billing plan change was made.
+1. Daily reminders now resolve the device timezone for every enabled sync,
+   independently of the global timezone state used by prayer calculations.
+   Tests reproduced a cached device zone and cross-module reset to UTC before
+   the fix. Three new regression cases pass.
+2. The advanced prayer-settings Save button now respects the bottom safe area.
+   A physical Galaxy A15 test tapped Android Home because the button was behind
+   its three-button navigation bar. A widget regression reproduced the overlap
+   at a 48-pixel bottom inset and passes after the fix, including actual Save.
+3. The native audit driver now parses the locale-independent epoch in Android's
+   alarm header, rather than its localized date field. The corrected parser
+   reads all three expected daily times from the actual Bangla device dump.
 
-## Remaining work
+## Evidence for build 6
 
-1. Complete current-binary native timezone, deletion, physical and older-Android
-   checks; verify server persistence/deletion and clean disposable fixtures.
-2. Verify optional diagnostics receipt against this build; refresh current
-   screenshots and binary-bound evidence, then generate the upload packet.
-3. Test remaining OS/accessibility/lifecycle requirements within available
-   devices. Controlled clock delivery does not establish natural-clock latency,
-   reboot/Doze, long sessions or all OEM behavior.
-4. Manual Play gates: Play app-signing certificate, Play-installed password and
-   Google login, internal-track/pre-launch reports, listing/declarations,
-   content rating, audience, developer identity and any closed-testing rules.
-5. Hosted GitHub checks previously could not start because of the account
-   billing lock. Local checks do not establish a hosted CI pass.
+| Requirement | Result | Scope |
+| --- | --- | --- |
+| Production source | Committed | `9df46cd`, including the timezone and bottom-safe-area fixes. |
+| Flutter regression | Passed | 529 passed, two existing browser-only future migration tests skipped. |
+| Analyzer | Passed | No issues. |
+| Release evidence tooling | Passed | Nine unit tests bind functional claims to current APK/AAB identities; superseded-version packet rejection verified separately. |
+| Signed AAB | Passed | Version 1.0.0+6, target API 36, minimum API 24, ARM64, all 64-bit ELF load segments aligned for 16 KB; test/debug flags absent. |
+| Universal APK | Passed | Exported signed APK; existing upload certificate matches, 16 KB ZIP alignment and signature verification pass. |
+| Current native startup | Pending | Older candidate receipts cannot verify this binary. |
+| Physical functional suite | Pending | Login, task persistence/isolation, permission handling, manual location, controlled delivery, timezone changes, interrupted deletion and server cleanup. |
+| Current screenshots | Pending | Must be generated from this candidate and inspected. |
+| Optional received diagnostics | Pending | Opt-in, controlled crash, restart, opt-out and independently correlated server event must identify this build. |
+| Existing backend and policy pages | Unchanged | Tested rules/Hosting deployment evidence remains valid; no backend source changes in builds 5/6. |
+| Hosted CI | Externally blocked at last check | Account billing lock prevented runner startup; local passes are not a hosted CI pass. |
+| Play-installed app / Console | Manual gate | Owner requested manual Console work. |
 
-## Artifacts
+## Historical evidence and failures
 
-- Installable test APK: `output/apk/rober-pothe-1.0.0-build5.apk`.
-- Signed AAB: `output/aab/rober-pothe-1.0.0-build5.aab`.
-- SHA-256 sidecars accompany both. No approved build 5 upload packet yet.
-- [Historical build 4 audit](historical-build4-audit.md) and its native receipts
-  do not verify build 5. Build 4 must not be published.
+Build 4 is superseded; see [its historical audit](historical-build4-audit.md).
+Build 5 passed signed-out startup on Android 8 (4 KB) and Android 16 (16 KB).
+Its virtual suite passed core cases but failed at the alarm test parser; deletion
+was not reached. Its physical suite passed core flows and reminders but failed
+at the real prayer-settings navigation-bar overlap. **Neither failed aggregate
+suite is a release pass.** Their disposable identities and owned app records
+were cleaned using the normal deletion protocol before new fixtures were made.
+
+## Remaining release gates
+
+- Finish current-binary native checks, confirm server task persistence/deletion,
+  and clean the new disposable fixtures.
+- Export and inspect current phone screenshots; refresh binary-bound evidence
+  and generate the upload packet only after its strict gates pass.
+- Verify remaining lifecycle/accessibility/device requirements. Controlled clock
+  delivery does not establish natural-clock latency, reboot/Doze, long sessions,
+  TalkBack or all OEM behavior.
+- Manual Play checks: app-signing certificate, Play-installed password and Google
+  login, internal-track/pre-launch reports, listing/declarations, content rating,
+  audience, developer identity and applicable closed-testing requirements.
+- Resolve the hosted CI account lock before merging under a required-CI policy.
+
+The APK/AAB paths and hashes are recorded in
+[the artifact receipt](current-release-artifacts.json). Binaries
+remain outside Git. No approved build 6 upload packet exists yet.

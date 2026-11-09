@@ -3,14 +3,14 @@
 The owner chose to keep Console work manual. No Console settings, declarations,
 tracks, terms or publishing actions have been submitted by Codex.
 
-Build 5 verification is still in progress. Use the current audit and wait for
+Build 6 verification is still in progress. Use the current audit and wait for
 the matching upload packet before following the upload steps.
 
 ## Start with internal testing
 
 1. Open the official [Play Console](https://play.google.com/console/) and select
    or create the app. Keep the package `com.rakindotcom.ummah_assist`.
-2. This candidate uses version code **5** (`1.0.0+5`). Confirm that it is greater
+2. This candidate uses version code **6** (`1.0.0+6`). Confirm that it is greater
    than every code already used in Console. If it is not, rebuild
    with a new monotonically increasing code before uploading.
 3. Configure Play App Signing. Back up the local upload key and credentials to

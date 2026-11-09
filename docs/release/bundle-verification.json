@@ -1,9 +1,9 @@
 {
   "bundle": "build/app/outputs/bundle/productionRelease/app-production-release.aab",
-  "sha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
+  "sha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 5,
+  "versionCode": 6,
   "minSdk": 24,
   "targetSdk": 36,
   "signatureVerified": true,

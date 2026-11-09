@@ -1,25 +1,3 @@
-# Current signed production APK startup captures
+# Build 5 native startup captures
 
-Captured by Firebase Test Lab on 6 November 2026 from the APK identified in
-`../current-testlab-startup.json`. The device is a virtual ARM64 Android 16
-(API 36) phone configured with 16 KB pages and Bangla (Bangladesh) locale.
-
-- `device-details.png` is the provider's device metadata screen.
-- `sign-in.png` is the actual production APK's initial signed-out screen.
-
-Original PNG bytes are preserved. No private account credentials were supplied.
-The captures prove startup/branding, not an authenticated dashboard, OS alert
-delivery, physical-device behavior or a Play-installed build. This is not the
-older profile integration APK. Raw run logs and the full action trace remain
-private under `.local/testlab-results/`.
-
-The configured Robo mode uses UIAutomator without app resigning. The uploaded
-APK checksum was verified against the exported candidate. Its installed file
-hash and an in-app page-size syscall were not independently read. Those Robo captures alone do not satisfy the independent installed-hash gate.
-
-The later `controlled-01-sign-in.png` and `controlled-02-privacy.png` come from
-the isolated UI Automator run in `../current-controlled-startup.json`. That
-driver independently hashed the original installed APK, measured native page
-size, loaded bundled privacy and exercised Android Back. It ran in its own
-process, leaving the minified app unmodified. These remain signed-out captures,
-not authenticated-home or physical-device proof.
+Original signed-out captures from matrix-2adf3wtnfyxuf (Android 16, ARM64, 16 KB). Installed APK hash verified independently. No account credentials supplied.
