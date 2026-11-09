@@ -27,16 +27,16 @@
   "universalApkZipAlignment16KiB": true,
   "nativeRuntimeVerified": true,
   "playInstalledBuildVerified": false,
-  "scope": "Clean build 8 passes source/static/signing checks, Android 8 / 16 KB startup and the reproduced prayer exact-permission flow. Complete suite, diagnostics, current captures and manual release gates remain open.",
+  "scope": "Clean build 8 passes source/static/signing checks, Android 8 / Android 16 with 16 KB startup, all seven physical release cases, independent server save/isolation/deletion checks and reviewed current captures. Received diagnostics is blocked by free testing quota; manual release gates remain open.",
   "nativeRuntimeScope": "Original signed build 8, Android 16 / 16 KB installed-file hash/syscall, login/privacy/Back; Android 8 / 4 KB startup verified separately. Authenticated exact-permission audit is separate from the complete release suite.",
   "nativeRuntimeEvidence": "current-controlled-startup.json",
   "independentDeviceApkHashVerified": true,
-  "nativeFunctionalEvidence": "current-native-prayer-permissions.json",
+  "nativeFunctionalEvidence": "current-native-suite.json",
   "exportedAtUtc": "2026-11-09T16:42:53.320765+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e",
   "sourceCommit": "6de9e852ff272cfed3610196017e2d5166939d57",
   "currentSourcePackaged": true,
-  "releaseCandidateStatus": "pending-native-verification",
+  "releaseCandidateStatus": "native-suite-passed-diagnostics-and-manual-gates-open",
   "compiledDartLibraryBuildIdsVerified": true,
   "compiledDartLibraries": [
     {
@@ -55,5 +55,6 @@
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
     }
   ],
-  "priorRejectedCandidateBuild": 7
+  "priorRejectedCandidateBuild": 7,
+  "evidenceUpdatedAtUtc": "2026-11-09T17:39:35.710857+00:00"
 }

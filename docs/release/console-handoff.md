@@ -6,7 +6,8 @@ tracks, terms or publishing actions have been submitted by Codex.
 **Stop: build 7 is rejected and must not be uploaded.** Additional native
 permission testing found cancelled prayer alerts after exact-alarm refusal.
 Build 8 passes clean build/signing checks and all seven physical native release
-cases. Current received diagnostics and its matching packet remain pending.
+cases. Received diagnostics is blocked by exhausted free Test Lab quota;
+the matching packet remains pending.
 Wait for that packet before these upload steps.
 Public release remains unapproved.
 

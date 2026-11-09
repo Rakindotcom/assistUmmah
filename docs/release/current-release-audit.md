@@ -53,7 +53,7 @@ disposable cohort for that observation and the build 8 permission check was clea
 | Current native startup / legacy | Passed | Android 16 / 16 KB `matrix-w0p1lhvwpdtda` and Android 8 / 4 KB `matrix-53rtwv399shda`: original installed hash, syscall measurement, login/privacy/Back and clean Firebase initialization. |
 | Reproduced prayer permission path | Passed | `matrix-3gexv8paqgp1v`, Android 16 / 16 KB: refusal preserves 46 inexact alarms, grant yields 45 exact plus renewal, OS revocation restores approximate scheduling, opt-out clears queue. JUnit passed; disposable accounts cleaned. |
 | Current complete native suite | Passed | Physical Galaxy A15 matrix `matrix-dhm0jqrx3qsqa`: all seven cases passed in 408 seconds. Independent server checks confirmed task save, account isolation, nine deleted root documents, eight empty collections and deleted Auth identity. Both disposable accounts cleaned. Earlier clipped-control driver failure remains preserved. |
-| Current optional diagnostics | Pending | Requires explicit opt-in/crash/restart/opt-out and a correlated received build 8 server report. |
+| Current optional diagnostics | Blocked by free quota | `matrix-h8nwgv9phl5pa` was rejected as `INVALID / TEST_QUOTA_EXCEEDED`; no test executed. Earlier `matrix-1mraxtyu9ifqs` stopped after successful login because Pixel merged greeting/date semantics. Driver corrected in `92279bb`; original failure retained. No consent or crash occurred in that failed attempt. Current received-report proof remains open. No further runs submitted. |
 | Current screenshots | Passed | Five build 8 phone captures visually reviewed; ten native evidence frames refreshed. Source APK/AAB and capture hashes recorded. |
 | Backend / reviewer access | Prior live readback retained | Rules, public assets and authentication setup are unchanged by this local scheduling fix. No new backend deployment is required. |
 | Hosted CI | Externally blocked | Last inspected run 42594358975 had zero job steps and an explicit account billing-lock annotation. No hosted CI pass is claimed. |
@@ -70,8 +70,10 @@ must not be uploaded. Native evidence is invalidated when binary identity change
 
 ## Remaining gates
 
-1. Finish current build 8 received diagnostics and its disposable fixture cleanup,
-   then package the verified native evidence and fresh captures.
+1. After free testing quota becomes available, finish current build 8 received
+   diagnostics, then package the verified native evidence and fresh captures.
+   The corrected diagnostic run was rejected before execution. Firebase billing
+   remains disabled; changing the plan is not required or authorized.
 2. Verify remaining lifecycle/accessibility scope: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. A bounded
    forced-Doze observation or controlled-clock pass is narrower than these gates.

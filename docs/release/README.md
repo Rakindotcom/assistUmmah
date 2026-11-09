@@ -5,7 +5,8 @@ Updated 9 November 2026 (Asia/Dhaka).
 **Build 7 is rejected as the final candidate.** Additional exact-alarm refusal
 checks exposed cancelled prayer alerts despite an enabled setting. The source
 race is fixed; build 8 passes clean build checks and all seven native release cases
-on a physical Galaxy A15. Current received diagnostics and manual gates remain open.
+on a physical Galaxy A15. Received diagnostics is blocked by exhausted free Test
+Lab quota; manual gates remain open. No tests are running and no paid retry is planned.
 Do not publish the archived build 7 packet. See the [current audit](current-release-audit.md).
 
 ## Current release scope and decision
