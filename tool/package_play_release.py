@@ -23,6 +23,7 @@ def main():
     bundle = ROOT / verification['bundle']
     assert hashlib.sha256(bundle.read_bytes()).hexdigest() == verification['sha256'], 'Bundle changed: revalidate first'
     assert verification['signatureVerified'] and verification['apkZipAlignmentVerified']
+    assert verification.get('compiledDartLibraryBuildIdsVerified'), 'Packaged Dart code must match current compiler output'
     summary = json.loads((docs / 'verification-summary.json').read_text())
     assert summary['bundleSha256'] == verification['sha256'], 'Verification summary belongs to another bundle'
     smoke = json.loads((docs / 'signed-release-smoke.json').read_text())

@@ -13,6 +13,10 @@ if [[ ! -d "$ANDROID_HOME/platforms/android-36" ]]; then
   exit 1
 fi
 python3 tool/release_preflight.py
+# Flutter flavor builds can leave stale merged/stripped native intermediates.
+# Release exports always start clean; the bundle verifier also compares the
+# packaged Dart GNU build IDs with the current compiler output for every ABI.
+flutter clean
 flutter pub get --enforce-lockfile
 flutter analyze --no-pub
 flutter test --no-pub --concurrency=2
