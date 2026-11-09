@@ -4,7 +4,7 @@
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 14,
   "releaseInputs": "pass",
-  "nativeRuntimeTested": false,
+  "nativeRuntimeTested": true,
   "playConsoleVerified": false,
   "supportEmail": "teamframecipher@gmail.com",
   "billingPlanChanged": false,
@@ -31,23 +31,24 @@
     "current-native-physical-flows.json",
     "current-native-location-diagnostics.json",
     "current-native-suite.json",
-    "current-native-timezone.json"
+    "current-native-timezone.json",
+    "current-native-prayer-permissions.json"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": false,
   "formTextInputSimulated": false,
-  "signedReleaseStartupSmokePassed": false,
+  "signedReleaseStartupSmokePassed": true,
   "fullSignedReleaseFunctionalTested": false,
   "physicalDeviceTested": false,
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
   "bundleSha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
-  "signedReleaseLoginVisible": false,
-  "firebaseRegistrarErrorsAbsent": false,
+  "signedReleaseLoginVisible": true,
+  "firebaseRegistrarErrorsAbsent": true,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "The current signed bundle has no matching 16 KB startup proof. Other device passes are tracked separately in nativeFunctionalEvidence.",
+  "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json, current-native-legacy.json, current-native-prayer-permissions.json.",
   "releaseToolTestsPassed": 16,
   "universalApkSha256": "952f7dd3be95997d3898653e9052adff5461b30d20ff8609c9a6da9a4e89d707",
   "signingIdentityMatchesPriorTestApk": true,
@@ -61,7 +62,7 @@
   "backendDeploymentVerified": true,
   "existingReviewerLiveAccessVerified": true,
   "githubCiStatus": "blocked: run 42594358975 completed with failed jobs and no steps; account billing lock annotation verified separately",
-  "historicalVisualEvidenceScope": "Existing widget/profile captures retain their original provenance; they do not verify build 7.",
+  "historicalVisualEvidenceScope": "Existing prior-build widget/profile captures retain original provenance and do not verify build 8.",
   "historicalVisualEvidence": {
     "phoneCaptureCount": 6,
     "homeFontAndPreviewChecksPassed": 9,
@@ -72,12 +73,12 @@
   "firebaseTestLockSha256": "49b5a5ff7b79280a07d0693bf774bcbec1a1471e0ec9c447020de9001c706a2f",
   "uploadPacketGateVerified": false,
   "cloudSignedApkStartupVerified": false,
-  "currentNativeStartupCaptureCount": 0,
+  "currentNativeStartupCaptureCount": 2,
   "currentNativeStartupScope": "ARM64 Android 16 / 16 KB Test Lab startup and signed-out UI only. No credentials supplied; no full native signed-in flow or OS alert delivery claimed.",
-  "independentDeviceApkHashVerified": false,
-  "devicePageSizeSyscallVerified": false,
-  "bundledPrivacyNativeVerified": false,
-  "nativeSystemBackVerified": false,
+  "independentDeviceApkHashVerified": true,
+  "devicePageSizeSyscallVerified": true,
+  "bundledPrivacyNativeVerified": true,
+  "nativeSystemBackVerified": true,
   "nativePasswordLoginVerified": false,
   "nativeTaskPersistenceVerified": false,
   "nativeAccountSwitchIsolationVerified": false,
@@ -86,7 +87,7 @@
   "nativeDeletionRouteRevocationVerified": false,
   "nativeDeletionServerCleanupVerified": false,
   "disposableNativeFixturesCleaned": false,
-  "android8StartupVerified": false,
+  "android8StartupVerified": true,
   "nativeNotificationPermissionGrantVerified": false,
   "nativeDailyAlarmRegistrationVerified": false,
   "nativeSignOutAlarmCancellationVerified": false,
@@ -106,15 +107,15 @@
   "controlledCrashlyticsServerReceiptVerified": false,
   "nativePostCrashRestartVerified": false,
   "timedNotificationDeliveryScope": "Build 7 physical release suite passed controlled-clock delivery into Android System UI. Natural-clock latency, reboot and Doze remain unverified.",
-  "nativeStartupEvidenceScope": "The current signed bundle has no matching 16 KB startup proof. Other device passes are tracked separately in nativeFunctionalEvidence.",
+  "nativeStartupEvidenceScope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
   "nativeFunctionalEvidence": {
     "current-native-suite.json": {
       "current": false,
       "scope": null
     },
     "current-controlled-startup.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-flows.json": {
       "current": false,
@@ -125,8 +126,8 @@
       "scope": null
     },
     "current-native-legacy.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-physical.json": {
       "current": false,
@@ -153,8 +154,8 @@
       "scope": null
     },
     "current-native-prayer-permissions.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original signed build 8, Android 16 / ARM64 / 16 KB virtual device. Native exact access request refused: 46 approximate alarms persisted. OS grant produced 45 exact alarms plus one renewal; OS revocation and relaunch restored 46 approximate alarms. Explicit prayer opt-out cleared the app alarm queue. No timed prayer-delivery, reboot, all-OEM or Play-installed claim."
     },
     "current-native-location-diagnostics.json": {
       "current": false,
@@ -171,15 +172,18 @@
   "diagnosticsVerificationStatus": "not verified for build 8; prior candidate proof is historical",
   "diagnosticsObservationBlocked": false,
   "diagnosticsFixtureCleanupPending": false,
-  "evidenceReconciledAtUtc": "2026-11-09T15:55:41.694022+00:00",
+  "evidenceReconciledAtUtc": "2026-11-09T17:01:09.360302+00:00",
   "completedDiagnosticsFixturesCleaned": false,
   "lifecycleVerificationStatus": "not verified for build 8; prior candidate observation is historical",
   "lifecycleFixturesCleaned": false,
-  "prayerPermissionsVerificationStatus": "source fix included in build 8; native refusal/grant/revocation verification pending",
+  "prayerPermissionsVerificationStatus": "verified on original build 8: refusal, native approximate queue, OS exact grant, OS revocation/relaunch fallback and opt-out",
   "nativeNaturalClockDailyDeliveryVerified": false,
   "nativeForcedDozeDeliveryVerified": false,
-  "nativePrayerInexactDenialFallbackVerified": false,
-  "nativePrayerExactGrantVerified": false,
-  "nativePrayerExactRevocationRecoveryVerified": false,
-  "nativePrayerAlertOptOutVerified": false
+  "nativePrayerInexactDenialFallbackVerified": true,
+  "nativePrayerExactGrantVerified": true,
+  "nativePrayerExactRevocationRecoveryVerified": true,
+  "nativePrayerAlertOptOutVerified": true,
+  "historicalBuild7LifecycleFixturesCleaned": true,
+  "nativeReleaseSuiteStatus": "submitted: original build 8 seven-case physical suite; separate fresh fixture cohort",
+  "nativeReleaseSuitePendingMatrixId": "matrix-3q1unykrabi8f"
 }

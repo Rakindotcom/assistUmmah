@@ -32,8 +32,11 @@ expanded suite or verify this changed binary.
 
 See the [historical build 7 audit](historical-build7-audit.md). Its public evidence
 snapshot is retained locally. Build 7's separate natural-clock/forced-Doze
-observation (`matrix-1162untmdq5yk`) remains active and cannot prove build 8.
-Its disposable accounts must not be cleaned while the run is live.
+observation (`matrix-1162untmdq5yk`) completed without seeing delivery within
+12 minutes after due. This bounded result is inconclusive for intentionally
+inexact alarms under Doze and cannot prove build 8. See the
+[historical observation](historical-build7-natural-clock.json). The shared
+disposable cohort for that observation and the build 8 permission check was cleaned.
 
 ## Current evidence
 
@@ -46,8 +49,9 @@ Its disposable accounts must not be cleaned while the run is live.
 | Release tooling | Passed | 16 tests, including stale binary/clock, unobserved notification, OS alarm-window and incomplete-suite rejection. |
 | Signed AAB | Passed | API 36/minimum 24, ARM64, 64-bit alignment, no native test plugin/debug flags, and packaged Dart identities matching compiler outputs for all three ABIs. |
 | Universal APK | Passed | Existing upload certificate, signature and 16 KB ZIP alignment verified. |
-| Current native startup / legacy | Pending | Requires original build 8 installed-file hash and syscall measurements. Older receipts are historical. |
-| Current complete native suite | Pending | Requires all seven cases, including the reproduced exact-permission path, and independent server persistence/deletion checks. |
+| Current native startup / legacy | Passed | Android 16 / 16 KB `matrix-w0p1lhvwpdtda` and Android 8 / 4 KB `matrix-53rtwv399shda`: original installed hash, syscall measurement, login/privacy/Back and clean Firebase initialization. |
+| Reproduced prayer permission path | Passed | `matrix-3gexv8paqgp1v`, Android 16 / 16 KB: refusal preserves 46 inexact alarms, grant yields 45 exact plus renewal, OS revocation restores approximate scheduling, opt-out clears queue. JUnit passed; disposable accounts cleaned. |
+| Current complete native suite | Submitted | Physical matrix `matrix-3q1unykrabi8f`, fresh accounts. Requires all seven cases and independent server persistence/deletion checks; no suite pass yet. |
 | Current optional diagnostics | Pending | Requires explicit opt-in/crash/restart/opt-out and a correlated received build 8 server report. |
 | Current screenshots | Pending | Build 7 images cannot satisfy the build 8 packet provenance gate. |
 | Backend / reviewer access | Prior live readback retained | Rules, public assets and authentication setup are unchanged by this local scheduling fix. No new backend deployment is required. |

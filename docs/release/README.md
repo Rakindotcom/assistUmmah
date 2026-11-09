@@ -25,12 +25,11 @@ The production package remains `com.rakindotcom.ummah_assist`.
 
 The signed production AAB is generated at
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
-The historical test APK is `output/apk/rober-pothe-1.0.0-build7.apk`;
-its six-case physical release suite and Android 8 / Android 16 with 16 KB
-startup checks passed. Optional diagnostics opt-in/crash/restart/opt-out also
-passed, including an independently received report correlated to this build.
-Older receipts retain their original binary identity; only matching build 7
-receipts establish current behavior. Public release remains unapproved.
+Current test artifacts are `output/apk/rober-pothe-1.0.0-build8.apk` and
+`output/aab/rober-pothe-1.0.0-build8.aab`. Build 8 passes clean source/build checks,
+Android 8 / Android 16 with 16 KB startup, and native exact-alarm refusal, grant,
+revocation and opt-out checks. Its expanded complete release suite is pending.
+Only matching receipts establish current behavior. Public release remains unapproved.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -218,11 +217,9 @@ signing credentials are excluded from that packet.
    explicit opt-in, controlled crash, restart and opt-out; a correlated report was
    received. Preserve default-off consent and recheck it in the Play-installed
    build. Do not crash a real user's session.
-7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. The current
-   APK has matching ARM64 Android16/16 KB and Android8/4 KB startup
-   receipts, plus physical GalaxyA15 Android16 login,
-   task persistence, navigation and isolation. Reboot/Doze, long-session
-   performance and the Play-signed build still require verification.
+7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. Read the
+   current audit for exact binary/device coverage. Reboot/Doze, long-session
+   performance and the Play-installed build remain separate verification gates.
 8. Review the five current `current-store-captures/` phone images. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
