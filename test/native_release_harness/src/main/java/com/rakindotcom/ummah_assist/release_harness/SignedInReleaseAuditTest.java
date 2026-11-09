@@ -237,24 +237,11 @@ public final class SignedInReleaseAuditTest {
             assertTrue("Provider did not allow a controlled device clock", clockChanged);
             report.put("wallClockAdvancedPastInexactWindow", true);
             device.openNotification();
-            // Samsung's first-use shade guide hides notification nodes from
-            // accessibility even when the delivered notification is visible.
-            UiObject2 shadeGuide = device.findObject(By.res("com.android.systemui:id/qs_guide_container"));
-            if (shadeGuide != null) {
-                device.waitForIdle(1000); SystemClock.sleep(700);
-                UiObject2 dismissGuide = device.findObject(By.res("com.android.systemui:id/dialog_checked"));
-                assertNotNull("Samsung shade guide has no dismiss action", dismissGuide);
-                dismissGuide.click();
-                long guideDeadline = SystemClock.uptimeMillis() + 10000;
-                while (device.findObject(By.res("com.android.systemui:id/qs_guide_container")) != null
-                        && SystemClock.uptimeMillis() < guideDeadline) SystemClock.sleep(200);
-                assertNull("Samsung shade guide did not close",
-                        device.findObject(By.res("com.android.systemui:id/qs_guide_container")));
-                report.put("nativeNotificationShadeGuideDismissed", true);
-            }
+            device.waitForIdle(1000); SystemClock.sleep(700);
             deadline = SystemClock.uptimeMillis() + 90000;
             UiObject2 notification = null;
             while (notification == null && SystemClock.uptimeMillis() < deadline) {
+                dismissNotificationShadeGuideIfPresent();
                 notification = device.findObject(By.text("আজকের কাজ").pkg("com.android.systemui"));
                 if (notification == null) SystemClock.sleep(300);
             }
@@ -367,6 +354,24 @@ public final class SignedInReleaseAuditTest {
             try {capture("failure-private");} catch (Throwable ignored) { }
             throw new AssertionError("Native location/diagnostics audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
         } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
+    }
+
+    private void dismissNotificationShadeGuideIfPresent() throws Exception {
+        // Samsung's first-use shade guide hides notification nodes from
+        // accessibility even when the delivered notification is visible.
+        UiObject2 shadeGuide = device.findObject(By.res("com.android.systemui:id/qs_guide_container"));
+        if (shadeGuide != null) {
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            UiObject2 dismissGuide = device.findObject(By.res("com.android.systemui:id/dialog_checked"));
+            assertNotNull("Samsung shade guide has no dismiss action", dismissGuide);
+            dismissGuide.click();
+            long guideDeadline = SystemClock.uptimeMillis() + 10000;
+            while (device.findObject(By.res("com.android.systemui:id/qs_guide_container")) != null
+                    && SystemClock.uptimeMillis() < guideDeadline) SystemClock.sleep(200);
+            assertNull("Samsung shade guide did not close",
+                    device.findObject(By.res("com.android.systemui:id/qs_guide_container")));
+            report.put("nativeNotificationShadeGuideDismissed", true);
+        }
     }
 
     private void setField(String label, String value) throws Exception {

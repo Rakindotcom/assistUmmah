@@ -209,8 +209,8 @@ def reconcile_runtime_evidence(docs: Path, bundle_sha256: str) -> bool:
             'the stricter direct runtime receipt and full signed-in flows remain open.')
     elif not current:
         summary['nativeEvidenceScope'] = (
-            'Profile audit and captures belong to a prior app build; '
-            'the current signed bundle runtime is unverified.')
+            'The current signed bundle has no matching 16 KB startup proof. '
+            'Other device passes are tracked separately in nativeFunctionalEvidence.')
     else:
         summary['nativeEvidenceScope'] = (
             smoke.get('scope',
