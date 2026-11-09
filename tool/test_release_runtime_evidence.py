@@ -185,5 +185,71 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
             self.assertFalse(read_json(self.docs / 'verification-summary.json')['controlledCrashlyticsServerReceiptVerified'])
 
 
+    def test_natural_delivery_requires_observed_alarm_and_unchanged_clock(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'SUCCESS', 'junitTestsPassed': 1,
+                  'junitFailures': 0, 'junitErrors': 0,
+                  'dailyNativeAlarmRegistered': True, 'naturalClockNotificationPosted': True,
+                  'wallClockAdvanceAbsent': True, 'notificationOrBroadcastInjectionAbsent': True,
+                  'forcedDeepDozeConfirmed': True, 'deepDozeStateAtObservation': 'IDLE',
+                  'registeredDailyDueEpochMillis': 100000, 'observationAtEpochMillis': 112000,
+                  'observedDelayAfterDueMillis': 12000}
+        path = self.docs / 'current-native-lifecycle.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        summary = read_json(self.docs / 'verification-summary.json')
+        self.assertTrue(summary['nativeNaturalClockDailyDeliveryVerified'])
+        self.assertTrue(summary['nativeForcedDozeDeliveryVerified'])
+        for key, value in [('naturalClockNotificationPosted', False),
+                           ('wallClockAdvanceAbsent', False), ('junitFailures', 1),
+                           ('installedApkSha256', 'other'), ('observedDelayAfterDueMillis', 0),
+                           ('observationAtEpochMillis', 90000)]:
+            with self.subTest(changed=key):
+                write_json(path, {**record, key: value})
+                reconcile_runtime_evidence(self.docs, 'new')
+                summary = read_json(self.docs / 'verification-summary.json')
+                self.assertFalse(summary['nativeNaturalClockDailyDeliveryVerified'])
+                self.assertFalse(summary['nativeForcedDozeDeliveryVerified'])
+        # A notification after the device left Doze proves only the natural-clock case.
+        write_json(path, {**record, 'deepDozeStateAtObservation': 'ACTIVE'})
+        reconcile_runtime_evidence(self.docs, 'new')
+        summary = read_json(self.docs / 'verification-summary.json')
+        self.assertTrue(summary['nativeNaturalClockDailyDeliveryVerified'])
+        self.assertFalse(summary['nativeForcedDozeDeliveryVerified'])
+
+    def test_prayer_permission_flags_require_registered_alarm_window_counts(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'SUCCESS', 'junitTestsPassed': 1,
+                  'junitFailures': 0, 'junitErrors': 0,
+                  'nativeExactAccessRequestRefused': True,
+                  'nativePrayerInexactFallbackRegistered': True,
+                  'nativeExactAccessGrantedThroughOs': True,
+                  'nativePrayerExactSchedulingAfterGrant': True,
+                  'nativeExactAccessRevokedThroughOs': True,
+                  'nativePrayerInexactFallbackAfterRevocation': True,
+                  'nativePrayerOptOutCancelsAlarms': True,
+                  'deniedNativeAlarmCount': 48, 'deniedExactNativeAlarmCount': 0,
+                  'grantedNativeAlarmCount': 48, 'grantedExactNativeAlarmCount': 47,
+                  'revokedNativeAlarmCount': 48, 'revokedExactNativeAlarmCount': 0}
+        path = self.docs / 'current-native-prayer-permissions.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        summary = read_json(self.docs / 'verification-summary.json')
+        self.assertTrue(summary['nativePrayerInexactDenialFallbackVerified'])
+        self.assertTrue(summary['nativePrayerExactGrantVerified'])
+        self.assertTrue(summary['nativePrayerExactRevocationRecoveryVerified'])
+        for key, flag, value in [
+            ('deniedExactNativeAlarmCount', 'nativePrayerInexactDenialFallbackVerified', 1),
+            ('grantedExactNativeAlarmCount', 'nativePrayerExactGrantVerified', 0),
+            ('revokedExactNativeAlarmCount', 'nativePrayerExactRevocationRecoveryVerified', 1),
+            ('deniedNativeAlarmCount', 'nativePrayerInexactDenialFallbackVerified', 0),
+            ('grantedExactNativeAlarmCount', 'nativePrayerExactGrantVerified', True),
+        ]:
+            with self.subTest(changed=key):
+                write_json(path, {**record, key: value})
+                reconcile_runtime_evidence(self.docs, 'new')
+                self.assertFalse(read_json(self.docs / 'verification-summary.json')[flag])
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -88,7 +88,8 @@ def main():
                 'This Robo receipt belongs to an older binary. Current startup '
                 'evidence is in ../current-controlled-startup.json and '
                 '../signed-release-smoke.json.\n')
-    for name in ['current-native-suite.json', 'current-native-timezone.json']:
+    for name in ['current-native-suite.json', 'current-native-timezone.json',
+                 'current-native-lifecycle.json', 'current-native-prayer-permissions.json']:
         path = docs / name
         if path.exists():
             shutil.copy2(path, destination / name)

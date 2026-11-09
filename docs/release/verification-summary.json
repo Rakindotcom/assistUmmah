@@ -48,7 +48,7 @@
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
   "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json, current-native-flows.json, current-native-deletion.json, current-native-legacy.json, current-native-physical.json, current-native-physical-flows.json, current-native-reminders.json, current-native-timezone.json, current-native-delivery.json, current-native-location-diagnostics.json.",
-  "releaseToolTestsPassed": 13,
+  "releaseToolTestsPassed": 15,
   "universalApkSha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
   "signingIdentityMatchesPriorTestApk": true,
   "sourceCommit": "7cd3d349cc718f39e0f6c99fa6f5432ab1798703",
@@ -144,6 +144,14 @@
       "current": true,
       "scope": "Original app alarm reached Android System UI after controlled wall-clock advance; OS notification permission revoked and explicit opt-out cancelled alarms. No natural-clock deadline, reboot or Doze claim."
     },
+    "current-native-lifecycle.json": {
+      "current": false,
+      "scope": null
+    },
+    "current-native-prayer-permissions.json": {
+      "current": false,
+      "scope": null
+    },
     "current-native-location-diagnostics.json": {
       "current": true,
       "scope": "Original build 7 on physical Pixel 8: native location denial/manual Dhaka setup, explicit diagnostics opt-in, synthetic shell crash, restart and opt-out. JUnit passed; provider matrix FAILURE records the deliberate crash. Independently received report matched package, version and crash time; fixture identifiers/content and custom user fields absent. No real user session was crashed."
@@ -163,5 +171,13 @@
   "completedDiagnosticsFixturesCleaned": true,
   "lifecycleVerificationStatus": "submitted: bounded natural-clock daily reminder and forced Doze observation; result pending",
   "lifecyclePendingMatrixId": "matrix-1162untmdq5yk",
-  "lifecycleFixturesCleaned": false
+  "lifecycleFixturesCleaned": false,
+  "prayerPermissionsVerificationStatus": "submitted: Android 16 / 16 KB exact-alarm request refusal, OS grant/revocation and prayer opt-out; result pending",
+  "prayerPermissionsPendingMatrixId": "matrix-3bnkinvjl0m5f",
+  "nativeNaturalClockDailyDeliveryVerified": false,
+  "nativeForcedDozeDeliveryVerified": false,
+  "nativePrayerInexactDenialFallbackVerified": false,
+  "nativePrayerExactGrantVerified": false,
+  "nativePrayerExactRevocationRecoveryVerified": false,
+  "nativePrayerAlertOptOutVerified": false
 }

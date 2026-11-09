@@ -44,7 +44,7 @@ Firebase remains Spark. Play Console stays manual. Support:
 | Release input checks | Passed | Branding, font/license inputs, policy, deletion inventory, Spark-only config, OAuth configuration and signing inputs. |
 | Analyzer | Passed | Clean pipeline: no issues. |
 | Flutter regression | Passed | 529 passed; two existing browser-only future migration tests skipped. |
-| Python release tooling | Passed | 13 tests; real build 6 stale-AOT rejection reproduced. |
+| Python release tooling | Passed | 15 tests; real build 6 stale-AOT rejection reproduced. |
 | Clean signed AAB | Passed | 1.0.0+7, API 36/minimum 24, ARM64, 64-bit ELF alignment, debug/test exclusion and compiled Dart build-ID match. |
 | Signed universal APK | Passed | Exported from verified AAB; existing upload certificate, signature and 16 KB ZIP alignment verified. |
 | Native 16 KB startup | Passed | Post-boundary matrix `matrix-1v4ft6yd9muzy`: exact installed APK hash, native 16 KB pages, login/privacy/Back, initialized Firebase and clean registrar logs. |
@@ -75,6 +75,9 @@ packet passes its binary/startup/screenshot gates and remains preparation materi
 A separate natural-clock/Doze observation was submitted as
 `matrix-1162untmdq5yk`; it has no accepted delivery result yet. Its fresh
 disposable fixtures remain active until the matrix is confirmed terminal.
+The separate Android 16 / 16 KB prayer exact-alarm permission audit is
+`matrix-3bnkinvjl0m5f`; it uses account B on a different device and also remains
+pending. Neither new run is counted as a native delivery/permission pass yet.
 
 1. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. Controlled

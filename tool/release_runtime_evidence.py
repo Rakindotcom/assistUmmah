@@ -67,6 +67,16 @@ SCOPED_CLAIMS = {
         'controlledClockNativeNotificationDeliveryVerified': ('nativeNotificationShadeDelivery', 'wallClockAdvancedPastInexactWindow'),
         'nativeNotificationOsRevocationVerified': ('notificationPermissionRevokedThroughOs', 'optOutAfterOsRevocationCancelsAlarms'),
     },
+    'current-native-lifecycle.json': {
+        'nativeNaturalClockDailyDeliveryVerified': ('dailyNativeAlarmRegistered', 'naturalClockNotificationPosted', 'wallClockAdvanceAbsent', 'notificationOrBroadcastInjectionAbsent'),
+        'nativeForcedDozeDeliveryVerified': ('dailyNativeAlarmRegistered', 'naturalClockNotificationPosted', 'wallClockAdvanceAbsent', 'notificationOrBroadcastInjectionAbsent', 'forcedDeepDozeConfirmed'),
+    },
+    'current-native-prayer-permissions.json': {
+        'nativePrayerInexactDenialFallbackVerified': ('nativeExactAccessRequestRefused', 'nativePrayerInexactFallbackRegistered'),
+        'nativePrayerExactGrantVerified': ('nativeExactAccessGrantedThroughOs', 'nativePrayerExactSchedulingAfterGrant'),
+        'nativePrayerExactRevocationRecoveryVerified': ('nativeExactAccessRevokedThroughOs', 'nativePrayerInexactFallbackAfterRevocation'),
+        'nativePrayerAlertOptOutVerified': ('nativePrayerOptOutCancelsAlarms',),
+    },
     'current-native-location-diagnostics.json': {
         'nativeLocationDenialVerified': ('locationPermissionDenialHandled',),
         'nativeManualLocationFallbackVerified': ('manualLocationSavedWithoutPermission',),
@@ -86,6 +96,35 @@ def _proved(record: dict, path: str) -> bool:
         else:
             return False
     return value is True
+
+
+def _additional_native_proof(filename: str, flag: str, record: dict) -> bool:
+    """Require native timing/queue details in addition to human-readable flags."""
+    if filename not in {'current-native-lifecycle.json', 'current-native-prayer-permissions.json'}:
+        return True
+    if not (record.get('junitTestsPassed', 0) >= 1
+            and record.get('junitFailures') == 0 and record.get('junitErrors') == 0):
+        return False
+    if filename == 'current-native-lifecycle.json':
+        due, observed, delay = (record.get(key) for key in (
+            'registeredDailyDueEpochMillis', 'observationAtEpochMillis', 'observedDelayAfterDueMillis'))
+        if not all(type(value) is int for value in (due, observed, delay)):
+            return False
+        if due <= 0 or observed < due or delay < 0 or abs(observed - due - delay) > 5000:
+            return False
+        return (flag != 'nativeForcedDozeDeliveryVerified'
+                or record.get('deepDozeStateAtObservation') == 'IDLE')
+    transition = {
+        'nativePrayerInexactDenialFallbackVerified': ('denied', False),
+        'nativePrayerExactGrantVerified': ('granted', True),
+        'nativePrayerExactRevocationRecoveryVerified': ('revoked', False),
+    }.get(flag)
+    if transition is None:
+        return True
+    name, expected_exact = transition
+    total, exact = record.get(name + 'NativeAlarmCount'), record.get(name + 'ExactNativeAlarmCount')
+    return (type(total) is int and type(exact) is int and total > 0
+            and 0 <= exact <= total and (exact > 0 if expected_exact else exact == 0))
 
 
 def reconcile_functional_evidence(docs: Path, bundle_sha256: str, summary: dict) -> None:
@@ -112,7 +151,8 @@ def reconcile_functional_evidence(docs: Path, bundle_sha256: str, summary: dict)
                        and record.get('success') is True and passed)
         evidence[filename] = {'current': current, 'scope': record.get('scope') if current else None}
         for flag, fields in claims.items():
-            summary[flag] = current and all(_proved(record, field) for field in fields)
+            summary[flag] = (current and all(_proved(record, field) for field in fields)
+                             and _additional_native_proof(filename, flag, record))
     controlled = evidence['current-controlled-startup.json']['current']
     record = read_json(docs / 'current-controlled-startup.json') if controlled else {}
     summary['devicePageSizeSyscallVerified'] = bool(controlled and record.get('pageSize') == 16384

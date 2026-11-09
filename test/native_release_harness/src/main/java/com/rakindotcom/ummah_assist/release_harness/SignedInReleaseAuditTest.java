@@ -315,10 +315,12 @@ public final class SignedInReleaseAuditTest {
             while(device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button")))==null&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(200);
             assertNotNull("Expected Android notification permission",device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button"))));
             dismissNativePermissionDialog("permission_allow_button");
+            stage="exact access system settings request";
             deadline=SystemClock.uptimeMillis()+15000;
             while(!"com.android.settings".equals(device.getCurrentPackageName())&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(200);
             assertEquals("Exact access request did not open Android Settings","com.android.settings",device.getCurrentPackageName());
             device.pressBack();
+            stage="inexact prayer queue after exact refusal";
             reveal("সময় আনুমানিক হতে পারে");waitPrayerAlarmMode(false,"denied");
             assertTrue(device.executeShellCommand("cmd appops get "+APP+" SCHEDULE_EXACT_ALARM").contains("deny"));
             report.put("nativeExactAccessRequestRefused",true);report.put("nativePrayerInexactFallbackRegistered",true);
@@ -343,8 +345,10 @@ public final class SignedInReleaseAuditTest {
             report.put("success",true);save();
         } catch(Throwable failure) {
             report.put("success",false);report.put("failedStage",stage);report.put("failureType",failure.getClass().getSimpleName());save();
+            savePrivateText("prayer-permission-failure-alarm-dump.txt",device.executeShellCommand("dumpsys alarm"));
+            savePrivateText("prayer-permission-failure-private.txt",String.valueOf(failure.getMessage()));
             try{capture("failure-private");}catch(Throwable ignored){}
-            throw new AssertionError("Prayer permission audit failed at "+stage+" ("+failure.getClass().getSimpleName()+"). Inspect private artifacts.");
+            throw new AssertionError("Prayer permission audit failed at "+stage+" ("+failure.getClass().getSimpleName()+"). Inspect private artifacts.",failure);
         } finally {device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM "+originalMode);}
     }
 
