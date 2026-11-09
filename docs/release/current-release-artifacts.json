@@ -35,8 +35,8 @@
   "exportedAtUtc": "2026-11-09T07:39:25.474840+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e",
   "sourceCommit": "7cd3d349cc718f39e0f6c99fa6f5432ab1798703",
-  "currentSourcePackaged": true,
-  "releaseCandidateStatus": "core-and-diagnostics-verified-manual-release-gates-pending",
+  "currentSourcePackaged": false,
+  "releaseCandidateStatus": "rejected-prayer-permission-resume-race",
   "compiledDartLibraryBuildIdsVerified": true,
   "compiledDartLibraries": [
     {
@@ -54,5 +54,6 @@
       "buildId": "3d49a0ba7d5b1ca4a88e279813f6f27f",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
     }
-  ]
+  ],
+  "knownReleaseBlocker": "Exact-alarm refusal/resume can cancel newly enabled prayer alerts using an old persisted preference; replacement build 8 is being prepared."
 }

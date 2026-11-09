@@ -24,6 +24,9 @@ def write_json(path: Path, value: dict) -> None:
 
 # Each flag has a named, scoped device receipt. Missing or stale evidence is false.
 SCOPED_CLAIMS = {
+    'current-native-suite.json': {
+        'currentNativeReleaseSuitePassed': ('full', 'reminders', 'location', 'delivery', 'timezone', 'prayerpermissions', 'deletion'),
+    },
     'current-controlled-startup.json': {
         'independentDeviceApkHashVerified': ('installedApkHashMatches',),
         'bundledPrivacyNativeVerified': ('bundledPrivacyVisible',),

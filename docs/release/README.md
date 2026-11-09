@@ -2,6 +2,11 @@
 
 Updated 9 November 2026 (Asia/Dhaka).
 
+**Build 7 is rejected as the final candidate.** Additional exact-alarm refusal
+checks exposed cancelled prayer alerts despite an enabled setting. The source
+race is fixed; build 8 preparation and fresh native verification are pending.
+Do not publish the archived build 7 packet. See the [current audit](current-release-audit.md).
+
 ## Current release scope and decision
 
 The owner confirmed on 6 November 2026: **finish and verify the current app for
@@ -20,7 +25,7 @@ The production package remains `com.rakindotcom.ummah_assist`.
 
 The signed production AAB is generated at
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
-The corrected test APK is `output/apk/rober-pothe-1.0.0-build7.apk`;
+The historical test APK is `output/apk/rober-pothe-1.0.0-build7.apk`;
 its six-case physical release suite and Android 8 / Android 16 with 16 KB
 startup checks passed. Optional diagnostics opt-in/crash/restart/opt-out also
 passed, including an independently received report correlated to this build.
@@ -222,7 +227,7 @@ signing credentials are excluded from that packet.
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
    content rating, target audience, ads declaration, developer verification and
-   the [store listing](store-listing.md) in Console. Confirm candidate version code `7`
+   the [store listing](store-listing.md) in Console. Confirm candidate version code `8`
    is greater than every code already used for this app.
 10. If the personal developer account was created after 13 November 2023, complete
     the applicable 12-tester/14-day closed test and production-access application.

@@ -62,6 +62,7 @@ class ReminderService {
   int _generation = 0;
   int _dailyRevision = 0;
   int _prayerRevision = 0;
+  int _prayerPreferenceUpdates = 0;
   int _taskScope = 0, _taskRevision = 0;
   String? _taskOwner;
   bool _taskInitialCleanup = false;
@@ -293,6 +294,22 @@ class ReminderService {
 
   int get dailyRevision => _dailyRevision;
   int get prayerRevision => _prayerRevision;
+
+  bool get prayerPreferencesChanging => _prayerPreferenceUpdates > 0;
+
+  /// An explicit edit includes native permission UI, scheduling and persistence.
+  /// Resume refreshes must not enqueue the previous stored preference mid-edit.
+  /// Revisions also invalidate refresh reads started before the edit began.
+  Future<T> updatePrayerPreferences<T>(Future<T> Function() update) async {
+    _prayerPreferenceUpdates++;
+    _prayerRevision++;
+    try {
+      return await update();
+    } finally {
+      _prayerPreferenceUpdates--;
+      _prayerRevision++;
+    }
+  }
 
   Future<T> _enqueue<T>(Future<T> Function() action) {
     final operation = _queue.then((_) => action());

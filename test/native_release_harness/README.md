@@ -140,7 +140,8 @@ before the rendered frame reaches the screenshot compositor.
 
 `ReleaseCandidateSuite#verifyCurrentRelease` runs startup, signed-in flows,
 reminder consent/cancellation, manual location, controlled-clock delivery,
-in-process device timezone changes and deletion last in one device allocation.
+in-process device timezone changes, prayer exact-alarm permission transitions
+and deletion last in one device allocation.
 It clears only the disposable device's production app data between cases and
 resets only fixture A's reminder preferences through its authenticated owner
 API. No crash is injected by this suite. The opt-in crash-report case is run

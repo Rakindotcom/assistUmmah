@@ -431,39 +431,41 @@ class _PrayerPageState extends State<PrayerPage> with WidgetsBindingObserver {
   }) async {
     if (!widget.enableNotifications || _alertBusy || !_alertsLoaded) return;
     setState(() => _alertBusy = true);
-    try {
-      final result = await ReminderService.instance.syncPrayerAlerts(
-        config: _timeConfig,
-        settings: next,
-        requestPermission: requestPermission,
-      );
-      if (!result.permissionGranted && next.enabled) {
-        _showMessage('অ্যালার্ট চালু করতে নোটিফিকেশন অনুমতি দিন।');
-        return;
-      }
-      await PrayerAlertStore(widget.repository.uid).save(next);
-      if (!mounted) return;
-      setState(() {
-        _alertSettings = next;
-        _alertPermissionGranted = result.permissionGranted;
-        _alertExact = result.exact;
-        _scheduledAlertCount = result.scheduledCount;
-      });
-    } catch (_) {
+    await ReminderService.instance.updatePrayerPreferences(() async {
       try {
-        if (widget.enableNotifications) {
-          await ReminderService.instance.syncPrayerAlerts(
-            config: _timeConfig,
-            settings: _alertSettings,
-          );
+        final result = await ReminderService.instance.syncPrayerAlerts(
+          config: _timeConfig,
+          settings: next,
+          requestPermission: requestPermission,
+        );
+        if (!result.permissionGranted && next.enabled) {
+          _showMessage('অ্যালার্ট চালু করতে নোটিফিকেশন অনুমতি দিন।');
+          return;
         }
+        await PrayerAlertStore(widget.repository.uid).save(next);
+        if (!mounted) return;
+        setState(() {
+          _alertSettings = next;
+          _alertPermissionGranted = result.permissionGranted;
+          _alertExact = result.exact;
+          _scheduledAlertCount = result.scheduledCount;
+        });
       } catch (_) {
-        // The next app launch will retry the persisted settings.
+        try {
+          if (widget.enableNotifications) {
+            await ReminderService.instance.syncPrayerAlerts(
+              config: _timeConfig,
+              settings: _alertSettings,
+            );
+          }
+        } catch (_) {
+          // The next app launch will retry the persisted settings.
+        }
+        _showMessage('নামাজের অ্যালার্ট সংরক্ষণ করা যায়নি');
+      } finally {
+        if (mounted) setState(() => _alertBusy = false);
       }
-      _showMessage('নামাজের অ্যালার্ট সংরক্ষণ করা যায়নি');
-    } finally {
-      if (mounted) setState(() => _alertBusy = false);
-    }
+    });
   }
 
   void _updateSchedule(PrayerTimeConfig config) {

@@ -2,9 +2,10 @@
 
 Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+7**.
 
-**Build 7 passes source/static checks, Android 8 / 16 KB startup and the complete
-physical release suite. Received optional diagnostics verification also passed.
-Public release is not approved; builds 5 and 6 are rejected.**
+**Build 7 is rejected as the final candidate. Additional exact-alarm refusal
+checks exposed a foreground-refresh race that cancels enabled prayer alerts.
+The source regression is fixed and 20 related tests pass. Replacement build 8
+is being prepared and requires fresh binary-bound verification.**
 
 ## Scope and constraints
 
@@ -44,7 +45,7 @@ Firebase remains Spark. Play Console stays manual. Support:
 | Release input checks | Passed | Branding, font/license inputs, policy, deletion inventory, Spark-only config, OAuth configuration and signing inputs. |
 | Analyzer | Passed | Clean pipeline: no issues. |
 | Flutter regression | Passed | 529 passed; two existing browser-only future migration tests skipped. |
-| Python release tooling | Passed | 15 tests; real build 6 stale-AOT rejection reproduced. |
+| Python release tooling | Passed | 16 tests; real build 6 stale-AOT rejection reproduced. |
 | Clean signed AAB | Passed | 1.0.0+7, API 36/minimum 24, ARM64, 64-bit ELF alignment, debug/test exclusion and compiled Dart build-ID match. |
 | Signed universal APK | Passed | Exported from verified AAB; existing upload certificate, signature and 16 KB ZIP alignment verified. |
 | Native 16 KB startup | Passed | Post-boundary matrix `matrix-1v4ft6yd9muzy`: exact installed APK hash, native 16 KB pages, login/privacy/Back, initialized Firebase and clean registrar logs. |
@@ -78,9 +79,10 @@ disposable fixtures remain active until the matrix is confirmed terminal.
 The first Android 16 / 16 KB prayer exact-alarm audit
 (`matrix-3bnkinvjl0m5f`) failed before completing its assertions. The capture
 shows approximate alerts enabled; it does not establish the native queue check.
-A diagnostic rerun, `matrix-35x58ea7wzbqq`, retains the original failure cause
-and OS alarm dump. It uses account B on a separate device. Neither new audit
-is counted as a native delivery/permission pass yet.
+The diagnostic rerun, `matrix-35x58ea7wzbqq`, also failed and retained the
+original cause and OS alarm dump. This confirmed a production scheduling race.
+Neither permission run is counted as a pass. See the
+[historical build 7 audit](historical-build7-audit.md).
 
 1. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. Controlled
@@ -101,6 +103,6 @@ upgrade or quota bypass is authorized. Exact reset time has not been established
 - APK: `output/apk/rober-pothe-1.0.0-build7.apk`.
 - AAB: `output/aab/rober-pothe-1.0.0-build7.aab`.
 - SHA-256 sidecars accompany both; binaries remain outside Git.
-- Prepared packet: `dist/play-store/rober-pothe-1.0.0-7.zip`. Its validation
-  checks artifact identity and packet contents; it is not production approval.
-- Replace the previously shared build 6 APK with build 7 for further testing.
+- The earlier build 7 packet is archived under `dist/play-store/historical/`.
+  Its checks predate the permission race discovery. Do not upload it.
+- The replacement build 8 APK/AAB and packet are not exported yet.

@@ -3,16 +3,17 @@
 The owner chose to keep Console work manual. No Console settings, declarations,
 tracks, terms or publishing actions have been submitted by Codex.
 
-The build 7 preparation packet contains the validated AAB and matching
-core-suite and received-diagnostics evidence. Remaining lifecycle/accessibility
-and manual gates are listed in `current-release-audit.md`. This packet does
-not approve production publication. Follow the steps below for internal testing.
+**Stop: build 7 is rejected and must not be uploaded.** Additional native
+permission testing found cancelled prayer alerts after exact-alarm refusal.
+The source fix is prepared for build 8, whose clean build and binary-bound native
+verification are pending. Wait for its matching packet before these upload steps.
+Public release remains unapproved.
 
 ## Start with internal testing
 
 1. Open the official [Play Console](https://play.google.com/console/) and select
    or create the app. Keep the package `com.rakindotcom.ummah_assist`.
-2. This candidate uses version code **7** (`1.0.0+7`). Confirm that it is greater
+2. This candidate uses version code **8** (`1.0.0+8`). Confirm that it is greater
    than every code already used in Console. If it is not, rebuild
    with a new monotonically increasing code before uploading.
 3. Configure Play App Signing. Back up the local upload key and credentials to

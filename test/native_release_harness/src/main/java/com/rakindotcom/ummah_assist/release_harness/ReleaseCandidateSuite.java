@@ -27,6 +27,7 @@ public final class ReleaseCandidateSuite {
             run("location",()->new SignedInReleaseAuditTest().locationFallbackOnly());
             run("delivery",()->new SignedInReleaseAuditTest().scheduledDeliveryAndOsRevocation());
             run("timezone",()->new SignedInReleaseAuditTest().timezoneRefreshWithoutRestart());
+            run("prayerpermissions",()->new SignedInReleaseAuditTest().prayerExactAlarmPermissionTransitions());
             run("deletion",()->new SignedInReleaseAuditTest().deletionRecoveryAndRouteRevocation());
             report.put("success",true);save();
         }catch(Throwable failure){

@@ -251,5 +251,22 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
                 self.assertFalse(read_json(self.docs / 'verification-summary.json')[flag])
 
 
+    def test_complete_suite_requires_new_permission_case_and_current_binary(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'SUCCESS',
+                  **{name: True for name in ['full', 'reminders', 'location',
+                      'delivery', 'timezone', 'prayerpermissions', 'deletion']}}
+        path = self.docs / 'current-native-suite.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        self.assertTrue(read_json(self.docs / 'verification-summary.json')['currentNativeReleaseSuitePassed'])
+        for key, value in [('prayerpermissions', False), ('installedApkSha256', 'old'),
+                           ('sourceBundleSha256', 'old'), ('matrixOutcome', 'FAILURE')]:
+            with self.subTest(changed=key):
+                write_json(path, {**record, key: value})
+                reconcile_runtime_evidence(self.docs, 'new')
+                self.assertFalse(read_json(self.docs / 'verification-summary.json')['currentNativeReleaseSuitePassed'])
+
+
 if __name__ == '__main__':
     unittest.main()

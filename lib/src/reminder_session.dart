@@ -73,9 +73,14 @@ class ReminderSession {
               config: null, settings: PrayerAlertSettings());
           return true;
         }
+        if (service.prayerPreferencesChanging) return true;
         final config = await PrayerTimeStore(repository.uid).load();
         final settings = await PrayerAlertStore(repository.uid).load();
-        if (!current() || service.prayerRevision != prayerRevision) return true;
+        if (!current() ||
+            service.prayerPreferencesChanging ||
+            service.prayerRevision != prayerRevision) {
+          return true;
+        }
         await service.syncPrayerAlerts(config: config, settings: settings);
         return true;
       } catch (_) {
