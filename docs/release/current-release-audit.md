@@ -72,6 +72,9 @@ records were cleaned through the normal deletion protocol before fresh fixtures.
 The complete core suite, independent server persistence/deletion checks,
 received diagnostics and disposable fixture cleanup are complete. The generated
 packet passes its binary/startup/screenshot gates and remains preparation material.
+A separate natural-clock/Doze observation was submitted as
+`matrix-1162untmdq5yk`; it has no accepted delivery result yet. Its fresh
+disposable fixtures remain active until the matrix is confirmed terminal.
 
 1. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. Controlled

@@ -85,7 +85,7 @@
   "nativeDeletionRecoveryVerified": true,
   "nativeDeletionRouteRevocationVerified": true,
   "nativeDeletionServerCleanupVerified": true,
-  "disposableNativeFixturesCleaned": true,
+  "disposableNativeFixturesCleaned": false,
   "android8StartupVerified": true,
   "nativeNotificationPermissionGrantVerified": true,
   "nativeDailyAlarmRegistrationVerified": true,
@@ -159,5 +159,9 @@
   "diagnosticsVerificationStatus": "verified: native opt-in/crash/restart/opt-out, correlated received server report and disposable fixture cleanup",
   "diagnosticsObservationBlocked": false,
   "diagnosticsFixtureCleanupPending": false,
-  "evidenceReconciledAtUtc": "2026-11-09T15:55:41.694022+00:00"
+  "evidenceReconciledAtUtc": "2026-11-09T15:55:41.694022+00:00",
+  "completedDiagnosticsFixturesCleaned": true,
+  "lifecycleVerificationStatus": "submitted: bounded natural-clock daily reminder and forced Doze observation; result pending",
+  "lifecyclePendingMatrixId": "matrix-1162untmdq5yk",
+  "lifecycleFixturesCleaned": false
 }
