@@ -84,6 +84,18 @@ Select one method per fresh-device run:
   cancellation, and captures the loaded tasbih view. No app broadcast or
   notification is injected. This establishes a controlled clock-change path,
   not natural-clock latency, reboot/Doze or all OEM behavior.
+- `SignedInReleaseAuditTest#naturalClockDeliveryInDoze`: selects a real device
+  timezone with an upcoming existing 08:00/20:00/21:00 reminder, grants notification
+  permission through Android, and verifies the matching epoch in Android's alarm
+  queue. It backgrounds the unchanged app, unplugs the disposable device's battery
+  simulation and confirms forced deep Doze using Android's documented test commands.
+  It observes Notification Manager with the real clock until 12 minutes after due.
+  A successful driver cleanup alone does not prove delivery: require
+  `naturalClockNotificationPosted`, unchanged wall/elapsed clocks, and confirmed
+  deep Doze at observation. No-arrival is inconclusive outside that bounded
+  observation window because these reminders are intentionally inexact. The
+  finally block restores battery/idle/timezone settings. This does not reboot the
+  phone or establish delivery across all Android/OEM policies.
 - `SignedInReleaseAuditTest#locationFallbackAndControlledCrash`: denies Android
   location permission, saves manual Dhaka coordinates/timezone in the app,
   captures calculated prayer views, explicitly enables optional diagnostics,

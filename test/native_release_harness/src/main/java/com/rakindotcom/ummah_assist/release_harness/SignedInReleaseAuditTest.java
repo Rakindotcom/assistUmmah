@@ -283,6 +283,117 @@ public final class SignedInReleaseAuditTest {
         }
     }
 
+    /** Real elapsed-time delivery in documented forced Doze; no clock advance or injected event. */
+    @Test
+    public void naturalClockDeliveryInDoze() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        String originalZone = device.executeShellCommand("getprop persist.sys.timezone").trim();
+        String automaticZone = device.executeShellCommand("settings get global auto_time_zone").trim();
+        long initialWall = System.currentTimeMillis(), initialElapsed = SystemClock.elapsedRealtime();
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash);
+            report.put("installedApkSha256", hash);
+            report.put("pageSize", Os.sysconf(OsConstants._SC_PAGESIZE));
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(launch);
+            signIn(required(args,"accountAEmail"),required(args,"accountAPassword"));
+            stage = "select real timezone with upcoming daily reminder";
+            long now = System.currentTimeMillis(), due = Long.MAX_VALUE;
+            String zone = null, title = null;
+            for (String id : java.util.TimeZone.getAvailableIDs()) {
+                if (!id.contains("/")) continue;
+                for (int hour : new int[]{8,20,21}) {
+                    java.util.Calendar candidate = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone(id));
+                    candidate.setTimeInMillis(now); candidate.set(java.util.Calendar.HOUR_OF_DAY,hour);
+                    candidate.set(java.util.Calendar.MINUTE,0); candidate.set(java.util.Calendar.SECOND,0); candidate.set(java.util.Calendar.MILLISECOND,0);
+                    if (candidate.getTimeInMillis() < now + 120000) candidate.add(java.util.Calendar.DAY_OF_MONTH,1);
+                    if (candidate.getTimeInMillis() < due) {
+                        due = candidate.getTimeInMillis(); zone = id;
+                        title = hour == 8 ? "আজকের কাজ" : hour == 20 ? "নামাজের হিসাব" : "গ্রোথ চেকলিস্ট";
+                    }
+                }
+            }
+            assertNotNull(zone);
+            assertTrue("No suitable daily slot within the bounded cloud test", due-now < 30L*60*1000);
+            device.pressHome(); device.executeShellCommand("settings put global auto_time_zone 0");
+            device.executeShellCommand("cmd alarm set-timezone " + zone);
+            context.startActivity(launch); waitLabel("আসসালামু আলাইকুম",60000);
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            reveal("দৈনিক রিমাইন্ডার").click();
+            long deadline = SystemClock.uptimeMillis()+15000;
+            while (device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button"))) == null && SystemClock.uptimeMillis()<deadline) SystemClock.sleep(200);
+            dismissNativePermissionDialog("permission_allow_button");
+            assertEquals(PackageManager.PERMISSION_GRANTED,context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS",APP));
+            waitChecked("দৈনিক রিমাইন্ডার",true); waitAlarmHours(zone,"natural-initial-alarm-dump.txt");
+            assertTrue("Slot passed during setup",due-System.currentTimeMillis()>15000);
+            String alarmDump=device.executeShellCommand("dumpsys alarm");
+            assertTrue("Selected epoch missing from registered native alarms",alarmDump.contains("origWhen "+due));
+            savePrivateText("natural-registered-alarm-dump.txt",alarmDump);
+            report.put("registeredDailyDueEpochMillis",due);report.put("selectedDeviceTimezone",zone);
+            report.put("expectedNativeNotificationTitle",title);report.put("dailyNativeAlarmRegistered",true);save();
+            stage = "natural clock delivery while backgrounded in forced Doze";
+            device.pressHome();device.sleep();
+            device.executeShellCommand("dumpsys battery unplug");
+            device.executeShellCommand("dumpsys deviceidle force-idle");
+            assertEquals("IDLE",device.executeShellCommand("dumpsys deviceidle get deep").trim());
+            report.put("forcedDeepDozeConfirmed",true);save();
+            // Daily reminders are explicitly inexact. Observe up to 12 minutes after
+            // their due epoch; lack of arrival is inconclusive beyond this window.
+            long end = due+12L*60*1000;
+            boolean delivered=false;
+            while(System.currentTimeMillis()<end) {
+                String notifications=device.executeShellCommand("dumpsys notification --noredact");
+                String[] records=notifications.split("(?=NotificationRecord\\()");
+                for(String record:records) {
+                    int lineEnd=record.indexOf('\n');
+                    if(lineEnd>0 && record.substring(0,lineEnd).contains("pkg="+APP)
+                            && record.contains("android.title=String ("+title+")")) {
+                        delivered=true;savePrivateText("natural-delivered-notification-dump.txt",notifications);break;
+                    }
+                }
+                if(delivered)break;
+                assertTrue("Device wall clock jumped during observation",Math.abs((System.currentTimeMillis()-initialWall)-(SystemClock.elapsedRealtime()-initialElapsed))<5000);
+                SystemClock.sleep(5000);
+            }
+            report.put("naturalClockNotificationPosted",delivered);
+            report.put("deepDozeStateAtObservation",device.executeShellCommand("dumpsys deviceidle get deep").trim());
+            report.put("observationAtEpochMillis",System.currentTimeMillis());
+            report.put("wallClockAdvanceAbsent",Math.abs((System.currentTimeMillis()-initialWall)-(SystemClock.elapsedRealtime()-initialElapsed))<5000);
+            report.put("notificationOrBroadcastInjectionAbsent",true);
+            report.put("observationWindowAfterDueMinutes",12);
+            if(delivered) {
+                assertTrue("Notification preceded registered due epoch",System.currentTimeMillis()>=due-2000);
+                report.put("observedDelayAfterDueMillis",System.currentTimeMillis()-due);
+            }
+            else savePrivateText("natural-no-arrival-notification-dump.txt",device.executeShellCommand("dumpsys notification --noredact"));
+            device.executeShellCommand("dumpsys deviceidle unforce");device.executeShellCommand("dumpsys battery reset");device.wakeUp();device.pressMenu();
+            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            nav("আরও");reveal("সেটিংস ও রিপোর্ট").click();
+            signOut();report.put("success",true);save();
+        } catch(Throwable failure) {
+            report.put("success",false);report.put("failedStage",stage);report.put("failureType",failure.getClass().getSimpleName());save();
+            throw new AssertionError("Natural-clock audit failed at "+stage+" ("+failure.getClass().getSimpleName()+"). Inspect private artifacts.");
+        } finally {
+            device.executeShellCommand("dumpsys deviceidle unforce");device.executeShellCommand("dumpsys battery reset");device.wakeUp();
+            if(!originalZone.isEmpty())device.executeShellCommand("cmd alarm set-timezone "+originalZone);
+            if(automaticZone.matches("[01]"))device.executeShellCommand("settings put global auto_time_zone "+automaticZone);
+        }
+    }
+
+    private void savePrivateText(String name,String value) throws Exception {
+        try(FileOutputStream stream=new FileOutputStream(new File(output,name))) {
+            stream.write(value.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     /** Explicit diagnostics opt-in and synthetic crash on a disposable identity only. */
     @Test
     public void locationFallbackAndControlledCrash() throws Exception {
