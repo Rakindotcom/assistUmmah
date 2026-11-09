@@ -123,5 +123,7 @@
   "apkZipAlignmentVerified": true,
   "cloudRuntime16KbStartupVerified": false,
   "universalApkSignatureVerified": true,
-  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"
+  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify",
+  "compiledDartLibraryBuildIdsVerified": false,
+  "rejectedReason": "Packaged Dart GNU build ID differs from current compiler output"
 }

@@ -46,7 +46,7 @@
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
   "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json.",
-  "releaseToolTestsPassed": 9,
+  "releaseToolTestsPassed": 13,
   "universalApkSha256": "c650f24bf4ce08dd35a0233713fcea0c5d6f5e1f7987d623fe621dc96083c121",
   "signingIdentityMatchesPriorTestApk": true,
   "sourceCommit": "9df46cd731ed33333e465a5f4719a4ae471594b5",
@@ -149,5 +149,7 @@
   },
   "nativeDailyTimezoneIsolationVerified": false,
   "nativeDailyTimezoneRefreshVerified": false,
-  "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855"
+  "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855",
+  "currentSourcePackaged": false,
+  "releaseCandidateStatus": "rejected-stale-dart-snapshot"
 }

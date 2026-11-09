@@ -2,7 +2,24 @@
 
 Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+6**.
 
-**Native verification is in progress; public release is not approved.**
+**Builds 5 and 6 are rejected: their packaged Dart snapshots were stale.
+Build 7 is being prepared from a clean build. Public release is not approved.**
+
+The three build 4/5/6 AABs contain the same ARM64 Dart library SHA-256
+`33f42d4dfc0b672b069aad4e6f9dc396a34ea6deed27c449d68b0e5c323f864a`.
+The current compiler output has GNU build ID
+`b718850985217222f90d3cfa89f9a6c4`, but the packaged library has older ID
+`b7188509789f8b14f90d3cfa8a2d9fee`. Merged/stripped native intermediates were
+still dated 6 November. Thus the APK version/signature checks passed while the
+new Dart fixes were absent. The previous claimed source commit was an intended
+checkpoint, not proof of packaged source identity.
+
+The verifier now rejects this mismatch for every ABI, and the release script
+cleans generated build outputs before compiling. The new identity guard and its
+regressions pass; all 13 Python release-tool tests pass. **Do not install or
+publish the previously shared build 6 APK as the corrected candidate.**
+
+The results below describe build 6 only and do not establish build 7.
 
 ## Scope
 
@@ -69,7 +86,10 @@ were cleaned using the normal deletion protocol before new fixtures were made.
 - Resolve the hosted CI account lock before merging under a required-CI policy.
 - The build 6 Android 8 submission (`matrix-2miug650jbzvy`) was rejected with
   `TEST_QUOTA_EXCEEDED`. No test ran. Wait for the free quota reset; build 5
-  startup on Android 8 does not verify build 6. No billing upgrade is allowed.
+  startup on Android 8 does not verify build 6. No billing upgrade is allowed. [Firebase documents](https://firebase.google.com/docs/test-lab/usage-quotas-pricing)
+  separate daily Spark limits of ten virtual and five physical test runs;
+  these are project-wide across test types. The exact reset time has not been
+  established from the documented quota response.
 
 The APK/AAB paths and hashes are recorded in
 [the artifact receipt](current-release-artifacts.json). Binaries
