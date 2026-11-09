@@ -280,6 +280,76 @@ public final class SignedInReleaseAuditTest {
         }
     }
 
+    /** Explicit diagnostics opt-in and synthetic crash on a disposable identity only. */
+    @Test
+    public void locationFallbackAndControlledCrash() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash); report.put("installedApkSha256", hash);
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); context.startActivity(launch);
+            signIn(required(args, "accountAEmail"), required(args, "accountAPassword"));
+            stage = "location permission denial";
+            reveal("স্থান সেট করুন").click(); waitLabel("নামাজের সময় সেট করুন", 15000);
+            reveal("বর্তমান অবস্থান ব্যবহার করুন").click();
+            long deadline = SystemClock.uptimeMillis() + 15000; UiObject2 deny = null;
+            while (deny == null && SystemClock.uptimeMillis() < deadline) {
+                deny = device.findObject(By.res(Pattern.compile(".*:id/permission_deny_button"))); SystemClock.sleep(200);
+            }
+            assertNotNull("Expected Android location permission dialog", deny); deny.click();
+            waitContains("অবস্থান পাওয়া যায়নি। হাতে স্থান লিখতে পারেন।", 15000);
+            assertEquals(PackageManager.PERMISSION_DENIED, context.getPackageManager().checkPermission("android.permission.ACCESS_FINE_LOCATION", APP));
+            report.put("locationPermissionDenialHandled", true);
+            stage = "manual location fallback";
+            setField("স্থানের নাম", "ঢাকা"); setField("অক্ষাংশ", "23.8103"); setField("দ্রাঘিমাংশ", "90.4125"); setField("টাইম জোন", "Asia/Dhaka");
+            reveal("সময় সংরক্ষণ করুন").click(); waitAbsent("নামাজের সময় সেট করুন", 20000);
+            waitContains("ঢাকা", 15000); report.put("manualLocationSavedWithoutPermission", true);
+            device.executeShellCommand("wm size 720x1280"); device.executeShellCommand("wm density 320");
+            capture("store-01-home-configured");
+            nav("নামাজ"); waitLabel("নামাজ ট্র্যাকিং", 20000); waitContains("ঢাকা", 15000); capture("store-02-prayer-configured");
+            nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitLabel("যিকিরসমূহ", 20000); capture("store-05-dhikr");
+            device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");
+            stage = "explicit diagnostic consent";
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); UiObject2 diagnostics = reveal("সমস্যার রিপোর্ট পাঠান");
+            assertFalse("Diagnostics must start disabled", diagnostics.isChecked()); diagnostics.click(); waitChecked("সমস্যার রিপোর্ট পাঠান", true);
+            report.put("explicitDiagnosticsOptInBeforeCrash", true);
+            stage = "controlled synthetic native crash";
+            report.put("controlledCrashAtEpochMillis", System.currentTimeMillis()); save();
+            String response = device.executeShellCommand("am crash --user current " + APP);
+            assertFalse("Android rejected the controlled crash", response.contains("Error") || response.contains("Unknown"));
+            SystemClock.sleep(1500); device.pressBack(); context.startActivity(launch);
+            waitLabel("আসসালামু আলাইকুম", 60000); report.put("postCrashRestartSucceeded", true);
+            // Give the SDK a bounded foreground interval to enqueue/upload the native report.
+            SystemClock.sleep(45000);
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); reveal("সমস্যার রিপোর্ট পাঠান"); waitChecked("সমস্যার রিপোর্ট পাঠান", true);
+            reveal("সমস্যার রিপোর্ট পাঠান").click(); waitChecked("সমস্যার রিপোর্ট পাঠান", false);
+            report.put("diagnosticsDisabledAfterTest", true); signOut();
+            report.put("success", true); save();
+        } catch (Throwable failure) {
+            report.put("success", false); report.put("failedStage", stage); report.put("failureType", failure.getClass().getSimpleName()); save();
+            try {capture("failure-private");} catch (Throwable ignored) { }
+            throw new AssertionError("Native location/diagnostics audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+        } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
+    }
+
+    private void setField(String label, String value) {
+        reveal(label);
+        UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP).descContains(label));
+        if (field == null) {
+            UiObject2 node = find(label, true);
+            field = node == null ? null : node.getParent().findObject(By.clazz("android.widget.EditText"));
+        }
+        assertNotNull("Missing manual location field", field);
+        field.click(); field.setText(value); device.pressBack();
+    }
+
     private boolean appAlarmPresent() throws Exception {
         String alarms = device.executeShellCommand("dumpsys alarm");
         // Only inspect pending alarm entries; historical Alarm Stats survive cancellation.

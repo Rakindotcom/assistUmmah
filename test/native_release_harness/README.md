@@ -84,12 +84,18 @@ Select one method per fresh-device run:
   cancellation, and captures the loaded tasbih view. No app broadcast or
   notification is injected. This establishes a controlled clock-change path,
   not natural-clock latency, reboot/Doze or all OEM behavior.
+- `SignedInReleaseAuditTest#locationFallbackAndControlledCrash`: denies Android
+  location permission, saves manual Dhaka coordinates/timezone in the app,
+  captures calculated prayer views, explicitly enables optional diagnostics,
+  asks Android to crash only the disposable app process, relaunches for upload,
+  then disables diagnostics and signs out. A successful driver run alone is
+  not proof of a received report; independently check Crashlytics afterward.
 - `SignedInReleaseAuditTest#deletionRecoveryAndRouteRevocation`: opens an
   unsaved task dialog, creates A's deletion marker through the ordinary owner
   REST API, checks private-route revocation and recovery, completes deletion
   using the app's password confirmation, then cold-starts and checks B.
 
-Both require `expectedApkSha256` and runtime-only arguments `accountAEmail`,
+Signed-in methods require `expectedApkSha256` and runtime-only arguments `accountAEmail`,
 `accountAPassword`, `accountATask`, `accountBEmail`, `accountBPassword`,
 `accountBTask`. Deletion also requires `firebaseApiKey` and `accountAUid`.
 Only disposable `teamframecipher+native-` fixture aliases are accepted; deletion
