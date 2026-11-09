@@ -1,5 +1,5 @@
-# Build 8 authenticated native evidence
+# Current-name native captures pending
 
-Original Galaxy A15 frames from successful seven-case matrix matrix-dhm0jqrx3qsqa. The app used disposable fabricated accounts through its normal backend. Source binary identities and capture hashes are recorded in capture-provenance.json. Both disposable accounts are cleaned.
+The public name changed in build 9. Earlier captures were archived locally and remain recoverable in Git history; they must not be used as current store artwork or new-binary runtime evidence.
 
-Selected UI hierarchies exclude fixture credentials and identifiers. Original device dimensions are retained. The five visually reviewed phone exports are in ../current-store-captures/. These captures do not establish Play-installed behavior.
+Current-name Flutter phone previews are in ../../ui-screenshots/deen-o-duniya-mobile.png and the corresponding auth/signup previews. They are not native or Play-installed screenshots. Fresh native captures await available free device quota.

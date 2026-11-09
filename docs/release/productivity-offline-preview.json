@@ -1,5 +1,5 @@
 {
-  "apk": "output/apk/rober-pothe-productivity-offline-preview-2026-11-06.apk",
+  "apk": null,
   "sha256": "3bacfbb95c85ae04b95ca26391d89ab0adf58f40ad7c776da6e7ba43779fee18",
   "package": "com.rakindotcom.ummah_assist.preview",
   "entrypoint": "lib/main_productivity_preview.dart",
@@ -9,5 +9,6 @@
   "nativeTestPluginAbsent": true,
   "nativeRuntimeVerified": false,
   "sourceCommit": "d78582677a9523c0de475723365661e6abc14383",
-  "verifiedAtUtc": "2026-11-06T06:27:22.943418+00:00"
+  "verifiedAtUtc": "2026-11-06T06:27:22.943418+00:00",
+  "artifactStatus": "Historical preview archived locally after the public name change; not a current download."
 }

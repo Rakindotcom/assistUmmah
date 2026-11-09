@@ -1,22 +1,22 @@
 {
-  "verifiedAtUtc": "2026-11-09T16:42:53.320765+00:00",
+  "verifiedAtUtc": "2026-11-09T18:06:42.442828+00:00",
   "entrypoint": "lib/main.dart",
   "flavor": "production",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 8,
+  "versionCode": 9,
   "targetSdk": 36,
   "minSdk": 24,
   "artifacts": {
     "apk": {
-      "path": "output/apk/rober-pothe-1.0.0-build8.apk",
-      "sha256": "952f7dd3be95997d3898653e9052adff5461b30d20ff8609c9a6da9a4e89d707",
+      "path": "output/apk/deen-o-duniya-1.0.0-build9.apk",
+      "sha256": "df7c1a1be307718a8ac951d94cf294d968461303d15dd186bf12ef71729437df",
       "bytes": 64633779
     },
     "aab": {
-      "path": "output/aab/rober-pothe-1.0.0-build8.aab",
-      "sha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
-      "bytes": 63647031
+      "path": "output/aab/deen-o-duniya-1.0.0-build9.aab",
+      "sha256": "3e682f0bc9f6885c092c5a037f772fd70c81a7353aa7e63062144f01513250ad",
+      "bytes": 63647073
     }
   },
   "signatureMatchesExistingUploadCertificate": true,
@@ -25,36 +25,37 @@
   "anekBanglaAndFontLicensesBundled": true,
   "native64BitElfAlignmentAtLeast16KiB": true,
   "universalApkZipAlignment16KiB": true,
-  "nativeRuntimeVerified": true,
+  "nativeRuntimeVerified": false,
   "playInstalledBuildVerified": false,
-  "scope": "Clean build 8 passes source/static/signing checks, Android 8 / Android 16 with 16 KB startup, all seven physical release cases, independent server save/isolation/deletion checks and reviewed current captures. Received diagnostics is blocked by free testing quota; manual release gates remain open.",
-  "nativeRuntimeScope": "Original signed build 8, Android 16 / 16 KB installed-file hash/syscall, login/privacy/Back; Android 8 / 4 KB startup verified separately. Authenticated exact-permission audit is separate from the complete release suite.",
-  "nativeRuntimeEvidence": "current-controlled-startup.json",
-  "independentDeviceApkHashVerified": true,
-  "nativeFunctionalEvidence": "current-native-suite.json",
-  "exportedAtUtc": "2026-11-09T16:42:53.320765+00:00",
+  "scope": "Renamed build 9: clean analyzer, 51 affected app/privacy/backup checks, five mobile sign-in layout checks, correct packaged launcher label and privacy content, matching signing identity, 16 KB alignment, and compiler-to-packaged Dart identities. Fresh native tests remain blocked by free provider quota.",
+  "nativeRuntimeScope": "Previous binary receipts are historical and do not establish runtime behavior for build 9.",
+  "nativeRuntimeEvidence": null,
+  "independentDeviceApkHashVerified": false,
+  "nativeFunctionalEvidence": null,
+  "exportedAtUtc": "2026-11-09T18:06:42.442828+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e",
-  "sourceCommit": "6de9e852ff272cfed3610196017e2d5166939d57",
+  "sourceCommit": "59e09371a4fe9c31bb0c0b360b87e760ef3e52af",
   "currentSourcePackaged": true,
-  "releaseCandidateStatus": "native-suite-passed-diagnostics-and-manual-gates-open",
+  "releaseCandidateStatus": "renamed-build-awaiting-native-verification",
   "compiledDartLibraryBuildIdsVerified": true,
   "compiledDartLibraries": [
     {
       "abi": "arm64-v8a",
-      "buildId": "b7188509848d5973f90d3cfaa3eba974",
+      "buildId": "b7188509848d5973f90d3cfac813e63c",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/arm64-v8a/app.so"
     },
     {
       "abi": "armeabi-v7a",
-      "buildId": "3931ddda8a0552cd0e1bf313c433b06c",
+      "buildId": "3931ddda8a0552cd0e1bf31364f82ce1",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/armeabi-v7a/app.so"
     },
     {
       "abi": "x86_64",
-      "buildId": "3d49a0ba9b0c567ba88e279848432ed6",
+      "buildId": "3d49a0ba9b0c567ba88e27982efdeb3c",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
     }
   ],
   "priorRejectedCandidateBuild": 7,
-  "evidenceUpdatedAtUtc": "2026-11-09T17:39:35.710857+00:00"
+  "evidenceUpdatedAtUtc": "2026-11-09T18:06:42.442828+00:00",
+  "appName": "দ্বীন ও দুনিয়া"
 }

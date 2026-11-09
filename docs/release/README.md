@@ -1,13 +1,11 @@
-# Release preparation — রবের পথে
+# Release preparation — দ্বীন ও দুনিয়া
 
-Updated 9 November 2026 (Asia/Dhaka).
+Updated 10 November 2026 (Asia/Dhaka).
 
-**Build 7 is rejected as the final candidate.** Additional exact-alarm refusal
-checks exposed cancelled prayer alerts despite an enabled setting. The source
-race is fixed; build 8 passes clean build checks and all seven native release cases
-on a physical Galaxy A15. Received diagnostics is blocked by exhausted free Test
-Lab quota; manual gates remain open. No tests are running and no paid retry is planned.
-Do not publish the archived build 7 packet. See the [current audit](current-release-audit.md).
+**Current candidate: দ্বীন ও দুনিয়া 1.0.0+9.** The public name is updated
+across the app, platform labels, public pages and store artwork. The earlier
+build 8 native pass is historical for this changed binary. Fresh native tests
+are blocked by exhausted free Test Lab quota. See the [current audit](current-release-audit.md).
 
 ## Current release scope and decision
 
@@ -27,13 +25,11 @@ The production package remains `com.rakindotcom.ummah_assist`.
 
 The signed production AAB is generated at
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
-Current test artifacts are `output/apk/rober-pothe-1.0.0-build8.apk` and
-`output/aab/rober-pothe-1.0.0-build8.aab`. Build 8 passes clean source/build checks,
-Android 8 / Android 16 with 16 KB startup, and native exact-alarm refusal, grant,
-revocation and opt-out checks. Its expanded seven-case physical release suite passed
-in `matrix-dhm0jqrx3qsqa`, including independent server persistence, isolation and
-deletion checks. The disposable suite accounts are cleaned.
-Only matching receipts establish current behavior. Public release remains unapproved.
+Current artifacts are `output/apk/deen-o-duniya-1.0.0-build9.apk` and
+`output/aab/deen-o-duniya-1.0.0-build9.aab`. They require their own native
+verification; earlier binary receipts cannot approve this build.
+Public release remains unapproved. Store screenshots displaying the previous
+name must be replaced before submission.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran
@@ -177,7 +173,7 @@ artifact hash changes. A Robo success does not satisfy the installed-hash gate. 
 UI Automator driver can supply an independent installed-file hash and native
 page-size measurement without modifying the production APK. The upload packager requires all four records to agree.
 
-With the dedicated `rober_pothe_audit_16k` emulator running as `emulator-5556`,
+With the dedicated `android_release_audit_16k` emulator running as `emulator-5556`,
 run `python3 tool/smoke_android_release.py`. The script clears only that
 emulator's app data, compares the installed APK hash, and requires a ready
 login screen, Firebase initialization, and no registrar error in the log.

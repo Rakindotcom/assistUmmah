@@ -3,19 +3,17 @@
 The owner chose to keep Console work manual. No Console settings, declarations,
 tracks, terms or publishing actions have been submitted by Codex.
 
-**Stop: build 7 is rejected and must not be uploaded.** Additional native
-permission testing found cancelled prayer alerts after exact-alarm refusal.
-Build 8 passes clean build/signing checks and all seven physical native release
-cases. Received diagnostics is blocked by exhausted free Test Lab quota;
-the matching packet remains pending.
-Wait for that packet before these upload steps.
+**Current candidate: দ্বীন ও দুনিয়া 1.0.0+9.** Previous candidates are
+superseded. The renamed binary requires fresh native verification, which is
+currently blocked by exhausted free Test Lab quota. Do not reuse earlier store
+screenshots or treat an earlier binary's pass as this build's approval.
 Public release remains unapproved.
 
 ## Start with internal testing
 
 1. Open the official [Play Console](https://play.google.com/console/) and select
    or create the app. Keep the package `com.rakindotcom.ummah_assist`.
-2. This candidate uses version code **8** (`1.0.0+8`). Confirm that it is greater
+2. This candidate uses version code **9** (`1.0.0+9`). Confirm that it is greater
    than every code already used in Console. If it is not, rebuild
    with a new monotonically increasing code before uploading.
 3. Configure Play App Signing. Back up the local upload key and credentials to
@@ -37,7 +35,7 @@ Public release remains unapproved.
 
 | Field | Value/source |
 | --- | --- |
-| Name | রবের পথে |
+| Name | দ্বীন ও দুনিয়া |
 | Default language | Bengali (Bangladesh) |
 | Category | Lifestyle (suggested) |
 | Price | Free |

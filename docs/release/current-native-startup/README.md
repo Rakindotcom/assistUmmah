@@ -1,3 +1,5 @@
-# Build 8 native startup captures
+# Current-name native captures pending
 
-Original signed-out captures from matrix-w0p1lhvwpdtda (Android 16, ARM64, 16 KB). Installed APK hash verified independently. No account credentials supplied.
+The public name changed in build 9. Earlier captures were archived locally and remain recoverable in Git history; they must not be used as current store artwork or new-binary runtime evidence.
+
+Current-name Flutter phone previews are in ../../ui-screenshots/deen-o-duniya-mobile.png and the corresponding auth/signup previews. They are not native or Play-installed screenshots. Fresh native captures await available free device quota.

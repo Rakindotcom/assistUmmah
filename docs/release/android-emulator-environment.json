@@ -9,14 +9,14 @@
   "screenWidth": 720,
   "screenHeight": 1280,
   "physicalDevice": false,
-  "productionAppRuntimeVerified": true,
-  "productionRuntimeBundleSha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
-  "productionRuntimeScope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
+  "productionAppRuntimeVerified": false,
+  "productionRuntimeBundleSha256": null,
+  "productionRuntimeScope": "Current signed bundle has no successful native runtime smoke.",
   "historicalHardwareAcceleration": "KVM",
   "currentRuntimeAttempt": {
     "attemptedAtUtc": "2026-11-06T16:45:34.725058+00:00",
     "hardwareAcceleration": "TCG software (-accel off); /dev/kvm unavailable",
-    "avd": "rober_pothe_audit_16k",
+    "avd": "android_release_audit_16k",
     "serial": "emulator-5556",
     "adbConnected": true,
     "adbReportedPageSize": 16384,
@@ -31,11 +31,8 @@
     "emulatorStoppedAfterDiagnosis": true
   },
   "cloudProductionStartupVerified": false,
-  "productionRuntimeEnvironment": {
-    "provider": "Firebase Test Lab",
-    "architecture": "arm64-v8a",
-    "androidApi": 36,
-    "pageSize": 16384
-  },
-  "localImageScope": "Top-level image/architecture fields describe the historical local emulator image. Current production runtime metadata is under productionRuntimeEnvironment."
+  "productionRuntimeEnvironment": null,
+  "localImageScope": "Top-level image/architecture fields describe the historical local emulator image. Current production runtime metadata is under productionRuntimeEnvironment.",
+  "avd": null,
+  "avdIdentifierArchived": true
 }

@@ -1,0 +1,70 @@
+{
+  "appName": "দ্বীন ও দুনিয়া",
+  "verifiedAtUtc": "2026-11-09T18:08:19.984780+00:00",
+  "sourceCommit": "59e09371a4fe9c31bb0c0b360b87e760ef3e52af",
+  "versionCode": 9,
+  "trackedTextPreviousNameMatches": 0,
+  "androidMainAndPreviewLabelsVerified": true,
+  "iosDisplayAndBundleNamesVerified": true,
+  "webDocumentAndPwaNamesVerified": true,
+  "packagedAndroidLabelVerified": true,
+  "bundledPrivacyNameVerified": true,
+  "affectedFlutterTestsPassed": 51,
+  "mobileSignInLayoutChecksPassed": 5,
+  "phonePreviewRendererPassed": true,
+  "fullFlutterSuiteRerun": false,
+  "anekBanglaRetained": true,
+  "earlierBackupVersionsReadable": true,
+  "hostingDeployed": true,
+  "publicNameReadbackVerified": [
+    "/",
+    "/privacy",
+    "/delete-account",
+    "/404.html"
+  ],
+  "website": "https://assistummah.web.app/",
+  "firebaseBillingDisabledAtDeployment": true,
+  "packageAndSigningIdentityPreserved": true,
+  "sourceApkSha256": "df7c1a1be307718a8ac951d94cf294d968461303d15dd186bf12ef71729437df",
+  "sourceBundleSha256": "3e682f0bc9f6885c092c5a037f772fd70c81a7353aa7e63062144f01513250ad",
+  "nativeRuntimeVerified": false,
+  "nativeVerificationLimit": "Earlier binary receipts are historical; free device test quota exhausted. No new device test submitted for build 9.",
+  "previews": [
+    {
+      "path": "docs/ui-screenshots/deen-o-duniya-auth-mobile.png",
+      "sha256": "3a9af9158b23207a6a328a50356035f8d60dc234b29c934b661576310aed0524",
+      "width": 780,
+      "height": 1688,
+      "phoneViewportLogical": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "Flutter widget render, not native device capture",
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/ui-screenshots/deen-o-duniya-mobile.png",
+      "sha256": "3d880afd3b7c5bc984b5fcb49cfcaf35b17336675ca931bec616d61cd708dcfc",
+      "width": 780,
+      "height": 1688,
+      "phoneViewportLogical": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "Flutter widget render, not native device capture",
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/ui-screenshots/deen-o-duniya-signup-mobile.png",
+      "sha256": "5b5c2bb2a5d481d224defbb374bd4394cb9602f08f3b268d3e4ecce807dacd19",
+      "width": 780,
+      "height": 1688,
+      "phoneViewportLogical": {
+        "width": 390,
+        "height": 844
+      },
+      "kind": "Flutter widget render, not native device capture",
+      "visuallyReviewed": true
+    }
+  ]
+}

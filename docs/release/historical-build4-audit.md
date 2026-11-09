@@ -63,11 +63,9 @@ does not itself claim authenticated-home or physical-device coverage. The separa
 
 ## Delivered artifacts
 
-- APK: `output/apk/rober-pothe-1.0.0-build4.apk` — installable signed production
-  candidate for testing, not the offline productivity preview.
-- AAB: `output/aab/rober-pothe-1.0.0-build4.aab` — signed candidate; do not promote
-  until the remaining gates pass.
-- SHA-256 sidecars accompany both files. Binaries remain outside Git.
+- Build 4 APK/AAB and their SHA-256 sidecars are archived locally as
+  superseded artifacts. They are not current downloads and must not be published.
+  Binaries remain outside Git.
 - The strict Play upload packager was checked to reject stale native proof.
   The current independent installed-hash/page-size receipt now satisfies its
   startup gate. The resulting packet is for manual internal-test preparation;

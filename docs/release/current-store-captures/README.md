@@ -1,5 +1,5 @@
-# Build 8 phone captures
+# Current-name native captures pending
 
-Five original Galaxy A15 viewports at 720×1280: configured home/prayer, growth, Quran tracking and tasbih. The complete source suite passed: matrix-dhm0jqrx3qsqa.
+The public name changed in build 9. Earlier captures were archived locally and remain recoverable in Git history; they must not be used as current store artwork or new-binary runtime evidence.
 
-RGB exports preserve every original pixel. Source and export hashes are recorded in export-verification.json. The app used disposable fabricated accounts through its normal backend. These are current native UI captures; Play-installed/Console previews remain separate manual checks.
+Current-name Flutter phone previews are in ../../ui-screenshots/deen-o-duniya-mobile.png and the corresponding auth/signup previews. They are not native or Play-installed screenshots. Fresh native captures await available free device quota.

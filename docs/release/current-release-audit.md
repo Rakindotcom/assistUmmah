@@ -1,83 +1,71 @@
-# Current production release audit
+# Current release audit — দ্বীন ও দুনিয়া
 
-Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+8**.
+Updated 10 November 2026 (Asia/Dhaka). Candidate: **1.0.0+9**.
 
-**Build 8 passes clean source/build/signing checks and the complete seven-case
-native suite on a physical Galaxy A15. Current diagnostics and manual release
-gates remain open. Public release is not approved. Builds 5, 6 and 7 must not
-be published.**
+## Name change
 
-## Scope and constraints
+The public name is updated across Flutter, Android/iOS launcher metadata, web
+and PWA metadata, bundled/public privacy pages, support pages, store listing,
+release notes and feature artwork. Anek Bangla and the existing icon are retained.
+New export filenames use the current name. The backup archive format is now
+independent of branding; versions 1 and 2 remain importable with checksum,
+account ownership, schema and transactional validation.
 
-Finish and verify the current production Android app. The full `gap.md` roadmap,
-hidden productivity root and offline preview remain outside this release.
-Production: `lib/main.dart` → `AppBootstrap` → `AuthGate` → `HomeShell`.
-Firebase remains Spark with billing disabled. Play Console stays manual.
-Support: **teamframecipher@gmail.com**.
+Account data, package ID `com.rakindotcom.ummah_assist`, Firebase project,
+permissions and release signing identity are unchanged. The production entry
+remains `lib/main.dart` → `AppBootstrap` → `AuthGate` → `HomeShell`.
 
-## Build 8 correction
+## Verification
 
-Additional Android 16 / 16 KB testing exposed a build 7 race: while native
-exact-alarm permission UI was returning, a foreground refresh read the old
-locally disabled prayer preference, then cancelled the new alarms. The UI still
-showed 45 alerts enabled. Both native failures are preserved; the second includes
-Android's alarm dump. A phone widget regression reproduced enabled stored
-preferences with an empty pending set before the fix.
+| Check | Result |
+| --- | --- |
+| Analyzer | Passed, no issues. |
+| Affected app/bootstrap/privacy/backup checks | 51 passed, including earlier archive import. |
+| Mobile sign-in layout checks | Five passed. |
+| Phone branding previews | Home, sign-in and sign-up rendered and visually reviewed at 390×844; preview renderer passed. |
+| Source scan | No previous app-name references in tracked text files. |
+| Platform names | Android main/preview, iOS display/bundle names, and web/PWA names checked. |
+| Signed production AAB | API 36, ARM64, no native test plugin; 16 KB ELF alignment and compiler-to-packaged Dart identities verified. |
+| Universal APK | Signature, existing upload certificate and 16 KB ZIP alignment verified. |
+| Packaged identity | Actual AAB launcher label and bundled privacy name checked. Anek Bangla retained. |
+| Public website | Home, privacy, deletion and not-found pages deployed and read back with the requested name. Firebase billing verified disabled. |
 
-Explicit prayer edits now protect the entire native permission, scheduling and
-local persistence operation. Revision checks invalidate earlier refresh reads.
-The regression and 19 related tests pass. The full native suite now requires
-exact access refusal, grant, revocation, approximate fallback and prayer opt-out;
-it checks actual OS alarm windows. Previous six-case passes cannot satisfy the
-expanded suite or verify this changed binary.
+Source checkpoint: `59e09371a4fe9c31bb0c0b360b87e760ef3e52af`.
+The full Flutter suite was not rerun for this name change; the 56 affected/layout
+checks above and one preview-render check are the current verification scope.
 
-See the [historical build 7 audit](historical-build7-audit.md). Its public evidence
-snapshot is retained locally. Build 7's separate natural-clock/forced-Doze
-observation (`matrix-1162untmdq5yk`) completed without seeing delivery within
-12 minutes after due. This bounded result is inconclusive for intentionally
-inexact alarms under Doze and cannot prove build 8. See the
-[historical observation](historical-build7-natural-clock.json). The shared
-disposable cohort for that observation and the build 8 permission check was cleaned.
+## Current downloads
 
-## Current evidence
+- APK: `output/apk/deen-o-duniya-1.0.0-build9.apk`.
+- AAB: `output/aab/deen-o-duniya-1.0.0-build9.aab`.
 
-| Requirement | Result | Evidence / limit |
-| --- | --- | --- |
-| Source checkpoint | Recorded | `6de9e852ff272cfed3610196017e2d5166939d57`. |
-| Release preflight | Passed | Branding, fonts/licenses, policy, Spark-only configuration, deletion inventory, OAuth and private signing inputs. |
-| Analyzer | Passed | Clean pipeline, no issues. |
-| Flutter regression suite | Passed | 530 passed; two existing browser-only future-migration skips. |
-| Release tooling | Passed | 16 tests, including stale binary/clock, unobserved notification, OS alarm-window and incomplete-suite rejection. |
-| Signed AAB | Passed | API 36/minimum 24, ARM64, 64-bit alignment, no native test plugin/debug flags, and packaged Dart identities matching compiler outputs for all three ABIs. |
-| Universal APK | Passed | Existing upload certificate, signature and 16 KB ZIP alignment verified. |
-| Current native startup / legacy | Passed | Android 16 / 16 KB `matrix-w0p1lhvwpdtda` and Android 8 / 4 KB `matrix-53rtwv399shda`: original installed hash, syscall measurement, login/privacy/Back and clean Firebase initialization. |
-| Reproduced prayer permission path | Passed | `matrix-3gexv8paqgp1v`, Android 16 / 16 KB: refusal preserves 46 inexact alarms, grant yields 45 exact plus renewal, OS revocation restores approximate scheduling, opt-out clears queue. JUnit passed; disposable accounts cleaned. |
-| Current complete native suite | Passed | Physical Galaxy A15 matrix `matrix-dhm0jqrx3qsqa`: all seven cases passed in 408 seconds. Independent server checks confirmed task save, account isolation, nine deleted root documents, eight empty collections and deleted Auth identity. Both disposable accounts cleaned. Earlier clipped-control driver failure remains preserved. |
-| Current optional diagnostics | Blocked by free quota | `matrix-h8nwgv9phl5pa` was rejected as `INVALID / TEST_QUOTA_EXCEEDED`; no test executed. Earlier `matrix-1mraxtyu9ifqs` stopped after successful login because Pixel merged greeting/date semantics. Driver corrected in `92279bb`; original failure retained. No consent or crash occurred in that failed attempt. Current received-report proof remains open. No further runs submitted. |
-| Current screenshots | Passed | Five build 8 phone captures visually reviewed; ten native evidence frames refreshed. Source APK/AAB and capture hashes recorded. |
-| Backend / reviewer access | Prior live readback retained | Rules, public assets and authentication setup are unchanged by this local scheduling fix. No new backend deployment is required. |
-| Hosted CI | Externally blocked | Last inspected run 42594358975 had zero job steps and an explicit account billing-lock annotation. No hosted CI pass is claimed. |
-| Play-installed build / Console | Manual | Owner requested manual Play work. |
+SHA-256 sidecars accompany both files. Hashes, sizes and source identity are in
+`current-release-artifacts.json`. Older download files and screenshots displaying
+the previous name are archived locally. No approved Play upload packet exists.
 
-## Artifacts
+Build 8 previously passed all seven physical Galaxy A15 release cases in
+`matrix-dhm0jqrx3qsqa`, including independent server persistence, isolation and
+deletion checks. Those binary-bound receipts are historical for build 9 and
+must not be presented as a native pass for the renamed binary. Existing native
+screenshots also show the previous name; they are not current store artwork.
 
-The APK is `output/apk/rober-pothe-1.0.0-build8.apk`.
-The AAB is `output/aab/rober-pothe-1.0.0-build8.aab`.
-Both have SHA-256 sidecars; [artifact metadata](current-release-artifacts.json)
-records hashes and sizes. No approved build 8 upload packet exists yet.
-The earlier build 7 packet is preserved under `dist/play-store/historical/` and
-must not be uploaded. Native evidence is invalidated when binary identity changes.
+Fresh native verification is blocked by exhausted free Test Lab quota
+(`matrix-h8nwgv9phl5pa`, `INVALID / TEST_QUOTA_EXCEEDED`). No paid run or billing
+upgrade is authorized. No device test is running. All disposable accounts from
+completed and rejected runs are cleaned.
 
-## Remaining gates
+## Remaining release gates
 
-1. After free testing quota becomes available, finish current build 8 received
-   diagnostics, then package the verified native evidence and fresh captures.
-   The corrected diagnostic run was rejected before execution. Firebase billing
-   remains disabled; changing the plan is not required or authorized.
-2. Verify remaining lifecycle/accessibility scope: natural-clock latency,
-   reboot/Doze, long sessions, TalkBack and applicable OEM behavior. A bounded
-   forced-Doze observation or controlled-clock pass is narrower than these gates.
-3. Manual Play: app-signing certificate, Play-installed password/Google login,
-   internal track/pre-launch, listing/declarations, content rating, audience,
-   developer identity and applicable closed testing.
-4. Resolve the hosted CI account lock before merging under a required-CI policy.
+- Native startup/UI and diagnostics verification for the exact renamed binary
+  when free device testing is available. Current-name phone widget renders are
+  previews, not Play store/device evidence.
+- Lifecycle/accessibility checks: natural-clock latency, reboot/Doze, long
+  sessions, TalkBack and applicable device behavior.
+- Manual Play Console: signing certificate registration, Play-installed password
+  and Google login, internal/pre-launch tests, listing/declarations, content
+  rating, audience, developer identity and any required closed testing.
+- Hosted CI account lock: the last inspected run had zero job steps and an
+  explicit account billing-lock annotation. No hosted CI pass is claimed.
+
+Firebase remains Spark with billing disabled. Support: **teamframecipher@gmail.com**.
+Play Console work stays manual. Public release is not approved.
