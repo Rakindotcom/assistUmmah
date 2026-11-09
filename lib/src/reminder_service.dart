@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'models.dart';
@@ -313,10 +312,6 @@ class ReminderService {
   }
 
   Future<void> _initializePlugin() async {
-    tz.initializeTimeZones();
-    final timezone = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timezone.identifier));
-
     await _plugin.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('ic_notification'),
@@ -347,6 +342,12 @@ class ReminderService {
   }) async {
     if (!supported) return false;
     await _initialize();
+    // Daily reminders follow the device's current zone, independently of the
+    // global timezone.local value used (and reset) by other modules.
+    final zone = preferences.values.any((enabled) => enabled)
+        ? PrayerTimeService.location(
+            (await FlutterTimezone.getLocalTimezone()).identifier)
+        : null;
     await _vacateTaskSlots();
 
     if (requestPermission && preferences.values.any((value) => value)) {
@@ -356,7 +357,7 @@ class ReminderService {
     for (final reminder in _reminders) {
       await _plugin.cancel(reminder.id);
       if (preferences[reminder.key] == true) {
-        await _schedule(reminder);
+        await _schedule(reminder, zone!);
       }
     }
     if (_taskPlan != null) await _refreshTaskAlerts();
@@ -557,10 +558,10 @@ class ReminderService {
     });
   }
 
-  Future<void> _schedule(_Reminder reminder) async {
-    final now = tz.TZDateTime.now(tz.local);
+  Future<void> _schedule(_Reminder reminder, tz.Location zone) async {
+    final now = tz.TZDateTime.now(zone);
     var next = tz.TZDateTime(
-      tz.local,
+      zone,
       now.year,
       now.month,
       now.day,
@@ -568,7 +569,7 @@ class ReminderService {
     );
     if (!next.isAfter(now)) {
       next = tz.TZDateTime(
-        tz.local,
+        zone,
         now.year,
         now.month,
         now.day + 1,

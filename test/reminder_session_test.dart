@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:ummah_assist/src/app_repository.dart';
@@ -17,10 +18,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final calls = <MethodCall>[];
   Future<void> Function(MethodCall)? intercept;
+  var deviceZone = 'Asia/Dhaka';
 
   setUp(() {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     configureNativeUiChannels();
+    deviceZone = 'Asia/Dhaka';
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('flutter_timezone'),
+            (call) async {
+      if (call.method == 'getLocalTimezone') return deviceZone;
+      throw UnsupportedError(call.method);
+    });
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
     calls.clear();
@@ -71,6 +80,39 @@ void main() {
         inInclusiveRange(46, 51));
     expect(calls.where((c) => c.method.contains('request')), isEmpty);
     session.dispose();
+  });
+
+  test('daily reminders follow the changed device timezone on refresh',
+      () async {
+    final service = ReminderService.instance;
+    await service.sync({'tasks': true});
+    var scheduled = calls.lastWhere((call) => call.method == 'zonedSchedule');
+    expect((scheduled.arguments as Map)['timeZoneName'], 'Asia/Dhaka');
+    deviceZone = 'America/New_York';
+    await service.sync({'tasks': true});
+    scheduled = calls.lastWhere((call) => call.method == 'zonedSchedule');
+    expect((scheduled.arguments as Map)['timeZoneName'], 'America/New_York');
+  });
+
+  test('daily reminder timezone is isolated from another module timezone state',
+      () async {
+    final service = ReminderService.instance;
+    await service.sync({'tasks': true});
+    // Initializing the prayer timezone database resets timezone.local to UTC.
+    tz.setLocalLocation(tz.UTC);
+    await service.sync({'tasks': true});
+    final scheduled = calls.lastWhere((call) => call.method == 'zonedSchedule');
+    expect((scheduled.arguments as Map)['timeZoneName'], 'Asia/Dhaka');
+  });
+
+  test('daily opt-out cancels alarms even if device timezone lookup fails',
+      () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('flutter_timezone'),
+            (_) async => throw PlatformException(code: 'unavailable'));
+    expect(await ReminderService.instance.sync({'tasks': false}), isTrue);
+    expect(calls.where((call) => call.method == 'zonedSchedule'), isEmpty);
+    expect(calls.where((call) => call.method == 'cancel'), hasLength(3));
   });
 
   test('late refresh cannot overwrite a newer explicit reminder preference',
