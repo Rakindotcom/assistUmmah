@@ -72,6 +72,10 @@ Select one method per fresh-device run:
 - `SignedInReleaseAuditTest#signedInIsolationAndPermissions`: authenticates A,
   saves a task, navigates core screens, denies Android notification permission,
   signs out, then checks B's own task and absence of A's tasks.
+- `SignedInReleaseAuditTest#remindersConsentAndNativeCaptures`: grants Android
+  notification permission, verifies a pending OS alarm and cancellation on
+  sign-out, checks diagnostics off/on/restart/off, and captures actual
+  720×1280 device viewports. Alarm registration is not proof of timed delivery.
 - `SignedInReleaseAuditTest#deletionRecoveryAndRouteRevocation`: opens an
   unsaved task dialog, creates A's deletion marker through the ordinary owner
   REST API, checks private-route revocation and recovery, completes deletion

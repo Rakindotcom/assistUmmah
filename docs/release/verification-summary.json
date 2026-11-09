@@ -21,7 +21,9 @@
     "../dua-content-review.md",
     "current-testlab-startup.json",
     "current-controlled-startup.json",
-    "current-native-flows.json"
+    "current-native-flows.json",
+    "current-native-deletion.json",
+    "current-native-legacy.json"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": true,
@@ -71,5 +73,10 @@
   "nativePasswordLoginVerified": true,
   "nativeTaskPersistenceVerified": true,
   "nativeAccountSwitchIsolationVerified": true,
-  "nativeNotificationDenialVerified": true
+  "nativeNotificationDenialVerified": true,
+  "nativeDeletionRecoveryVerified": true,
+  "nativeDeletionRouteRevocationVerified": true,
+  "nativeDeletionServerCleanupVerified": true,
+  "disposableNativeFixturesCleaned": true,
+  "android8StartupVerified": true
 }

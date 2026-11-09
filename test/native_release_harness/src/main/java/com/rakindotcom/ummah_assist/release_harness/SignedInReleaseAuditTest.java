@@ -131,6 +131,91 @@ public final class SignedInReleaseAuditTest {
         }
     }
 
+    @Test
+    public void remindersConsentAndNativeCaptures() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash); report.put("installedApkSha256", hash);
+            // Request a real device viewport with the store's supported 16:9 aspect ratio.
+            device.executeShellCommand("wm size 720x1280"); device.executeShellCommand("wm density 320");
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(launch);
+            stage = "native captures";
+            signIn(required(args, "accountAEmail"), required(args, "accountAPassword")); capture("store-01-home");
+            nav("নামাজ"); waitLabel("নামাজ ট্র্যাকিং", 30000); capture("store-02-prayer");
+            nav("গ্রোথ"); waitLabel("গ্রোথ চেকলিস্ট", 30000); capture("store-03-growth");
+            nav("আরও"); reveal("কুরআন রিডিং").click(); waitLabel("কুরআন রিডিং", 20000); capture("store-04-quran");
+            nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitContains("তসবিহ", 20000); capture("store-05-dhikr");
+            report.put("nativeStoreViewport", "720x1280 at density 320; original screenshots without cropping");
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            stage = "daily reminder permission and alarms";
+            assertFalse("Unexpected baseline alarm", appAlarmPresent());
+            reveal("দৈনিক রিমাইন্ডার").click();
+            long deadline = SystemClock.uptimeMillis() + 15000; UiObject2 allow = null;
+            while (allow == null && SystemClock.uptimeMillis() < deadline) {
+                allow = device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button"))); SystemClock.sleep(200);
+            }
+            assertNotNull("Expected Android notification permission dialog", allow); allow.click();
+            deadline = SystemClock.uptimeMillis() + 20000;
+            while (!appAlarmPresent() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
+            assertTrue("No native daily alarm after permission grant", appAlarmPresent());
+            assertEquals(PackageManager.PERMISSION_GRANTED, context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS", APP));
+            report.put("nativeNotificationPermissionAllowed", true); report.put("nativeDailyAlarmScheduled", true);
+            stage = "optional diagnostics off on off";
+            UiObject2 diagnostics = reveal("সমস্যার রিপোর্ট পাঠান");
+            assertFalse("Diagnostics must default off", diagnostics.isChecked()); diagnostics.click();
+            waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsEnabledByExplicitToggle", true);
+            device.executeShellCommand("am force-stop " + APP); context.startActivity(launch);
+            waitLabel("আসসালামু আলাইকুম", 60000); nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsConsentSurvivesRestart", true);
+            reveal("সমস্যার রিপোর্ট পাঠান").click(); waitChecked("সমস্যার রিপোর্ট পাঠান", false);
+            report.put("diagnosticsDisabledAgain", true);
+            stage = "sign-out cancels native alarms";
+            signOut(); deadline = SystemClock.uptimeMillis() + 15000;
+            while (appAlarmPresent() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
+            assertFalse("Account alarms remained after sign-out", appAlarmPresent());
+            report.put("nativeSignOutCancelsAlarms", true);
+            report.put("success", true); save();
+        } catch (Throwable failure) {
+            report.put("success", false); report.put("failedStage", stage);
+            report.put("failureType", failure.getClass().getSimpleName()); save();
+            try {capture("failure-private");} catch (Throwable ignored) { }
+            throw new AssertionError("Native reminders audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+        } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
+    }
+
+    private boolean appAlarmPresent() throws Exception {
+        String alarms = device.executeShellCommand("dumpsys alarm");
+        // Only inspect pending alarm entries; historical Alarm Stats survive cancellation.
+        String[] lines = alarms.split("\\n");
+        for (int index = 0; index < lines.length; index++) {
+            if (!lines[index].matches("\\s*(?:RTC|ELAPSED)(?:_WAKEUP)? #\\d+:.*")) continue;
+            StringBuilder entry = new StringBuilder(lines[index]);
+            for (int next = index + 1; next < Math.min(index + 10, lines.length); next++) {
+                if (lines[next].matches("\\s*(?:RTC|ELAPSED)(?:_WAKEUP)? #\\d+:.*")) break;
+                entry.append(lines[next]);
+            }
+            if (entry.toString().contains(APP) && entry.toString().contains("ScheduledNotificationReceiver")) return true;
+        }
+        return false;
+    }
+    private void waitChecked(String label, boolean checked) {
+        long deadline = SystemClock.uptimeMillis() + 15000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            UiObject2 node = find(label, true); if (node != null && node.isChecked() == checked) return;
+            SystemClock.sleep(200);
+        }
+        throw new AssertionError("Consent state did not settle during " + stage);
+    }
+
     /** Simulates an interrupted owner deletion while an unsaved private dialog is open. */
     @Test
     public void deletionRecoveryAndRouteRevocation() throws Exception {

@@ -37,6 +37,8 @@ OS notification delivery or an approved Console configuration.
 | Exact candidate native startup | Passed in cloud | ARM64 Android 16 / 16 KB Test Lab run completed successfully. Login screenshot and Firebase logs inspected; no registrar errors or fatal crashes. Original uploaded checksum verified and no-resigning mode used. See [cloud startup receipt](current-testlab-startup.json) and [original captures](current-native-startup/README.md). |
 | Independent installed hash / page-size syscall | Passed | The separate-process UI Automator driver measured the installed APK SHA-256 and 16 KB native pages on the device; both match this candidate. Production login, bundled privacy and Android Back passed in one JUnit case. See [controlled receipt](current-controlled-startup.json). The earlier injected runner failed from a test/app Kotlin class collision; the isolated driver avoids that collision without modifying the app. |
 | Exact candidate signed-in native flows | Passed within scope | Real email/password login, own task read/save, server persistence, prayer/growth/Quran/tasbih navigation, Android notification permission denial, logout and A→B isolation passed on virtual ARM64 Android 16. Two disposable accounts only. See [native flow receipt](current-native-flows.json). This does not establish every native edit, OS delivery, Google OAuth or Play-installed behavior. |
+| Older Android startup | Passed within scope | Original installed APK hash, login, bundled privacy and Android Back passed on ARM64 Android 8/API26 with 4 KB pages. [Receipt](current-native-legacy.json). This is not an authenticated-feature audit on Android 8. |
+| Native deletion and interrupted recovery | Passed | Remote deletion marker closed an unsaved private dialog; Back did not restore private home. Native password confirmation finished deletion, then a cold restart allowed the other account. Server checks found nine root documents absent, eight owned collections empty, no activities, deleted Auth identity absent and only an empty anti-resurrection marker retained. Both synthetic fixtures were cleaned afterward. See [deletion receipt](current-native-deletion.json). |
 | Play-installed build and Google OAuth | Manual gate | Register the Play app-signing certificate in Firebase and test the Play-installed app. Upload-key verification alone does not prove this. |
 | Store declarations and listing | Prepared, unsubmitted | [Console handoff](console-handoff.md), [listing](store-listing.md), [Data safety](data-safety.md), artwork and release notes. Console stays manual by owner choice. |
 | Current store screenshots | Open | Current signed-out and signed-in QA captures exist. The complete changed-screen set still needs re-capture from the candidate; widget renders and old profile captures are not current store artwork. |
@@ -66,7 +68,7 @@ does not itself claim authenticated-home or physical-device coverage. The separa
 
 ## Remaining publishing checks
 
-1. Finish native deletion/recovery and OS notification checks, then install the Play-generated build
+1. Finish OS notification checks, then install the Play-generated build
    from an internal track. Check email and Google login, logout/account switch,
    core edits and reloads, deletion and interrupted deletion recovery.
 2. Test notification/location denial and revocation, approximate scheduling,

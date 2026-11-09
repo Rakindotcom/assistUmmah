@@ -61,7 +61,8 @@ def main():
                  'signed-release-smoke.json', 'current-release-audit.md',
                  'current-release-artifacts.json', 'current-backend-verification.json',
                  'current-reviewer-access.json', 'current-testlab-startup.json',
-                 'current-controlled-startup.json', 'current-native-flows.json']:
+                 'current-controlled-startup.json', 'current-native-flows.json',
+                 'current-native-deletion.json', 'current-native-legacy.json']:
         shutil.copy2(docs / name, destination / name)
     shutil.copytree(docs / 'current-native-startup', destination / 'current-native-startup')
     shutil.copytree(docs / 'current-native-flows', destination / 'current-native-flows')
