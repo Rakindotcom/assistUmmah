@@ -14,3 +14,7 @@ Both disposable identities and their owned records were removed afterward.
 capture from `../current-native-delivery.json`. The test advanced only the
 disposable device clock, then restored it. Native alarms for the three daily
 reminders fired; no notification or app broadcast was injected.
+
+`physical-03-home.png` is the original physical Samsung Galaxy A15 home
+capture from `../current-native-physical-flows.json`. The native test also
+verified task server persistence, navigation, denial and account isolation.

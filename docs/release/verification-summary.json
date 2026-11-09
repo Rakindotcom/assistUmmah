@@ -27,7 +27,8 @@
     "current-native-reminders.json",
     "current-store-captures/export-verification.json",
     "current-native-physical.json",
-    "current-native-delivery.json"
+    "current-native-delivery.json",
+    "current-native-physical-flows.json"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": true,
@@ -92,5 +93,9 @@
   "physicalStartupVerified": true,
   "fullPhysicalFlowsTested": false,
   "controlledClockNativeNotificationDeliveryVerified": true,
-  "nativeNotificationOsRevocationVerified": true
+  "nativeNotificationOsRevocationVerified": true,
+  "physicalNativePasswordSignInVerified": true,
+  "physicalNativeTaskPersistenceVerified": true,
+  "physicalNativeAccountIsolationVerified": true,
+  "physicalCoreNavigationVerified": true
 }
