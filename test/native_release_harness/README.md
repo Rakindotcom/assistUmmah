@@ -116,3 +116,22 @@ Run it only on a disposable test device. Finally blocks restore clock settings
 and viewport, including on failure. Screenshots wait for accessibility idle and
 an additional presentation frame interval because Flutter semantics can appear
 before the rendered frame reaches the screenshot compositor.
+
+## Current candidate suite
+
+`ReleaseCandidateSuite#verifyCurrentRelease` runs startup, signed-in flows,
+reminder consent/cancellation, manual location, controlled-clock delivery,
+in-process device timezone changes and deletion last in one device allocation.
+It clears only the disposable device's production app data between cases and
+resets only fixture A's reminder preferences through its authenticated owner
+API. No crash is injected by this suite. The opt-in crash-report case is run
+separately so an expected crash cannot hide an unexpected suite failure.
+
+The suite additionally requires `firebaseApiKey`, `accountAUid` and
+`suiteVerifyPersistedTask=true`. Before deletion it checks the earlier native
+task save through a fresh owner-authenticated server read. Each case writes its
+own named receipt; a suite pass requires every case to return successfully.
+`timezoneRefreshWithoutRestart` initializes prayer settings, then verifies the
+pending native alarms retain local 08:00, 20:00 and 21:00 schedules after device
+zone changes to New York and Dhaka while the original app process and Settings
+screen remain alive. Automatic timezone settings are restored afterward.

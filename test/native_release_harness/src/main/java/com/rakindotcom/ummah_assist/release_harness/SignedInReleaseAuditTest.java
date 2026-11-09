@@ -283,6 +283,12 @@ public final class SignedInReleaseAuditTest {
     /** Explicit diagnostics opt-in and synthetic crash on a disposable identity only. */
     @Test
     public void locationFallbackAndControlledCrash() throws Exception {
+        locationAndDiagnostics(true);
+    }
+
+    void locationFallbackOnly() throws Exception { locationAndDiagnostics(false); }
+
+    private void locationAndDiagnostics(boolean withCrash) throws Exception {
         Bundle args = InstrumentationRegistry.getArguments();
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
@@ -318,6 +324,10 @@ public final class SignedInReleaseAuditTest {
             nav("নামাজ"); waitLabel("নামাজ ট্র্যাকিং", 20000); waitContains("ঢাকা", 15000); capture("store-02-prayer-configured");
             nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitLabel("যিকিরসমূহ", 20000); capture("store-05-dhikr");
             device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");
+            if (!withCrash) {
+                nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); signOut();
+                report.put("controlledCrashSkipped", true); report.put("success", true); save(); return;
+            }
             stage = "explicit diagnostic consent";
             nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); UiObject2 diagnostics = reveal("সমস্যার রিপোর্ট পাঠান");
             assertFalse("Diagnostics must start disabled", diagnostics.isChecked()); diagnostics.click(); waitChecked("সমস্যার রিপোর্ট পাঠান", true);
@@ -373,6 +383,93 @@ public final class SignedInReleaseAuditTest {
         assertNull("Native permission dialog remained after settled input", device.findObject(By.res(id)));
     }
 
+    @Test
+    public void timezoneRefreshWithoutRestart() throws Exception {
+        Bundle args = InstrumentationRegistry.getArguments();
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output = new File(context.getExternalFilesDir(null), "release-audit");
+        assertTrue(output.mkdirs() || output.isDirectory());
+        String originalZone = java.util.TimeZone.getDefault().getID();
+        String automaticZone = device.executeShellCommand("settings get global auto_time_zone").trim();
+        try {
+            stage = "artifact identity";
+            String hash = SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP, 0).sourceDir));
+            assertEquals(required(args, "expectedApkSha256"), hash); report.put("installedApkSha256", hash);
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch); launch.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            context.startActivity(launch); signIn(required(args,"accountAEmail"),required(args,"accountAPassword"));
+            stage = "prayer database initialization before daily scheduling";
+            reveal("স্থান সেট করুন").click(); waitLabel("শহর থেকে বেছে নিন",15000); reveal("ঢাকা").click(); waitAbsent("শহর থেকে বেছে নিন",15000);
+            nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); reveal("দৈনিক রিমাইন্ডার").click();
+            long deadline=SystemClock.uptimeMillis()+15000; UiObject2 allow=null;
+            while(allow==null && SystemClock.uptimeMillis()<deadline){allow=device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button")));SystemClock.sleep(200);}
+            assertNotNull("Expected native notification permission",allow); dismissNativePermissionDialog("permission_allow_button");
+            waitChecked("দৈনিক রিমাইন্ডার",true); waitAlarmHours(originalZone,"timezone-initial-alarm-dump.txt");
+            report.put("dailyZoneIsolatedFromPrayerDatabase",true);
+            String pid=device.executeShellCommand("pidof "+APP).trim(); assertFalse(pid.isEmpty());
+            device.executeShellCommand("settings put global auto_time_zone 0");
+            for(String zone:new String[]{"America/New_York","Asia/Dhaka"}){
+                stage="in-process timezone refresh: "+zone;
+                device.pressHome(); device.executeShellCommand("cmd alarm set-timezone "+zone); context.startActivity(launch);
+                waitContains("দৈনিক রিমাইন্ডার",20000);
+                assertEquals("App process restarted; cannot establish in-process refresh",pid,device.executeShellCommand("pidof "+APP).trim());
+                waitAlarmHours(zone,"timezone-"+zone.replace('/','-')+"-alarm-dump.txt");
+            }
+            report.put("deviceTimezoneRefreshWithoutProcessRestart",true);
+            report.put("dailyLocalHoursPreserved", "08:00,20:00,21:00");
+            signOut(); report.put("success",true); save();
+        } catch(Throwable failure){
+            report.put("success",false);report.put("failedStage",stage);report.put("failureType",failure.getClass().getSimpleName());save();
+            try{capture("failure-private");}catch(Throwable ignored){}
+            throw new AssertionError("Native timezone audit failed at "+stage+" ("+failure.getClass().getSimpleName()+"). Inspect private artifacts.");
+        } finally {
+            device.executeShellCommand("cmd alarm set-timezone "+originalZone);
+            if(automaticZone.matches("[01]"))device.executeShellCommand("settings put global auto_time_zone "+automaticZone);
+        }
+    }
+
+    private void waitAlarmHours(String zone,String filename) throws Exception {
+        long deadline=SystemClock.uptimeMillis()+20000; String dump="";
+        java.util.Set<Integer> expected=new java.util.HashSet<>(java.util.Arrays.asList(8,20,21));
+        do {
+            dump=device.executeShellCommand("dumpsys alarm"); String[] lines=dump.split("\\n");
+            java.util.Set<Integer> hours=new java.util.HashSet<>();
+            for(int i=0;i<lines.length;i++){
+                if(!lines[i].matches("\\s*RTC_WAKEUP #\\d+:.*"))continue;
+                StringBuilder entry=new StringBuilder(lines[i]);
+                for(int n=i+1;n<Math.min(i+10,lines.length);n++){
+                    if(lines[n].matches("\\s*(?:RTC|ELAPSED)(?:_WAKEUP)? #\\d+:.*"))break;
+                    entry.append(' ').append(lines[n]);
+                }
+                if(!entry.toString().contains(APP)||!entry.toString().contains("ScheduledNotificationReceiver"))continue;
+                java.util.regex.Matcher when=Pattern.compile("origWhen=(\\d+)").matcher(entry);
+                if(!when.find())continue;
+                java.util.Calendar calendar=java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone(zone));
+                calendar.setTimeInMillis(Long.parseLong(when.group(1)));
+                if(calendar.get(java.util.Calendar.MINUTE)==0)hours.add(calendar.get(java.util.Calendar.HOUR_OF_DAY));
+            }
+            if(hours.equals(expected))return;
+            SystemClock.sleep(300);
+        }while(SystemClock.uptimeMillis()<deadline);
+        try(FileOutputStream file=new FileOutputStream(new File(output,filename))){file.write(dump.getBytes(StandardCharsets.UTF_8));}
+        throw new AssertionError("Pending alarms did not retain local daily hours during "+stage);
+    }
+
+    void resetFixtureReminderPreferences() throws Exception {
+        Bundle args=InstrumentationRegistry.getArguments(); String email=required(args,"accountAEmail");
+        assertTrue(email.startsWith("teamframecipher+native-"));
+        JSONObject login=ownerRequest("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+required(args,"firebaseApiKey"),"POST",
+            new JSONObject().put("email",email).put("password",required(args,"accountAPassword")).put("returnSecureToken",true),null);
+        assertEquals(required(args,"accountAUid"),login.getString("localId"));
+        JSONObject notifications=new JSONObject();for(String key:new String[]{"tasks","prayer","growth"})notifications.put(key,new JSONObject().put("booleanValue",false));
+        JSONObject fields=new JSONObject().put("notifications",new JSONObject().put("mapValue",new JSONObject().put("fields",notifications)))
+            .put("remindersConfigured",new JSONObject().put("booleanValue",false));
+        ownerRequest("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/userSettings/"+login.getString("localId")+"?updateMask.fieldPaths=notifications&updateMask.fieldPaths=remindersConfigured",
+            "PATCH",new JSONObject().put("fields",fields),login.getString("idToken"));
+    }
+
     private boolean appAlarmPresent() throws Exception {
         String alarms = device.executeShellCommand("dumpsys alarm");
         // Only inspect pending alarm entries; historical Alarm Stats survive cancellation.
@@ -423,6 +520,11 @@ public final class SignedInReleaseAuditTest {
                 "POST", new JSONObject().put("email", email).put("password", password).put("returnSecureToken", true), null);
             assertEquals(required(args, "accountAUid"), login.getString("localId"));
             String token = login.getString("idToken");
+            if ("true".equals(args.getString("suiteVerifyPersistedTask"))) {
+                JSONObject saved = ownerRequest("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/userTasks/" + login.getString("localId"), "GET", null, token);
+                assertTrue("Earlier native task save was absent from the server", saved.toString().contains("Native audit saved task"));
+                report.put("earlierNativeTaskSaveConfirmedOnServer", true);
+            }
             ownerRequest("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/" + login.getString("localId"),
                 "PATCH", new JSONObject().put("fields", new JSONObject()), token);
             stage = "private route revocation";
@@ -468,7 +570,9 @@ public final class SignedInReleaseAuditTest {
 
     private JSONObject ownerRequest(String url, String method, JSONObject body, String token) throws Exception {
         assertTrue(url.startsWith("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=") ||
-            url.startsWith("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/"));
+            url.startsWith("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/accountDeletions/") ||
+            (method.equals("GET") && url.startsWith("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/userTasks/")) ||
+            (method.equals("PATCH") && url.startsWith("https://firestore.googleapis.com/v1/projects/assistummah/databases/(default)/documents/userSettings/")));
         java.net.HttpURLConnection connection = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
         connection.setConnectTimeout(15000); connection.setReadTimeout(15000); connection.setRequestMethod(method);
         connection.setRequestProperty("Content-Type", "application/json");
