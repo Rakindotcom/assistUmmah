@@ -98,6 +98,8 @@ Select one method per fresh-device run:
 Signed-in methods require `expectedApkSha256` and runtime-only arguments `accountAEmail`,
 `accountAPassword`, `accountATask`, `accountBEmail`, `accountBPassword`,
 `accountBTask`. Deletion also requires `firebaseApiKey` and `accountAUid`.
+The signed-in isolation case checks `expectedPageSize`, allowing the same
+method to verify physical 4 KB and virtual 16 KB devices.
 Only disposable `teamframecipher+native-` fixture aliases are accepted; deletion
 checks that the authenticated UID matches the explicitly supplied fixture UID.
 Never use a reviewer or real user's account. Credentials belong in private
