@@ -155,3 +155,8 @@ own named receipt; a suite pass requires every case to return successfully.
 pending native alarms retain local 08:00, 20:00 and 21:00 schedules after device
 zone changes to New York and Dhaka while the original app process and Settings
 screen remain alive. Automatic timezone settings are restored afterward.
+
+A reveal action must expose at least 12 dp in both visible dimensions before
+tapping. Flutter may retain a clipped one-pixel semantics node at a scroll
+boundary; its presence is not evidence that the control is tappable. The
+external driver scrolls farther before tapping, while production UI is unchanged.

@@ -184,6 +184,5 @@
   "nativePrayerExactRevocationRecoveryVerified": true,
   "nativePrayerAlertOptOutVerified": true,
   "historicalBuild7LifecycleFixturesCleaned": true,
-  "nativeReleaseSuiteStatus": "submitted: original build 8 seven-case physical suite; separate fresh fixture cohort",
-  "nativeReleaseSuitePendingMatrixId": "matrix-3q1unykrabi8f"
+  "nativeReleaseSuiteStatus": "failed: matrix-3q1unykrabi8f; case artifacts being inspected, no suite pass claimed"
 }

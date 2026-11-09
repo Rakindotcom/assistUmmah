@@ -901,7 +901,10 @@ public final class SignedInReleaseAuditTest {
     private boolean isUsableAction(UiObject2 node) {
         if (node == null) return false;
         android.graphics.Rect bounds = node.getVisibleBounds();
-        if (bounds.isEmpty()) return false;
+        // Flutter can retain an accessibility node clipped to a one-pixel strip
+        // at the scroll boundary. Its center is not a usable tap target.
+        int minimumVisible = Math.round(12 * context.getResources().getDisplayMetrics().density);
+        if (bounds.height() < minimumVisible || bounds.width() < minimumVisible) return false;
         UiObject2 navigation = device.findObject(By.res("com.android.systemui:id/navigation_bar_frame"));
         // Flutter can expose an offscreen scroll child in accessibility before
         // it is actually tappable. Never send that tap to Android Home/Back.

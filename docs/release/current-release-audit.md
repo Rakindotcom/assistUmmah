@@ -51,7 +51,7 @@ disposable cohort for that observation and the build 8 permission check was clea
 | Universal APK | Passed | Existing upload certificate, signature and 16 KB ZIP alignment verified. |
 | Current native startup / legacy | Passed | Android 16 / 16 KB `matrix-w0p1lhvwpdtda` and Android 8 / 4 KB `matrix-53rtwv399shda`: original installed hash, syscall measurement, login/privacy/Back and clean Firebase initialization. |
 | Reproduced prayer permission path | Passed | `matrix-3gexv8paqgp1v`, Android 16 / 16 KB: refusal preserves 46 inexact alarms, grant yields 45 exact plus renewal, OS revocation restores approximate scheduling, opt-out clears queue. JUnit passed; disposable accounts cleaned. |
-| Current complete native suite | Submitted | Physical matrix `matrix-3q1unykrabi8f`, fresh accounts. Requires all seven cases and independent server persistence/deletion checks; no suite pass yet. |
+| Current complete native suite | Failed / investigating | Physical matrix `matrix-3q1unykrabi8f` failed after 153 seconds. Stopped in reminders: the driver tapped a one-pixel clipped sign-out node and no confirmation dialog opened. Visibility guard corrected; original failure retained and cohort cleaned. No suite pass or current server persistence/deletion claim. |
 | Current optional diagnostics | Pending | Requires explicit opt-in/crash/restart/opt-out and a correlated received build 8 server report. |
 | Current screenshots | Pending | Build 7 images cannot satisfy the build 8 packet provenance gate. |
 | Backend / reviewer access | Prior live readback retained | Rules, public assets and authentication setup are unchanged by this local scheduling fix. No new backend deployment is required. |
