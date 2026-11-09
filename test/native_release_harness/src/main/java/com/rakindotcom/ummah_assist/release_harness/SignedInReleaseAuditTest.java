@@ -84,7 +84,7 @@ public final class SignedInReleaseAuditTest {
             reveal("কুরআন রিডিং").click(); waitLabel("কুরআন রিডিং", 20000); capture("08-quran");
             nav("আরও"); reveal("যিকিরের লক্ষ্য").click();
             stage = "tasbih navigation";
-            waitContains("তসবিহ", 20000); capture("09-dhikr");
+            waitContains("যিকিরসমূহ", 20000); capture("09-dhikr");
             report.put("coreNavigationOpened", true);
 
             stage = "native permission denial";
@@ -153,7 +153,7 @@ public final class SignedInReleaseAuditTest {
             nav("নামাজ"); waitLabel("নামাজ ট্র্যাকিং", 30000); capture("store-02-prayer");
             nav("গ্রোথ"); waitLabel("গ্রোথ চেকলিস্ট", 30000); capture("store-03-growth");
             nav("আরও"); reveal("কুরআন রিডিং").click(); waitLabel("কুরআন রিডিং", 20000); capture("store-04-quran");
-            nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitContains("তসবিহ", 20000); capture("store-05-dhikr");
+            nav("আরও"); reveal("যিকিরের লক্ষ্য").click(); waitContains("যিকিরসমূহ", 20000); capture("store-05-dhikr");
             report.put("nativeStoreViewport", "720x1280 at density 320; original screenshots without cropping");
             nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
             stage = "daily reminder permission and alarms";
@@ -175,6 +175,7 @@ public final class SignedInReleaseAuditTest {
             waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsEnabledByExplicitToggle", true);
             device.executeShellCommand("am force-stop " + APP); context.startActivity(launch);
             waitLabel("আসসালামু আলাইকুম", 60000); nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            reveal("সমস্যার রিপোর্ট পাঠান");
             waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsConsentSurvivesRestart", true);
             reveal("সমস্যার রিপোর্ট পাঠান").click(); waitChecked("সমস্যার রিপোর্ট পাঠান", false);
             report.put("diagnosticsDisabledAgain", true);
