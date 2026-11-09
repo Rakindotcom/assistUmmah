@@ -1,0 +1,17 @@
+# Current production phone screenshots
+
+Four reviewed captures of build 4: home, prayer tracking, growth and Quran
+tracking. See `../current-native-reminders.json` for the completed device run.
+The original signed APK ran on virtual ARM64 Android 16 with 16 KB pages.
+The actual device viewport was set to 720×1280 pixels / density 320 before
+launch. These are native captures, not browser/widget renders or mockups.
+
+Screens show synthetic starter data and the app's initial location-not-selected
+state. They contain no passwords or account email addresses. Each selected
+screen was visually reviewed after download. The tasbih capture in that run
+caught a transition frame and was not accepted into this set.
+
+Exports are opaque 24-bit RGB PNGs. Only the opaque alpha channel was removed;
+RGB pixels, dimensions and content are unchanged. Source/export hashes are in
+`export-verification.json`. Final Play-installed behavior and the locale's
+Console preview still require manual review before publication.

@@ -1,6 +1,6 @@
 # Current production release audit
 
-Updated 7 November 2026. Candidate: **রবের পথে 1.0.0+4**.
+Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+4**.
 
 ## Scope and decision
 
@@ -38,10 +38,12 @@ OS notification delivery or an approved Console configuration.
 | Independent installed hash / page-size syscall | Passed | The separate-process UI Automator driver measured the installed APK SHA-256 and 16 KB native pages on the device; both match this candidate. Production login, bundled privacy and Android Back passed in one JUnit case. See [controlled receipt](current-controlled-startup.json). The earlier injected runner failed from a test/app Kotlin class collision; the isolated driver avoids that collision without modifying the app. |
 | Exact candidate signed-in native flows | Passed within scope | Real email/password login, own task read/save, server persistence, prayer/growth/Quran/tasbih navigation, Android notification permission denial, logout and A→B isolation passed on virtual ARM64 Android 16. Two disposable accounts only. See [native flow receipt](current-native-flows.json). This does not establish every native edit, OS delivery, Google OAuth or Play-installed behavior. |
 | Older Android startup | Passed within scope | Original installed APK hash, login, bundled privacy and Android Back passed on ARM64 Android 8/API26 with 4 KB pages. [Receipt](current-native-legacy.json). This is not an authenticated-feature audit on Android 8. |
+| Physical Android startup | Passed within scope | Physical Pixel 8 / Android14 API34: original installed APK hash, login, bundled privacy and Back passed. [Receipt](current-native-physical.json). Physical authenticated flows, notification delivery, reboot/Doze and Play-installed behavior remain open. |
 | Native deletion and interrupted recovery | Passed | Remote deletion marker closed an unsaved private dialog; Back did not restore private home. Native password confirmation finished deletion, then a cold restart allowed the other account. Server checks found nine root documents absent, eight owned collections empty, no activities, deleted Auth identity absent and only an empty anti-resurrection marker retained. Both synthetic fixtures were cleaned afterward. See [deletion receipt](current-native-deletion.json). |
+| Native reminders and diagnostics consent | Passed within scope | Permission grant, pending OS alarm registration, sign-out cancellation and diagnostics off/on/restart/off passed. [Receipt](current-native-reminders.json). Timed delivery, reboot/Doze and a received crash report remain unverified. |
 | Play-installed build and Google OAuth | Manual gate | Register the Play app-signing certificate in Firebase and test the Play-installed app. Upload-key verification alone does not prove this. |
 | Store declarations and listing | Prepared, unsubmitted | [Console handoff](console-handoff.md), [listing](store-listing.md), [Data safety](data-safety.md), artwork and release notes. Console stays manual by owner choice. |
-| Current store screenshots | Open | Current signed-out and signed-in QA captures exist. The complete changed-screen set still needs re-capture from the candidate; widget renders and old profile captures are not current store artwork. |
+| Current phone store screenshots | Prepared and reviewed | Four actual 720×1280 native captures of this APK: home, prayer, growth and Quran. Opaque RGB exports preserve original pixels. [Capture provenance](current-store-captures/README.md). Final Play-installed/Console preview remains manual. |
 | GitHub hosted CI | Blocked externally | Latest observed jobs never started because the GitHub account is locked for billing. [Run 42255887870](https://github.com/Rakindotcom/assistUmmah/actions/runs/42255887870) had zero steps in all jobs. Local checks passed; no hosted CI pass is claimed. |
 | Firebase billing | Constraint preserved | Spark deployment only; no Cloud Functions or billing-plan upgrade. |
 | iOS | Unverified, outside Android publishing | No Mac/iPhone testing setup is available; do not describe this as an iOS release audit. |
@@ -75,7 +77,7 @@ does not itself claim authenticated-home or physical-device coverage. The separa
    reboot/Doze, timezone/day changes, keyboard/back navigation, large text,
    TalkBack, edge-to-edge layout, launcher/splash and modest-phone performance.
 3. Verify optional diagnostics off/on/off and a controlled Crashlytics receipt.
-4. Re-capture changed store screens. Complete app access, Data safety, content
+4. Inspect the current phone screenshots in Console. Complete app access, Data safety, content
    rating, target audience, ads and developer identity in Console. Confirm code
    **4** is greater than every previously used code before uploading.
 5. Inspect Play's SDK/ABI/pre-launch reports and complete the applicable closed

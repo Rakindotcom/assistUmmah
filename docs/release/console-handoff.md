@@ -43,8 +43,8 @@ tracks, terms or publishing actions have been submitted by Codex.
 | Feature graphic | `store-assets/feature-graphic-1024x500.png` |
 
 Use accurate phone captures, check their dimensions and preview every locale.
-Read `native-captures/README.md` when captures are present; do not describe a
-profile-mode integration capture as a Play-installed release capture.
+Use the current `current-store-captures/` set and read its provenance.
+The older `native-captures/` directory is historical reference.
 
 ## App access: do not leave this blank
 

@@ -23,14 +23,17 @@
     "current-controlled-startup.json",
     "current-native-flows.json",
     "current-native-deletion.json",
-    "current-native-legacy.json"
+    "current-native-legacy.json",
+    "current-native-reminders.json",
+    "current-store-captures/export-verification.json",
+    "current-native-physical.json"
   ],
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": true,
   "formTextInputSimulated": false,
   "signedReleaseStartupSmokePassed": true,
   "fullSignedReleaseFunctionalTested": false,
-  "physicalDeviceTested": false,
+  "physicalDeviceTested": true,
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
@@ -78,5 +81,13 @@
   "nativeDeletionRouteRevocationVerified": true,
   "nativeDeletionServerCleanupVerified": true,
   "disposableNativeFixturesCleaned": true,
-  "android8StartupVerified": true
+  "android8StartupVerified": true,
+  "nativeNotificationPermissionGrantVerified": true,
+  "nativeDailyAlarmRegistrationVerified": true,
+  "nativeSignOutAlarmCancellationVerified": true,
+  "nativeDiagnosticsConsentPersistenceVerified": true,
+  "timedNotificationDeliveryVerified": false,
+  "currentStorePhoneScreenshots": 4,
+  "physicalStartupVerified": true,
+  "fullPhysicalFlowsTested": false
 }

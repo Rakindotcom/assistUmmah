@@ -27,7 +27,8 @@ screen and Firebase logs were inspected. The separate-process [controlled
 startup test](current-controlled-startup.json) then verified the installed APK
 hash, measured 16 KB pages, opened bundled privacy and returned with Android
 Back. Scoped [signed-in native checks](current-native-flows.json) also passed.
-Remaining OS/deletion checks and manual Play gates remain open; the
+Native deletion/recovery, alarm registration/cancellation and diagnostics consent
+also passed. Timed OS delivery and manual Play gates remain open; the
 stronger startup evidence now permits a manual internal-test upload packet.
 
 Current functionality includes the prayer-first home with offline prayer and
@@ -74,7 +75,8 @@ screenshots or proof of notification delivery on a phone.
   opt-in and rollback on preference-save failure. App reports strip exception
   messages and attach no custom account/profile/activity content.
 - Store icon and feature graphic exported from the supplied artwork with Anek
-  Bangla shaping. Native store screenshots remain an independent gate.
+  Bangla shaping. Current native screenshots are documented separately in
+  `current-store-captures/README.md`.
 - The GitHub quality workflow runs Flutter checks and Firebase account-lifecycle
   emulator tests on pushes. A separate manually dispatched Android release
   workflow requires the configured release secrets for remote signing. Local
@@ -210,11 +212,11 @@ signing credentials are excluded from that packet.
    launcher/splash/themed/status icons, and modest-device performance/ANRs.
 6. Confirm optional diagnostic reporting off/on/off behavior and receipt of a
    controlled test report in Crashlytics. Do not crash a real user's session.
-7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. Emulator
-   16 KB profile flows passed on an earlier build; the current signed APK must have its own matching startup receipt. Physical ARM64
-   and Play-signed builds remain unverified. No physical Android
-   device is connected here.
-8. Review the six prepared native captures. Recapture any screen that differs
+7. Inspect Play's native SDK/ABI/16 KB warnings and pre-launch report. The current
+   APK has matching ARM64 Android16/16 KB, Android8/4 KB and physical Pixel8
+   Android14 startup receipts. Physical authenticated/OS flows and the
+   Play-signed build still require verification.
+8. Review the four current `current-store-captures/` phone images. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
    content rating, target audience, ads declaration, developer verification and

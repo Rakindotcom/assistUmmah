@@ -62,10 +62,27 @@ def main():
                  'current-release-artifacts.json', 'current-backend-verification.json',
                  'current-reviewer-access.json', 'current-testlab-startup.json',
                  'current-controlled-startup.json', 'current-native-flows.json',
-                 'current-native-deletion.json', 'current-native-legacy.json']:
+                 'current-native-deletion.json', 'current-native-legacy.json',
+                 'current-native-reminders.json', 'current-native-physical.json']:
         shutil.copy2(docs / name, destination / name)
     shutil.copytree(docs / 'current-native-startup', destination / 'current-native-startup')
     shutil.copytree(docs / 'current-native-flows', destination / 'current-native-flows')
+    capture_inventory = json.loads((docs / 'current-store-captures/export-verification.json').read_text())
+    assert capture_inventory['sourceBundleSha256'] == verification['sha256'], 'Store captures belong to another bundle'
+    assert capture_inventory['sourceApkSha256'] == smoke['universalApkSha256'], 'Store captures belong to another APK'
+    assert len(capture_inventory['screens']) >= 2, 'At least two current phone screenshots are required'
+    for capture in capture_inventory['screens']:
+        filename = capture['file']
+        assert Path(filename).name == filename and filename.endswith('.png'), 'Unsafe capture filename'
+        path = docs / 'current-store-captures' / filename
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == capture['exportSha256'], 'Store export hash changed'
+        with Image.open(path) as image:
+            width, height = image.size
+            assert image.mode == 'RGB' and capture['rgbPixelsUnchanged']
+            assert (width, height) == (capture['width'], capture['height'])
+            assert min(width, height) >= 320 and max(width, height) <= 3840
+            assert max(width, height) <= min(width, height) * 2
+    shutil.copytree(docs / 'current-store-captures', destination / 'current-store-captures')
     shutil.copytree(docs / 'store-assets', destination / 'store-assets')
     native_report = docs / 'native-verification.json'
     if native_report.exists():
@@ -105,11 +122,11 @@ def main():
             json.dumps(exports, indent=2) + '\n')
         shutil.copy2(native_report, destination / native_report.name)
         if not current_captures:
-            (destination / 'SCREENSHOTS-REQUIRED.md').write_text(
-                '# Current screenshots required\n\n'
+            (destination / 'SCREENSHOT-PROVENANCE.md').write_text(
+                '# Screenshot provenance\n\n'
                 'historical-native-captures contains prior-build reference evidence, '
-                'not current store screenshots. Capture and verify the changed '
-                'screens from this candidate before store submission.\n')
+                'not current store screenshots. Use current-store-captures and '
+                'inspect the final Play-installed app and Console preview before submission.\n')
     files = sorted(path for path in destination.rglob('*') if path.is_file())
     assert all(path.suffix not in ['.jks', '.keystore', '.p12'] for path in files)
     assert not any(path.name in ['key.properties', 'google-services.json'] for path in files)

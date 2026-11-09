@@ -1,0 +1,43 @@
+{
+  "matrixId": "matrix-3oml65nlb9axb",
+  "sourceApkSha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b",
+  "sourceBundleSha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
+  "screens": [
+    {
+      "file": "store-01-home.png",
+      "width": 720,
+      "height": 1280,
+      "sourceSha256": "232f7077eee7c04f36f2e64204cecbeaeff08bc39c5e0139f748eda2d025767c",
+      "exportSha256": "32408abac5c3ba32542b1c3ec0e167ccfb64f813440164fd884976b91f761bb8",
+      "rgbPixelsUnchanged": true,
+      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+    },
+    {
+      "file": "store-02-prayer.png",
+      "width": 720,
+      "height": 1280,
+      "sourceSha256": "a3ae881f4f2d0dd2589c9f3bb450fbb1cd6c9513133a06f603d5281c68bf2557",
+      "exportSha256": "cd1087e5806c818201b09813b4ab8d093fb21266e9839c126a639c99b64f0762",
+      "rgbPixelsUnchanged": true,
+      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+    },
+    {
+      "file": "store-03-growth.png",
+      "width": 720,
+      "height": 1280,
+      "sourceSha256": "b01068a4a53c2652166b8b8068f35b23ae7869dfeb1fafa8e5891034c9f10819",
+      "exportSha256": "fa2bb67362b0304896699b30b87a40f8a9b9c7ffe7d888a2a3a2d3448e2d93ab",
+      "rgbPixelsUnchanged": true,
+      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+    },
+    {
+      "file": "store-04-quran.png",
+      "width": 720,
+      "height": 1280,
+      "sourceSha256": "27c4f5ef359cf22165b975276e7e91eccb73374f9cad585e73e6198e94260353",
+      "exportSha256": "d4782eb531fd508d0a39b7f52839b8379e73d6f2adb39c91d019685250315253",
+      "rgbPixelsUnchanged": true,
+      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+    }
+  ]
+}
