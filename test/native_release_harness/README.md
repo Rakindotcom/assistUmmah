@@ -84,6 +84,13 @@ Select one method per fresh-device run:
   cancellation, and captures the loaded tasbih view. No app broadcast or
   notification is injected. This establishes a controlled clock-change path,
   not natural-clock latency, reboot/Doze or all OEM behavior.
+- `SignedInReleaseAuditTest#prayerExactAlarmPermissionTransitions`: uses the
+  second disposable account on a separate device. It refuses the app's real
+  Android exact-alarm request, checks approximate prayer scheduling, grants and
+  revokes exact access through OS app-ops, and checks recovery to inexact
+  scheduling after relaunch. Prayer opt-out must clear the native queue. The
+  original app-op is restored. UI status plus registered alarms establish these
+  transitions, not timed prayer delivery or reboot behavior.
 - `SignedInReleaseAuditTest#naturalClockDeliveryInDoze`: selects a real device
   timezone with an upcoming existing 08:00/20:00/21:00 reminder, grants notification
   permission through Android, and verifies the matching epoch in Android's alarm

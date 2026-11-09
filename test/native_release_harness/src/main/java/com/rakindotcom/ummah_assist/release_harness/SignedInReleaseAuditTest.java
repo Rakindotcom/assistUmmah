@@ -283,6 +283,102 @@ public final class SignedInReleaseAuditTest {
         }
     }
 
+    /** OS exact-alarm permission transitions using the second disposable account. */
+    @Test
+    public void prayerExactAlarmPermissionTransitions() throws Exception {
+        Bundle args=InstrumentationRegistry.getArguments();
+        context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        Configurator.getInstance().setWaitForIdleTimeout(300);
+        output=new File(context.getExternalFilesDir(null),"release-audit");
+        assertTrue(output.mkdirs()||output.isDirectory());
+        String original=device.executeShellCommand("cmd appops get "+APP+" SCHEDULE_EXACT_ALARM");
+        java.util.regex.Matcher mode=Pattern.compile("SCHEDULE_EXACT_ALARM: (allow|ignore|deny|default|foreground)").matcher(original);
+        String originalMode=mode.find()?mode.group(1):"default";
+        try {
+            stage="artifact identity";
+            String hash=SignedReleaseAuditTest.sha256(new File(context.getPackageManager().getApplicationInfo(APP,0).sourceDir));
+            assertEquals(required(args,"expectedApkSha256"),hash);report.put("installedApkSha256",hash);
+            long pageSize=Os.sysconf(OsConstants._SC_PAGESIZE);report.put("pageSize",pageSize);
+            assertEquals(Long.parseLong(required(args,"expectedPageSize")),pageSize);
+            device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM deny");
+            Intent launch=context.getPackageManager().getLaunchIntentForPackage(APP);
+            assertNotNull(launch);launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(launch);
+            signIn(required(args,"accountBEmail"),required(args,"accountBPassword"));
+            reveal("স্থান সেট করুন").click();waitLabel("শহর থেকে বেছে নিন",15000);
+            reveal("ঢাকা").click();waitAbsent("শহর থেকে বেছে নিন",15000);
+            nav("নামাজ");waitLabel("নামাজ ট্র্যাকিং",20000);
+            stage="prayer notification grant and exact access refusal";
+            reveal("নামাজের সময়ের অ্যালার্ট").click();
+            long deadline=SystemClock.uptimeMillis()+15000;
+            while(device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button")))==null&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(200);
+            assertNotNull("Expected Android notification permission",device.findObject(By.res(Pattern.compile(".*:id/permission_allow_button"))));
+            dismissNativePermissionDialog("permission_allow_button");
+            deadline=SystemClock.uptimeMillis()+15000;
+            while(!"com.android.settings".equals(device.getCurrentPackageName())&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(200);
+            assertEquals("Exact access request did not open Android Settings","com.android.settings",device.getCurrentPackageName());
+            device.pressBack();
+            reveal("সময় আনুমানিক হতে পারে");waitPrayerAlarmMode(false,"denied");
+            assertTrue(device.executeShellCommand("cmd appops get "+APP+" SCHEDULE_EXACT_ALARM").contains("deny"));
+            report.put("nativeExactAccessRequestRefused",true);report.put("nativePrayerInexactFallbackRegistered",true);
+            capture("prayer-exact-denied");
+            stage="OS exact access grant and foreground refresh";
+            device.pressHome();device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM allow");
+            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            nav("নামাজ");reveal("যথাসময়ে");waitPrayerAlarmMode(true,"granted");
+            assertTrue(device.executeShellCommand("cmd appops get "+APP+" SCHEDULE_EXACT_ALARM").contains("allow"));
+            report.put("nativeExactAccessGrantedThroughOs",true);report.put("nativePrayerExactSchedulingAfterGrant",true);
+            capture("prayer-exact-granted");
+            stage="OS exact access revocation and cold recovery";
+            device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM deny");
+            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            nav("নামাজ");reveal("সময় আনুমানিক হতে পারে");waitPrayerAlarmMode(false,"revoked");
+            report.put("nativeExactAccessRevokedThroughOs",true);report.put("nativePrayerInexactFallbackAfterRevocation",true);
+            capture("prayer-exact-revoked");
+            stage="prayer opt-out clears native queue";
+            reveal("নামাজের সময়ের অ্যালার্ট").click();waitChecked("নামাজের সময়ের অ্যালার্ট",false);waitForAppAlarm(false);
+            report.put("nativePrayerOptOutCancelsAlarms",true);
+            nav("আরও");reveal("সেটিংস ও রিপোর্ট").click();signOut();
+            report.put("success",true);save();
+        } catch(Throwable failure) {
+            report.put("success",false);report.put("failedStage",stage);report.put("failureType",failure.getClass().getSimpleName());save();
+            try{capture("failure-private");}catch(Throwable ignored){}
+            throw new AssertionError("Prayer permission audit failed at "+stage+" ("+failure.getClass().getSimpleName()+"). Inspect private artifacts.");
+        } finally {device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM "+originalMode);}
+    }
+
+    private void waitPrayerAlarmMode(boolean exactExpected,String name) throws Exception {
+        long deadline=SystemClock.uptimeMillis()+25000;
+        do {
+            String dump=device.executeShellCommand("dumpsys alarm");String[] lines=dump.split("\\n");
+            int total=0,exact=0;
+            for(int i=0;i<lines.length;i++) {
+                if(!lines[i].matches("\\s*RTC_WAKEUP #\\d+:.*")||!lines[i].contains(APP))continue;
+                StringBuilder entry=new StringBuilder(lines[i]);
+                for(int j=i+1;j<Math.min(i+10,lines.length);j++) {
+                    if(lines[j].matches("\\s*(?:RTC|ELAPSED)(?:_WAKEUP)? #\\d+:.*"))break;
+                    entry.append(' ').append(lines[j]);
+                }
+                if(!entry.toString().contains("ScheduledNotificationReceiver"))continue;
+                total++;
+                if(Pattern.compile("\\bwindow=0\\s").matcher(entry).find())exact++;
+            }
+            if(total>0&&(exactExpected?exact>0:exact==0)) {
+                savePrivateText("prayer-permission-"+name+"-alarm-dump.txt",dump);
+                report.put(name+"NativeAlarmCount",total);report.put(name+"ExactNativeAlarmCount",exact);return;
+            }
+            SystemClock.sleep(300);
+        }while(SystemClock.uptimeMillis()<deadline);
+        throw new AssertionError("Native alarm queue did not match exact access during "+stage);
+    }
+
+    private void waitForAppAlarm(boolean expected) throws Exception {
+        long deadline=SystemClock.uptimeMillis()+20000;
+        while(appAlarmPresent()!=expected&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(200);
+        assertEquals("Unexpected pending native alarm state during "+stage,expected,appAlarmPresent());
+    }
+
     /** Real elapsed-time delivery in documented forced Doze; no clock advance or injected event. */
     @Test
     public void naturalClockDeliveryInDoze() throws Exception {
