@@ -1,22 +1,22 @@
 {
-  "verifiedAtUtc": "2026-11-09T07:39:25.474840+00:00",
+  "verifiedAtUtc": "2026-11-09T16:42:53.320765+00:00",
   "entrypoint": "lib/main.dart",
   "flavor": "production",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 7,
+  "versionCode": 8,
   "targetSdk": 36,
   "minSdk": 24,
   "artifacts": {
     "apk": {
-      "path": "output/apk/rober-pothe-1.0.0-build7.apk",
-      "sha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
+      "path": "output/apk/rober-pothe-1.0.0-build8.apk",
+      "sha256": "952f7dd3be95997d3898653e9052adff5461b30d20ff8609c9a6da9a4e89d707",
       "bytes": 64633779
     },
     "aab": {
-      "path": "output/aab/rober-pothe-1.0.0-build7.aab",
-      "sha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
-      "bytes": 63644103
+      "path": "output/aab/rober-pothe-1.0.0-build8.aab",
+      "sha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
+      "bytes": 63647031
     }
   },
   "signatureMatchesExistingUploadCertificate": true,
@@ -25,35 +25,35 @@
   "anekBanglaAndFontLicensesBundled": true,
   "native64BitElfAlignmentAtLeast16KiB": true,
   "universalApkZipAlignment16KiB": true,
-  "nativeRuntimeVerified": true,
+  "nativeRuntimeVerified": false,
   "playInstalledBuildVerified": false,
-  "scope": "Clean build 7 matches current compiled Dart identities. Source/static checks, Android 8 / 16 KB startup, complete physical release suite and correlated received optional diagnostics passed. Manual Play and remaining lifecycle/accessibility gates remain open.",
-  "nativeRuntimeScope": "Original signed build 7 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
-  "nativeRuntimeEvidence": "current-controlled-startup.json",
-  "independentDeviceApkHashVerified": true,
-  "nativeFunctionalEvidence": "current-native-suite.json",
-  "exportedAtUtc": "2026-11-09T07:39:25.474840+00:00",
+  "scope": "Build 8 protects explicit prayer preference edits through permission UI, native scheduling and local persistence, preventing stale resume refreshes from cancelling the new alarms. Source/static checks pass; this binary requires fresh native verification.",
+  "nativeRuntimeScope": "Previous binary native receipts are historical and cannot verify this changed candidate.",
+  "nativeRuntimeEvidence": null,
+  "independentDeviceApkHashVerified": false,
+  "nativeFunctionalEvidence": null,
+  "exportedAtUtc": "2026-11-09T16:42:53.320765+00:00",
   "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e",
-  "sourceCommit": "7cd3d349cc718f39e0f6c99fa6f5432ab1798703",
-  "currentSourcePackaged": false,
-  "releaseCandidateStatus": "rejected-prayer-permission-resume-race",
+  "sourceCommit": "6de9e852ff272cfed3610196017e2d5166939d57",
+  "currentSourcePackaged": true,
+  "releaseCandidateStatus": "pending-native-verification",
   "compiledDartLibraryBuildIdsVerified": true,
   "compiledDartLibraries": [
     {
       "abi": "arm64-v8a",
-      "buildId": "b718850985217222f90d3cfa89f9a6c4",
+      "buildId": "b7188509848d5973f90d3cfaa3eba974",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/arm64-v8a/app.so"
     },
     {
       "abi": "armeabi-v7a",
-      "buildId": "3931dddaa80a7bce0e1bf313bedb136f",
+      "buildId": "3931ddda8a0552cd0e1bf313c433b06c",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/armeabi-v7a/app.so"
     },
     {
       "abi": "x86_64",
-      "buildId": "3d49a0ba7d5b1ca4a88e279813f6f27f",
+      "buildId": "3d49a0ba9b0c567ba88e279848432ed6",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
     }
   ],
-  "knownReleaseBlocker": "Exact-alarm refusal/resume can cancel newly enabled prayer alerts using an old persisted preference; replacement build 8 is being prepared."
+  "priorRejectedCandidateBuild": 7
 }

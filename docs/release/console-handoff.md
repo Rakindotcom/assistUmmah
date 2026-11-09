@@ -5,8 +5,8 @@ tracks, terms or publishing actions have been submitted by Codex.
 
 **Stop: build 7 is rejected and must not be uploaded.** Additional native
 permission testing found cancelled prayer alerts after exact-alarm refusal.
-The source fix is prepared for build 8, whose clean build and binary-bound native
-verification are pending. Wait for its matching packet before these upload steps.
+Build 8 passes clean build/signing checks; binary-bound native verification
+is pending. Wait for its matching packet before these upload steps.
 Public release remains unapproved.
 
 ## Start with internal testing

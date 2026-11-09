@@ -4,7 +4,7 @@ Updated 9 November 2026 (Asia/Dhaka).
 
 **Build 7 is rejected as the final candidate.** Additional exact-alarm refusal
 checks exposed cancelled prayer alerts despite an enabled setting. The source
-race is fixed; build 8 preparation and fresh native verification are pending.
+race is fixed; build 8 passes clean build checks and awaits fresh native verification.
 Do not publish the archived build 7 packet. See the [current audit](current-release-audit.md).
 
 ## Current release scope and decision

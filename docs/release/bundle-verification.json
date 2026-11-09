@@ -1,9 +1,9 @@
 {
   "bundle": "build/app/outputs/bundle/productionRelease/app-production-release.aab",
-  "sha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
+  "sha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 7,
+  "versionCode": 8,
   "minSdk": 24,
   "targetSdk": 36,
   "signatureVerified": true,
@@ -119,23 +119,23 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": true,
+  "runtime16KbVerified": false,
   "apkZipAlignmentVerified": true,
   "compiledDartLibraryBuildIdsVerified": true,
   "compiledDartLibraries": [
     {
       "abi": "arm64-v8a",
-      "buildId": "b718850985217222f90d3cfa89f9a6c4",
+      "buildId": "b7188509848d5973f90d3cfaa3eba974",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/arm64-v8a/app.so"
     },
     {
       "abi": "armeabi-v7a",
-      "buildId": "3931dddaa80a7bce0e1bf313bedb136f",
+      "buildId": "3931ddda8a0552cd0e1bf313c433b06c",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/armeabi-v7a/app.so"
     },
     {
       "abi": "x86_64",
-      "buildId": "3d49a0ba7d5b1ca4a88e279813f6f27f",
+      "buildId": "3d49a0ba9b0c567ba88e279848432ed6",
       "compilerOutput": "build/app/intermediates/flutter/productionRelease/x86_64/app.so"
     }
   ],
