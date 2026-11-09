@@ -119,7 +119,7 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": false,
+  "runtime16KbVerified": true,
   "apkZipAlignmentVerified": true,
   "cloudRuntime16KbStartupVerified": false,
   "universalApkSignatureVerified": true,

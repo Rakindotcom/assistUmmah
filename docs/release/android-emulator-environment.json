@@ -9,9 +9,9 @@
   "screenWidth": 720,
   "screenHeight": 1280,
   "physicalDevice": false,
-  "productionAppRuntimeVerified": false,
-  "productionRuntimeBundleSha256": null,
-  "productionRuntimeScope": "Current signed bundle has no successful native runtime smoke.",
+  "productionAppRuntimeVerified": true,
+  "productionRuntimeBundleSha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
+  "productionRuntimeScope": "Original signed build 6 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
   "historicalHardwareAcceleration": "KVM",
   "currentRuntimeAttempt": {
     "attemptedAtUtc": "2026-11-06T16:45:34.725058+00:00",
@@ -31,6 +31,11 @@
     "emulatorStoppedAfterDiagnosis": true
   },
   "cloudProductionStartupVerified": false,
-  "productionRuntimeEnvironment": null,
+  "productionRuntimeEnvironment": {
+    "provider": "Firebase Test Lab",
+    "architecture": "arm64-v8a",
+    "androidApi": 36,
+    "pageSize": 16384
+  },
   "localImageScope": "Top-level image/architecture fields describe the historical local emulator image. Current production runtime metadata is under productionRuntimeEnvironment."
 }

@@ -36,12 +36,12 @@ Support: **teamframecipher@gmail.com**.
 | Release evidence tooling | Passed | Nine unit tests bind functional claims to current APK/AAB identities; superseded-version packet rejection verified separately. |
 | Signed AAB | Passed | Version 1.0.0+6, target API 36, minimum API 24, ARM64, all 64-bit ELF load segments aligned for 16 KB; test/debug flags absent. |
 | Universal APK | Passed | Exported signed APK; existing upload certificate matches, 16 KB ZIP alignment and signature verification pass. |
-| Current native startup | Pending | Older candidate receipts cannot verify this binary. |
-| Physical functional suite | Pending | Login, task persistence/isolation, permission handling, manual location, controlled delivery, timezone changes, interrupted deletion and server cleanup. |
+| Current native startup | Passed | Build 6 16 KB matrix `matrix-32b6xdgx7d0ed`: independently measured installed APK hash, page size, login, privacy and Back; Firebase initialization/log checks pass. |
+| Physical functional suite | Incomplete | First build 6 run passed core flows/reminder consent, then failed when the driver clicked a Flutter scroll child over Android Home. Driver corrected to scroll actions above the observed system-navigation bounds; full rerun pending. |
 | Current screenshots | Pending | Must be generated from this candidate and inspected. |
 | Optional received diagnostics | Pending | Opt-in, controlled crash, restart, opt-out and independently correlated server event must identify this build. |
 | Existing backend and policy pages | Unchanged | Tested rules/Hosting deployment evidence remains valid; no backend source changes in builds 5/6. |
-| Hosted CI | Externally blocked at last check | Account billing lock prevented runner startup; local passes are not a hosted CI pass. |
+| Hosted CI | Externally blocked | Current run [42576553855](https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855): all three jobs have zero steps. Annotation: account locked due to a billing issue. |
 | Play-installed app / Console | Manual gate | Owner requested manual Console work. |
 
 ## Historical evidence and failures
@@ -67,6 +67,9 @@ were cleaned using the normal deletion protocol before new fixtures were made.
   login, internal-track/pre-launch reports, listing/declarations, content rating,
   audience, developer identity and applicable closed-testing requirements.
 - Resolve the hosted CI account lock before merging under a required-CI policy.
+- The build 6 Android 8 submission (`matrix-2miug650jbzvy`) was rejected with
+  `TEST_QUOTA_EXCEEDED`. No test ran. Wait for the free quota reset; build 5
+  startup on Android 8 does not verify build 6. No billing upgrade is allowed.
 
 The APK/AAB paths and hashes are recorded in
 [the artifact receipt](current-release-artifacts.json). Binaries

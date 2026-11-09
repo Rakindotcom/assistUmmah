@@ -4,7 +4,7 @@
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 14,
   "releaseInputs": "pass",
-  "nativeRuntimeTested": false,
+  "nativeRuntimeTested": true,
   "playConsoleVerified": false,
   "supportEmail": "teamframecipher@gmail.com",
   "billingPlanChanged": false,
@@ -34,18 +34,18 @@
   "nativeProfileAuditPassed": false,
   "nativeLoginFormSubmitted": false,
   "formTextInputSimulated": false,
-  "signedReleaseStartupSmokePassed": false,
+  "signedReleaseStartupSmokePassed": true,
   "fullSignedReleaseFunctionalTested": false,
   "physicalDeviceTested": false,
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
   "bundleSha256": "9b255b9272c34b8cb41f382c571546a46114a8d61b5c4093911f3eae5ab9ebc3",
-  "signedReleaseLoginVisible": false,
-  "firebaseRegistrarErrorsAbsent": false,
+  "signedReleaseLoginVisible": true,
+  "firebaseRegistrarErrorsAbsent": true,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
+  "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json.",
   "releaseToolTestsPassed": 9,
   "universalApkSha256": "c650f24bf4ce08dd35a0233713fcea0c5d6f5e1f7987d623fe621dc96083c121",
   "signingIdentityMatchesPriorTestApk": true,
@@ -58,7 +58,7 @@
   "productionReleaseApproved": false,
   "backendDeploymentVerified": true,
   "existingReviewerLiveAccessVerified": true,
-  "githubCiStatus": "blocked: account billing lock prevented runner startup; no CI pass claimed",
+  "githubCiStatus": "blocked: current run 42576553855 had zero steps; annotation confirms account billing lock",
   "historicalVisualEvidenceScope": "Existing widget/profile captures retain their original provenance; they do not verify build 5.",
   "historicalVisualEvidence": {
     "phoneCaptureCount": 6,
@@ -70,12 +70,12 @@
   "firebaseTestLockSha256": "49b5a5ff7b79280a07d0693bf774bcbec1a1471e0ec9c447020de9001c706a2f",
   "uploadPacketGateVerified": true,
   "cloudSignedApkStartupVerified": false,
-  "currentNativeStartupCaptureCount": 0,
+  "currentNativeStartupCaptureCount": 2,
   "currentNativeStartupScope": "ARM64 Android 16 / 16 KB Test Lab startup and signed-out UI only. No credentials supplied; no full native signed-in flow or OS alert delivery claimed.",
-  "independentDeviceApkHashVerified": false,
-  "devicePageSizeSyscallVerified": false,
-  "bundledPrivacyNativeVerified": false,
-  "nativeSystemBackVerified": false,
+  "independentDeviceApkHashVerified": true,
+  "devicePageSizeSyscallVerified": true,
+  "bundledPrivacyNativeVerified": true,
+  "nativeSystemBackVerified": true,
   "nativePasswordLoginVerified": false,
   "nativeTaskPersistenceVerified": false,
   "nativeAccountSwitchIsolationVerified": false,
@@ -104,11 +104,11 @@
   "controlledCrashlyticsServerReceiptVerified": false,
   "nativePostCrashRestartVerified": false,
   "timedNotificationDeliveryScope": "Natural-clock latency remains unverified. The build 5 virtual suite passed the controlled-clock case, but the aggregate suite failed at a test parser; complete native verification is pending.",
-  "nativeStartupEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
+  "nativeStartupEvidenceScope": "Original signed build 6 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
   "nativeFunctionalEvidence": {
     "current-controlled-startup.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original signed build 6 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-flows.json": {
       "current": false,
@@ -148,5 +148,6 @@
     }
   },
   "nativeDailyTimezoneIsolationVerified": false,
-  "nativeDailyTimezoneRefreshVerified": false
+  "nativeDailyTimezoneRefreshVerified": false,
+  "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855"
 }
