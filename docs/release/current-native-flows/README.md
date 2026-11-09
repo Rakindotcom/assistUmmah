@@ -1,5 +1,5 @@
-# Build 7 authenticated native evidence
+# Build 8 authenticated native evidence
 
-Original Galaxy A15 frames from successful complete matrix matrix-3df6vrt78lucs. The app used disposable fabricated accounts through the normal backend. Source APK/AAB and per-file hashes are recorded in capture-provenance.json.
+Original Galaxy A15 frames from successful seven-case matrix matrix-dhm0jqrx3qsqa. The app used disposable fabricated accounts through its normal backend. Source binary identities and capture hashes are recorded in capture-provenance.json. Both disposable accounts are cleaned.
 
-Associated UI hierarchies were scanned for fixture credentials and identifiers before selection. Original device dimensions are retained. Play phone exports are in ../current-store-captures/. Native behavior and server-cleanup results are scoped in the release audit and named JSON receipts.
+Selected UI hierarchies exclude fixture credentials and identifiers. Original device dimensions are retained. The five visually reviewed phone exports are in ../current-store-captures/. These captures do not establish Play-installed behavior.

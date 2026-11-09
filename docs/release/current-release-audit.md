@@ -2,9 +2,10 @@
 
 Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+8**.
 
-**Build 8 passes clean source/build/signing checks. Native verification of this
-exact binary is pending. Public release is not approved. Builds 5, 6 and 7 must
-not be published.**
+**Build 8 passes clean source/build/signing checks and the complete seven-case
+native suite on a physical Galaxy A15. Current diagnostics and manual release
+gates remain open. Public release is not approved. Builds 5, 6 and 7 must not
+be published.**
 
 ## Scope and constraints
 
@@ -51,9 +52,9 @@ disposable cohort for that observation and the build 8 permission check was clea
 | Universal APK | Passed | Existing upload certificate, signature and 16 KB ZIP alignment verified. |
 | Current native startup / legacy | Passed | Android 16 / 16 KB `matrix-w0p1lhvwpdtda` and Android 8 / 4 KB `matrix-53rtwv399shda`: original installed hash, syscall measurement, login/privacy/Back and clean Firebase initialization. |
 | Reproduced prayer permission path | Passed | `matrix-3gexv8paqgp1v`, Android 16 / 16 KB: refusal preserves 46 inexact alarms, grant yields 45 exact plus renewal, OS revocation restores approximate scheduling, opt-out clears queue. JUnit passed; disposable accounts cleaned. |
-| Current complete native suite | Failed / investigating | Physical matrix `matrix-3q1unykrabi8f` failed after 153 seconds. Stopped in reminders: the driver tapped a one-pixel clipped sign-out node and no confirmation dialog opened. Visibility guard corrected; original failure retained and cohort cleaned. No suite pass or current server persistence/deletion claim. |
+| Current complete native suite | Passed | Physical Galaxy A15 matrix `matrix-dhm0jqrx3qsqa`: all seven cases passed in 408 seconds. Independent server checks confirmed task save, account isolation, nine deleted root documents, eight empty collections and deleted Auth identity. Both disposable accounts cleaned. Earlier clipped-control driver failure remains preserved. |
 | Current optional diagnostics | Pending | Requires explicit opt-in/crash/restart/opt-out and a correlated received build 8 server report. |
-| Current screenshots | Pending | Build 7 images cannot satisfy the build 8 packet provenance gate. |
+| Current screenshots | Passed | Five build 8 phone captures visually reviewed; ten native evidence frames refreshed. Source APK/AAB and capture hashes recorded. |
 | Backend / reviewer access | Prior live readback retained | Rules, public assets and authentication setup are unchanged by this local scheduling fix. No new backend deployment is required. |
 | Hosted CI | Externally blocked | Last inspected run 42594358975 had zero job steps and an explicit account billing-lock annotation. No hosted CI pass is claimed. |
 | Play-installed build / Console | Manual | Owner requested manual Play work. |
@@ -69,8 +70,8 @@ must not be uploaded. Native evidence is invalidated when binary identity change
 
 ## Remaining gates
 
-1. Verify original build 8 startup, all seven suite cases, received diagnostics,
-   fresh captures, server cleanup and disposable fixture cleanup, then package.
+1. Finish current build 8 received diagnostics and its disposable fixture cleanup,
+   then package the verified native evidence and fresh captures.
 2. Verify remaining lifecycle/accessibility scope: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. A bounded
    forced-Doze observation or controlled-clock pass is narrower than these gates.

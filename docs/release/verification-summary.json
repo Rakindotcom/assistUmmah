@@ -35,11 +35,11 @@
     "current-native-prayer-permissions.json"
   ],
   "nativeProfileAuditPassed": false,
-  "nativeLoginFormSubmitted": false,
+  "nativeLoginFormSubmitted": true,
   "formTextInputSimulated": false,
   "signedReleaseStartupSmokePassed": true,
   "fullSignedReleaseFunctionalTested": false,
-  "physicalDeviceTested": false,
+  "physicalDeviceTested": true,
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
@@ -48,7 +48,7 @@
   "firebaseRegistrarErrorsAbsent": true,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json, current-native-legacy.json, current-native-prayer-permissions.json.",
+  "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-native-suite.json, current-controlled-startup.json, current-native-flows.json, current-native-deletion.json, current-native-legacy.json, current-native-physical.json, current-native-physical-flows.json, current-native-reminders.json, current-native-timezone.json, current-native-delivery.json, current-native-prayer-permissions.json, current-native-location-diagnostics.json.",
   "releaseToolTestsPassed": 16,
   "universalApkSha256": "952f7dd3be95997d3898653e9052adff5461b30d20ff8609c9a6da9a4e89d707",
   "signingIdentityMatchesPriorTestApk": true,
@@ -79,75 +79,75 @@
   "devicePageSizeSyscallVerified": true,
   "bundledPrivacyNativeVerified": true,
   "nativeSystemBackVerified": true,
-  "nativePasswordLoginVerified": false,
-  "nativeTaskPersistenceVerified": false,
-  "nativeAccountSwitchIsolationVerified": false,
-  "nativeNotificationDenialVerified": false,
-  "nativeDeletionRecoveryVerified": false,
-  "nativeDeletionRouteRevocationVerified": false,
-  "nativeDeletionServerCleanupVerified": false,
+  "nativePasswordLoginVerified": true,
+  "nativeTaskPersistenceVerified": true,
+  "nativeAccountSwitchIsolationVerified": true,
+  "nativeNotificationDenialVerified": true,
+  "nativeDeletionRecoveryVerified": true,
+  "nativeDeletionRouteRevocationVerified": true,
+  "nativeDeletionServerCleanupVerified": true,
   "disposableNativeFixturesCleaned": false,
   "android8StartupVerified": true,
-  "nativeNotificationPermissionGrantVerified": false,
-  "nativeDailyAlarmRegistrationVerified": false,
-  "nativeSignOutAlarmCancellationVerified": false,
-  "nativeDiagnosticsConsentPersistenceVerified": false,
+  "nativeNotificationPermissionGrantVerified": true,
+  "nativeDailyAlarmRegistrationVerified": true,
+  "nativeSignOutAlarmCancellationVerified": true,
+  "nativeDiagnosticsConsentPersistenceVerified": true,
   "timedNotificationDeliveryVerified": false,
-  "currentStorePhoneScreenshots": 0,
-  "physicalStartupVerified": false,
+  "currentStorePhoneScreenshots": 5,
+  "physicalStartupVerified": true,
   "fullPhysicalFlowsTested": false,
-  "controlledClockNativeNotificationDeliveryVerified": false,
-  "nativeNotificationOsRevocationVerified": false,
-  "physicalNativePasswordSignInVerified": false,
-  "physicalNativeTaskPersistenceVerified": false,
-  "physicalNativeAccountIsolationVerified": false,
-  "physicalCoreNavigationVerified": false,
-  "nativeLocationDenialVerified": false,
-  "nativeManualLocationFallbackVerified": false,
+  "controlledClockNativeNotificationDeliveryVerified": true,
+  "nativeNotificationOsRevocationVerified": true,
+  "physicalNativePasswordSignInVerified": true,
+  "physicalNativeTaskPersistenceVerified": true,
+  "physicalNativeAccountIsolationVerified": true,
+  "physicalCoreNavigationVerified": true,
+  "nativeLocationDenialVerified": true,
+  "nativeManualLocationFallbackVerified": true,
   "controlledCrashlyticsServerReceiptVerified": false,
   "nativePostCrashRestartVerified": false,
-  "timedNotificationDeliveryScope": "Build 7 physical release suite passed controlled-clock delivery into Android System UI. Natural-clock latency, reboot and Doze remain unverified.",
+  "timedNotificationDeliveryScope": "Build 8 physical suite verifies delivery after a controlled wall-clock advance. Natural-clock latency, reboot and Doze remain unverified.",
   "nativeStartupEvidenceScope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims.",
   "nativeFunctionalEvidence": {
     "current-native-suite.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "All seven named release audit cases passed in one device allocation, with app-data reset between cases and deletion last. This is scoped functional evidence, not every feature or Play publication approval."
     },
     "current-controlled-startup.json": {
       "current": true,
       "scope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-flows.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Physical Galaxy A15:  native password login, own task read/save confirmed on server before deletion, core page navigation, notification denial, logout and account isolation. Does not cover every edit, Google OAuth, Play delivery or long-session performance."
     },
     "current-native-deletion.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Remote owner deletion marker closes a private unsaved dialog, Back cannot restore private home, native password-confirmed deletion finishes, cold restart permits the other account. Independent server check confirms owned data/identity cleanup."
     },
     "current-native-legacy.json": {
       "current": true,
       "scope": "Original signed build 8 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-physical.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original signed candidate startup, installed APK identity, login, privacy and Android Back on a physical Galaxy A15. No Play-installed signing claim."
     },
     "current-native-physical-flows.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Physical Galaxy A15:  native password login, own task read/save confirmed on server before deletion, core page navigation, notification denial, logout and account isolation. Does not cover every edit, Google OAuth, Play delivery or long-session performance."
     },
     "current-native-reminders.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Native notification grant, OS alarm registration, sign-out cancellation and optional diagnostics default-off/on/restart/off. Registration is separate from timed delivery or a received crash report."
     },
     "current-native-timezone.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Daily native alarm epochs retained local 08:00/20:00/21:00 after prayer database initialization, then device zone changes to New York and Dhaka without restarting the production process. Original timezone settings restored."
     },
     "current-native-delivery.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Original app alarm reached Android System UI after controlled wall-clock advance; OS notification permission revoked and explicit opt-out cancelled alarms. No natural-clock deadline, reboot or Doze claim."
     },
     "current-native-lifecycle.json": {
       "current": false,
@@ -155,24 +155,24 @@
     },
     "current-native-prayer-permissions.json": {
       "current": true,
-      "scope": "Original signed build 8, Android 16 / ARM64 / 16 KB virtual device. Native exact access request refused: 46 approximate alarms persisted. OS grant produced 45 exact alarms plus one renewal; OS revocation and relaunch restored 46 approximate alarms. Explicit prayer opt-out cleared the app alarm queue. No timed prayer-delivery, reboot, all-OEM or Play-installed claim."
+      "scope": "Native exact-alarm request refused, approximate queue registered, OS exact grant with exact native windows, OS revocation/cold restart with approximate windows, and prayer opt-out cancels all alarms. Not proof of timed prayer delivery or reboot."
     },
     "current-native-location-diagnostics.json": {
-      "current": false,
-      "scope": null
+      "current": true,
+      "scope": "Native location denial and advanced manual Dhaka coordinates/timezone saved and reflected in calculated prayer views. No crash injected by this suite; diagnostics receipt remains separate."
     }
   },
-  "nativeDailyTimezoneIsolationVerified": false,
-  "nativeDailyTimezoneRefreshVerified": false,
+  "nativeDailyTimezoneIsolationVerified": true,
+  "nativeDailyTimezoneRefreshVerified": true,
   "githubCiRunUrl": "https://github.com/Rakindotcom/assistUmmah/actions/runs/42594358975",
   "currentSourcePackaged": true,
   "releaseCandidateStatus": "pending-native-verification",
-  "currentNativeReleaseSuitePassed": false,
-  "completedReleaseSuiteFixturesCleaned": false,
-  "diagnosticsVerificationStatus": "not verified for build 8; prior candidate proof is historical",
+  "currentNativeReleaseSuitePassed": true,
+  "completedReleaseSuiteFixturesCleaned": true,
+  "diagnosticsVerificationStatus": "running: matrix-1mraxtyu9ifqs; explicit-consent synthetic crash/restart/opt-out on fresh disposable accounts",
   "diagnosticsObservationBlocked": false,
-  "diagnosticsFixtureCleanupPending": false,
-  "evidenceReconciledAtUtc": "2026-11-09T17:01:09.360302+00:00",
+  "diagnosticsFixtureCleanupPending": true,
+  "evidenceReconciledAtUtc": "2026-11-09T17:32:42.735494+00:00",
   "completedDiagnosticsFixturesCleaned": false,
   "lifecycleVerificationStatus": "not verified for build 8; prior candidate observation is historical",
   "lifecycleFixturesCleaned": false,
@@ -184,5 +184,5 @@
   "nativePrayerExactRevocationRecoveryVerified": true,
   "nativePrayerAlertOptOutVerified": true,
   "historicalBuild7LifecycleFixturesCleaned": true,
-  "nativeReleaseSuiteStatus": "failed: matrix-3q1unykrabi8f; case artifacts being inspected, no suite pass claimed"
+  "nativeReleaseSuiteStatus": "passed: matrix-dhm0jqrx3qsqa; all seven cases, independent server save/isolation/deletion checks and cohort cleanup verified"
 }

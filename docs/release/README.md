@@ -4,7 +4,8 @@ Updated 9 November 2026 (Asia/Dhaka).
 
 **Build 7 is rejected as the final candidate.** Additional exact-alarm refusal
 checks exposed cancelled prayer alerts despite an enabled setting. The source
-race is fixed; build 8 passes clean build checks and awaits fresh native verification.
+race is fixed; build 8 passes clean build checks and all seven native release cases
+on a physical Galaxy A15. Current received diagnostics and manual gates remain open.
 Do not publish the archived build 7 packet. See the [current audit](current-release-audit.md).
 
 ## Current release scope and decision
@@ -28,7 +29,9 @@ The signed production AAB is generated at
 Current test artifacts are `output/apk/rober-pothe-1.0.0-build8.apk` and
 `output/aab/rober-pothe-1.0.0-build8.aab`. Build 8 passes clean source/build checks,
 Android 8 / Android 16 with 16 KB startup, and native exact-alarm refusal, grant,
-revocation and opt-out checks. Its expanded complete release suite is pending.
+revocation and opt-out checks. Its expanded seven-case physical release suite passed
+in `matrix-dhm0jqrx3qsqa`, including independent server persistence, isolation and
+deletion checks. The disposable suite accounts are cleaned.
 Only matching receipts establish current behavior. Public release remains unapproved.
 
 Current functionality includes the prayer-first home with offline prayer and

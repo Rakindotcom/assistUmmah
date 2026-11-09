@@ -1,9 +1,9 @@
 {
-  "matrixId": "matrix-3df6vrt78lucs",
+  "matrixId": "matrix-dhm0jqrx3qsqa",
   "matrixOutcome": "SUCCESS",
-  "sourceApkSha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
-  "sourceBundleSha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
-  "exportedAtUtc": "2026-11-09T08:32:43.543621+00:00",
+  "sourceApkSha256": "952f7dd3be95997d3898653e9052adff5461b30d20ff8609c9a6da9a4e89d707",
+  "sourceBundleSha256": "0b84257e13a1abb7e685d9d4c6322adf080d60f6346c0d70f261ce8b76e0540a",
+  "exportedAtUtc": "2026-11-09T17:30:44.547243+00:00",
   "scope": "Original physical Galaxy A15 viewports from the successful complete release suite. RGB conversion preserves all pixels. Screenshots establish the pictured UI, not Play-installed behavior or publication approval.",
   "screens": [
     {
@@ -11,10 +11,10 @@
       "width": 720,
       "height": 1280,
       "sourceFile": "store-01-home-configured.png",
-      "sourceSha256": "b43e5e21af103b962291548462c9238375e023b0ce19e164af874f5714d6cf05",
-      "exportSha256": "c61e062b5336bb1f2ab82919d036ca18c16a60ecdd9c2568cdbe3572e5f9d5cb",
+      "sourceSha256": "1c1f8062510459ae9a717f52db26c234af7659d5f164a6974508a5d4291f87e2",
+      "exportSha256": "317399ced52aed0e5e02fc7e0bdf46858ecd4d1d028a25c6da60412be80ac8f4",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "sourceMatrixId": "matrix-dhm0jqrx3qsqa",
       "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
@@ -22,10 +22,10 @@
       "width": 720,
       "height": 1280,
       "sourceFile": "store-02-prayer-configured.png",
-      "sourceSha256": "38a35abaef646f4e5f13bac582c97efb1d58b373ef5d74b6a9d6a9208235a2d1",
-      "exportSha256": "17fdab99ee10eb878966202d0dac1ac76945a6d47639258a085b8110c4b18b9f",
+      "sourceSha256": "371d292fbc937ec79427ef5a0aed1e42a5cffd444baee01b73775019dc230ff4",
+      "exportSha256": "7e032e47578339715e32a3d089fe764145d774a34f81418b0545c3a2de593efb",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "sourceMatrixId": "matrix-dhm0jqrx3qsqa",
       "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
@@ -33,10 +33,10 @@
       "width": 720,
       "height": 1280,
       "sourceFile": "store-03-growth.png",
-      "sourceSha256": "7824d307a0c183424837f39d9813ce6762d1f1930052649ed7d8bdfd9e3f92c4",
-      "exportSha256": "a8faef0cbc5214c167995ebaac5d9b440aaa7a4188c08e5e7d3fba2891a35d1a",
+      "sourceSha256": "a0a9261ee826b8a71944cbd1b531e9abec0ae01d58225749bd22d85706ba02fe",
+      "exportSha256": "3d5fadc196d86f7caa57597757c82eb9ab1af54331ba9e62a9f4944d1bb99df4",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "sourceMatrixId": "matrix-dhm0jqrx3qsqa",
       "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
@@ -44,10 +44,10 @@
       "width": 720,
       "height": 1280,
       "sourceFile": "store-04-quran.png",
-      "sourceSha256": "4b54671665d11e8ad18086b84891770f9ebef20053f0cd5b788566854538d0e9",
-      "exportSha256": "d6e2c97193c931d1447abf0a581a5a59a067fc21d48ce84ee9108c86b175efb4",
+      "sourceSha256": "46f036fcddca8ad016c1086e341ef4b22116582a25b81e5d729271eb1b240644",
+      "exportSha256": "6a3907b5edaef3e5620c1371e47499fe5a487424878299e9af4481d8fd10e7cf",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "sourceMatrixId": "matrix-dhm0jqrx3qsqa",
       "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
@@ -55,10 +55,10 @@
       "width": 720,
       "height": 1280,
       "sourceFile": "store-05-dhikr.png",
-      "sourceSha256": "6012d028382d96e9bef43a699c5e41cc964188fbcb2fd54d37ebc57810f2be2c",
-      "exportSha256": "d085f6a9a1c87d260db4be1a5f479056e774de90b03de304fe493f50110bcf85",
+      "sourceSha256": "78b2b1a060a73558cc4d0ce2134299c9c093c95f688280f51d3335b157dffdd2",
+      "exportSha256": "7b5583c6d23866eca9167452037003bf04d4be3f3abe2b512c17e8da9d75e14d",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "sourceMatrixId": "matrix-dhm0jqrx3qsqa",
       "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     }
   ]
