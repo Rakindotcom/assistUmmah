@@ -75,9 +75,12 @@ packet passes its binary/startup/screenshot gates and remains preparation materi
 A separate natural-clock/Doze observation was submitted as
 `matrix-1162untmdq5yk`; it has no accepted delivery result yet. Its fresh
 disposable fixtures remain active until the matrix is confirmed terminal.
-The separate Android 16 / 16 KB prayer exact-alarm permission audit is
-`matrix-3bnkinvjl0m5f`; it uses account B on a different device and also remains
-pending. Neither new run is counted as a native delivery/permission pass yet.
+The first Android 16 / 16 KB prayer exact-alarm audit
+(`matrix-3bnkinvjl0m5f`) failed before completing its assertions. The capture
+shows approximate alerts enabled; it does not establish the native queue check.
+A diagnostic rerun, `matrix-35x58ea7wzbqq`, retains the original failure cause
+and OS alarm dump. It uses account B on a separate device. Neither new audit
+is counted as a native delivery/permission pass yet.
 
 1. Verify remaining lifecycle/accessibility requirements: natural-clock latency,
    reboot/Doze, long sessions, TalkBack and applicable OEM behavior. Controlled
