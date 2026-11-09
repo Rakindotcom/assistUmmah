@@ -1,0 +1,79 @@
+{
+  "matrixId": "matrix-3df6vrt78lucs",
+  "matrixOutcome": "SUCCESS",
+  "sourceApkSha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
+  "sourceBundleSha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
+  "scope": "Original authenticated physical-phone QA frames of disposable fabricated accounts. Associated UI hierarchies were checked for fixture email/password/UID literals before publication. Store phone exports are maintained separately.",
+  "screens": [
+    {
+      "file": "03-home.png",
+      "sha256": "e31f40538572f0645da93f5cda03393f09952c7d91a6dc5e1c88221636724e89",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "04-tasks.png",
+      "sha256": "ec7773ef28a307e0dd5fd0f1dcc2089acb9503b71a1607b3c6967d6ce1676f65",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "05-prayer.png",
+      "sha256": "3c5a9b650ab54d2fc940c404421df426022e9e8d3d02f7441a71fa826832639c",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "06-growth.png",
+      "sha256": "525f91003697c35e6f6236c1e3d1e7fb0ec5a1019e1c1eb24c90839333d50d14",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "07-more.png",
+      "sha256": "a97ecf63634145223a929d4ef7fe0accfa704dbf144fd15f146d7c8b99bed8af",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "08-quran.png",
+      "sha256": "6d96380dd81dd5cefbdd389725e722156bcff9fcbd726c8a3766bdff5fbcfc05",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "09-dhikr.png",
+      "sha256": "5b81a21f0d286daca1c25371319e549946f5d6ebf850fc9710d22cfb87b7e964",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "10-other-account-tasks.png",
+      "sha256": "0c1d4adcfa12a96fa84127549e81f4f78cc74af017f4ee3b000528839f4d3447",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "11-deletion-recovery.png",
+      "sha256": "006dc1ab3a4f381988f30efe794bfef72ced3830fbe79d0cf343fc844171de83",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    },
+    {
+      "file": "12-native-notification-delivery.png",
+      "sha256": "cf7241601a29d6c152e40dcb627595dc0c839fa5cb9c15980277fc548ce26908",
+      "width": 1080,
+      "height": 2340,
+      "associatedHierarchyCredentialScanPassed": true
+    }
+  ]
+}

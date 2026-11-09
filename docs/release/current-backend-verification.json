@@ -6,6 +6,11 @@
       "matchesSource": true,
       "sha256": "daacf6dbd649bae39a10b48fb0ccb7741487b524fff4a3974d12028b211a7055"
     },
+    "delete-account.html": {
+      "httpStatus": 200,
+      "matchesSource": true,
+      "sha256": "be08e4edb6d3d13566635f3b60d5709e0c92782a0a8f2af4138331fc29e17215"
+    },
     "account-data-paths.json": {
       "httpStatus": 200,
       "matchesSource": true,
@@ -25,7 +30,7 @@
   "firestoreRulesDeployed": true,
   "firestoreRulesDeploymentEvidence": "Firebase CLI completed deployment successfully in this session after all 14 emulator cases passed.",
   "billingPlanChanged": false,
-  "verifiedAtUtc": "2026-11-06T16:35:33.147279+00:00",
+  "verifiedAtUtc": "2026-11-09T08:19:49.461Z",
   "firestoreRulesSha256": "edb46c5b4d5e95a188ac085ddfa41ec5a4fbc0527d2e26106800b8e62b55b7f0",
   "deploymentScope": [
     "firestore:rules",
@@ -37,5 +42,17 @@
   "browserVerificationScope": "Read-only production page initialization, not an account deletion attempt.",
   "testLabResultsApiEnabledForVerification": true,
   "testLabFreeStartupCompleted": true,
-  "billingEnabledAfterCloudTest": false
+  "billingEnabledAfterCloudTest": false,
+  "priorBrowserVerificationAtUtc": "2026-11-06T16:35:33.147279+00:00",
+  "liveRulesReadbackVerified": true,
+  "liveRulesReadback": [
+    {
+      "release": "projects/assistummah/releases/cloud.firestore",
+      "ruleset": "projects/assistummah/rulesets/932124bc-42ae-44b1-94a0-430a95ccfe2c",
+      "sha256": "edb46c5b4d5e95a188ac085ddfa41ec5a4fbc0527d2e26106800b8e62b55b7f0",
+      "matchesSource": true
+    }
+  ],
+  "readOnlyRecheck": true,
+  "readOnlyRecheckScope": "Exact public HTML/script hashes and active Firestore rule source. No browser interaction, deployment, identity mutation or billing change."
 }

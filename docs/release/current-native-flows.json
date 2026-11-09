@@ -1,6 +1,6 @@
 {
-  "installedApkSha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b",
-  "pageSize": 16384,
+  "installedApkSha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
+  "pageSize": 4096,
   "nativePasswordSignIn": true,
   "accountATaskVisible": true,
   "nativeTaskSaveVisible": true,
@@ -11,24 +11,25 @@
   "previousAccountDataAbsent": true,
   "secondAccountSignOut": true,
   "success": true,
-  "verifiedAtUtc": "2026-11-07T06:34:17.736884+00:00",
+  "verifiedAtUtc": "2026-11-09T08:32:42.064591+00:00",
   "provider": "Firebase Test Lab",
-  "matrixId": "matrix-2npxx74fb4b1u",
+  "matrixId": "matrix-3df6vrt78lucs",
   "matrixOutcome": "SUCCESS",
-  "resultsUrl": "https://console.firebase.google.com/project/assistummah/testlab/histories/bh.6e4f3b6d15328b01/matrices/5851865724438766907",
-  "sourceCommit": "fe768742b0b8fc4854e71f3d0138811f2a72af58",
-  "sourceBundleSha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
-  "harnessApkSha256": "9240df3a5e7c0416bfc4ca9299d81ed51561cb1b34d25bf5d7a8b6229229979c",
+  "resultsUrl": "https://console.firebase.google.com/project/assistummah/testlab/histories/bh.6e4f3b6d15328b01/matrices/5010708349095077684",
+  "sourceCommit": "7cd3d349cc718f39e0f6c99fa6f5432ab1798703",
+  "sourceBundleSha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
+  "harnessApkSha256": "8f80ccfa006cc3735baf44a50ff00aeed8158599dbefaf202a8dead8659b7348",
+  "harnessSourceCommit": "3a85e00c75bd5214f8cac1c35068590eb1ba919c",
+  "physicalDevice": true,
+  "model": "Samsung Galaxy A15 5G (a15x / SM-A156U)",
   "androidApi": 36,
   "architecture": "arm64-v8a",
-  "physicalDevice": false,
   "syntheticAccountsOnly": true,
+  "disposableFixturesCleaned": true,
   "serverVerification": [
     {
       "fixture": "A",
-      "ownTaskOnServer": true,
-      "nativeSavedTaskOnServer": true,
-      "notificationsDisabled": true
+      "nativeSavedTaskOnServer": true
     },
     {
       "fixture": "B",
@@ -36,5 +37,5 @@
       "otherAccountTaskAbsent": true
     }
   ],
-  "scope": "Email/password login, task read/save with server persistence, core page navigation, Android notification permission denial, logout and A-to-B account isolation. Other native edits, OS alert delivery, Google OAuth and Play-installed builds are not established by this run."
+  "scope": "Physical Galaxy A15: native password login, own task read/save confirmed on server before deletion, core page navigation, notification denial, logout and account isolation. Does not cover every edit, Google OAuth, Play delivery or long-session performance."
 }

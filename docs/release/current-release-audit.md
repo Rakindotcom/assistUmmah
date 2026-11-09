@@ -2,8 +2,9 @@
 
 Updated 9 November 2026. Candidate: **রবের পথে 1.0.0+7**.
 
-**The corrected signed binaries pass source/static checks. Native verification
-is pending; public release is not approved. Builds 5 and 6 are rejected.**
+**Build 7 passes source/static checks, Android 8 / 16 KB startup and the complete
+physical release suite. Optional diagnostics verification is in progress.
+Public release is not approved; builds 5 and 6 are rejected.**
 
 ## Scope and constraints
 
@@ -46,12 +47,13 @@ Firebase remains Spark. Play Console stays manual. Support:
 | Python release tooling | Passed | 13 tests; real build 6 stale-AOT rejection reproduced. |
 | Clean signed AAB | Passed | 1.0.0+7, API 36/minimum 24, ARM64, 64-bit ELF alignment, debug/test exclusion and compiled Dart build-ID match. |
 | Signed universal APK | Passed | Exported from verified AAB; existing upload certificate, signature and 16 KB ZIP alignment verified. |
-| Native 16 KB startup | Pending | Must identify this exact APK/AAB. Build 6 startup is historical. |
-| Physical functional suite | Pending | Login, task save/server persistence, account isolation, permission flows, location fallback, controlled delivery, in-process timezone changes and interrupted deletion. |
-| Native screenshots | Pending | Current-binary captures must be visually inspected and exported. |
+| Native 16 KB startup | Passed | Post-boundary matrix `matrix-1v4ft6yd9muzy`: exact installed APK hash, native 16 KB pages, login/privacy/Back, initialized Firebase and clean registrar logs. |
+| Physical functional suite | Passed | Matrix `matrix-3df6vrt78lucs`: all six cases passed. Server reads confirmed the earlier native task save, nine absent roots, eight empty owned collections, deleted Auth identity, retained empty marker and unaffected other-account data. |
+| Native screenshots | Prepared | Five inspected 720×1280 captures from successful complete matrix `matrix-3df6vrt78lucs`; pixel-preserving RGB exports and exact APK/AAB hashes recorded. |
 | Received optional diagnostics | Pending | Explicit opt-in, controlled crash, restart/opt-out and a server event correlated to this build. |
-| Older Android | Pending / free quota | Previous Android 8 submission was rejected with `TEST_QUOTA_EXCEEDED`; no build 7 pass claimed. |
-| Backend and policy pages | Unchanged | Existing rule/Hosting receipts apply to unchanged backend sources. |
+| Older Android | Passed | Build 7 Android 8 matrix `matrix-2jpepjmsmorsb`: original installed hash, native 4 KB pages, login, bundled privacy and Back. Firebase initialization/log checks pass. |
+| Existing review account | Live access passed | Normal SDK password login, nine own-document reads, eight owned collection queries, marker absent and legacy-log enumeration denied before deletion. No app records changed. |
+| Backend and policy pages | Live readback passed | Five public HTML/script assets exactly match source; active default Firestore release source matches the tested rules. Billing remains disabled. No deployment or account change in this recheck. |
 | Hosted CI | Externally blocked | Last inspected run [42576553855](https://github.com/Rakindotcom/assistUmmah/actions/runs/42576553855) had zero steps in all jobs; annotation confirms an account billing lock. |
 | Play-installed build / Console | Manual gate | Owner requested manual Play work. |
 

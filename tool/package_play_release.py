@@ -66,13 +66,28 @@ def main():
                  'deletion-web-verification.json', 'deletion-web-proof.jpg',
                  'signed-release-smoke.json', 'current-release-audit.md',
                  'current-release-artifacts.json', 'current-backend-verification.json',
-                 'current-reviewer-access.json', 'current-testlab-startup.json',
+                 'current-reviewer-access.json',
                  'current-controlled-startup.json', 'current-native-flows.json',
                  'current-native-deletion.json', 'current-native-legacy.json',
                  'current-native-reminders.json', 'current-native-physical.json',
                  'current-native-delivery.json', 'current-native-physical-flows.json',
                  'current-native-location-diagnostics.json']:
         shutil.copy2(docs / name, destination / name)
+    robo_path = docs / 'current-testlab-startup.json'
+    if robo_path.exists():
+        robo = json.loads(robo_path.read_text())
+        if (robo.get('sourceBundleSha256') == verification['sha256']
+                and robo.get('uploadedApkSha256') == smoke['universalApkSha256']):
+            shutil.copy2(robo_path, destination / robo_path.name)
+        else:
+            historical = destination / 'historical-evidence'
+            historical.mkdir()
+            shutil.copy2(robo_path, historical / robo_path.name)
+            (historical / 'README.md').write_text(
+                '# Historical startup evidence\n\n'
+                'This Robo receipt belongs to an older binary. Current startup '
+                'evidence is in ../current-controlled-startup.json and '
+                '../signed-release-smoke.json.\n')
     for name in ['current-native-suite.json', 'current-native-timezone.json']:
         path = docs / name
         if path.exists():

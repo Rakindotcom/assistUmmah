@@ -1,20 +1,5 @@
-# Current signed APK native flow captures
+# Build 7 authenticated native evidence
 
-Unmodified device captures from `../current-native-flows.json`, virtual ARM64
-Android 16 with 16 KB pages. Disposable synthetic Firebase accounts only.
-Home, Quran tracking and tasbih were visually reviewed for font rendering and
-layout. Original PNGs are retained at 1080 × 2400; these are QA evidence,
-not a complete approved store screenshot set. No login credentials are shown.
+Original Galaxy A15 frames from successful complete matrix matrix-3df6vrt78lucs. The app used disposable fabricated accounts through the normal backend. Source APK/AAB and per-file hashes are recorded in capture-provenance.json.
 
-`11-deletion-recovery.png` is the actual recovery screen from
-`../current-native-deletion.json`, captured after the private dialog was revoked.
-Both disposable identities and their owned records were removed afterward.
-
-`12-native-notification-delivery.png` is the original Android notification-shade
-capture from `../current-native-delivery.json`. The test advanced only the
-disposable device clock, then restored it. Native alarms for the three daily
-reminders fired; no notification or app broadcast was injected.
-
-`physical-03-home.png` is the original physical Samsung Galaxy A15 home
-capture from `../current-native-physical-flows.json`. The native test also
-verified task server persistence, navigation, denial and account isolation.
+Associated UI hierarchies were scanned for fixture credentials and identifiers before selection. Original device dimensions are retained. Play phone exports are in ../current-store-captures/. Native behavior and server-cleanup results are scoped in the release audit and named JSON receipts.

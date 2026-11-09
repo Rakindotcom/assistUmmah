@@ -1,55 +1,65 @@
 {
-  "matrixId": "matrix-3oml65nlb9axb",
-  "sourceApkSha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b",
-  "sourceBundleSha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
+  "matrixId": "matrix-3df6vrt78lucs",
+  "matrixOutcome": "SUCCESS",
+  "sourceApkSha256": "5252f571ef3ad5a873f7690867a34f4532d5a0440c061f6eb790aa797126e8a6",
+  "sourceBundleSha256": "33ef4cd734f9a163c42823ffff09d81af1da493dfba044ef45dfeddaefa8aa1b",
+  "exportedAtUtc": "2026-11-09T08:32:43.543621+00:00",
+  "scope": "Original physical Galaxy A15 viewports from the successful complete release suite. RGB conversion preserves all pixels. Screenshots establish the pictured UI, not Play-installed behavior or publication approval.",
   "screens": [
     {
       "file": "store-01-home.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "f9a1ab38493592a3e83af89a30c44dab66fd26e82b259b4945c0c8e60f11cc52",
-      "exportSha256": "b69d38ff0f59da2d9cccf8d673832e28d85710efe1c20e24d709a67a076a3f25",
+      "sourceFile": "store-01-home-configured.png",
+      "sourceSha256": "b43e5e21af103b962291548462c9238375e023b0ce19e164af874f5714d6cf05",
+      "exportSha256": "c61e062b5336bb1f2ab82919d036ca18c16a60ecdd9c2568cdbe3572e5f9d5cb",
       "rgbPixelsUnchanged": true,
-      "visualReview": "Loaded calculated Dhaka prayer state following actual manual UI configuration; no credentials.",
-      "sourceMatrixId": "matrix-vklgs67ok48ea"
+      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
       "file": "store-02-prayer.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "c3e35fdda74a4ae5690b2132ab244a432f1e6e7fc561db03e1c79ab9d7908dd9",
-      "exportSha256": "0769c31dc9e9da53d3c77e85edb3f53b43ba33a5d6a3f37944881a356afcc40a",
+      "sourceFile": "store-02-prayer-configured.png",
+      "sourceSha256": "38a35abaef646f4e5f13bac582c97efb1d58b373ef5d74b6a9d6a9208235a2d1",
+      "exportSha256": "17fdab99ee10eb878966202d0dac1ac76945a6d47639258a085b8110c4b18b9f",
       "rgbPixelsUnchanged": true,
-      "visualReview": "Loaded calculated Dhaka prayer state following actual manual UI configuration; no credentials.",
-      "sourceMatrixId": "matrix-vklgs67ok48ea"
+      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
       "file": "store-03-growth.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "b01068a4a53c2652166b8b8068f35b23ae7869dfeb1fafa8e5891034c9f10819",
-      "exportSha256": "fa2bb67362b0304896699b30b87a40f8a9b9c7ffe7d888a2a3a2d3448e2d93ab",
+      "sourceFile": "store-03-growth.png",
+      "sourceSha256": "7824d307a0c183424837f39d9813ce6762d1f1930052649ed7d8bdfd9e3f92c4",
+      "exportSha256": "a8faef0cbc5214c167995ebaac5d9b440aaa7a4188c08e5e7d3fba2891a35d1a",
       "rgbPixelsUnchanged": true,
-      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
       "file": "store-04-quran.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "27c4f5ef359cf22165b975276e7e91eccb73374f9cad585e73e6198e94260353",
-      "exportSha256": "d4782eb531fd508d0a39b7f52839b8379e73d6f2adb39c91d019685250315253",
+      "sourceFile": "store-04-quran.png",
+      "sourceSha256": "4b54671665d11e8ad18086b84891770f9ebef20053f0cd5b788566854538d0e9",
+      "exportSha256": "d6e2c97193c931d1447abf0a581a5a59a067fc21d48ce84ee9108c86b175efb4",
       "rgbPixelsUnchanged": true,
-      "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     },
     {
       "file": "store-05-dhikr.png",
       "width": 720,
       "height": 1280,
-      "sourceSha256": "d6b22614e42b70c170601f026a583f3ef9d09105375d7a3ffb9d7f9e51185a81",
-      "exportSha256": "903ec743ec32950bebf95d097dec9868a8072bd36223e790e9f6b494c7dc6216",
+      "sourceFile": "store-05-dhikr.png",
+      "sourceSha256": "6012d028382d96e9bef43a699c5e41cc964188fbcb2fd54d37ebc57810f2be2c",
+      "exportSha256": "d085f6a9a1c87d260db4be1a5f479056e774de90b03de304fe493f50110bcf85",
       "rgbPixelsUnchanged": true,
-      "sourceMatrixId": "matrix-3jj7wgff18pja",
-      "visualReview": "Loaded tasbih view with Arabic/Bangla phrase and target; no credentials."
+      "sourceMatrixId": "matrix-3df6vrt78lucs",
+      "visualReview": "Loaded native screen inspected; Bangla/Arabic rendering, Bangla numerals and absence of credentials verified."
     }
   ]
 }

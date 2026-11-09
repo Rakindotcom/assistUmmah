@@ -1,5 +1,5 @@
 {
-  "verifiedAtUtc": "2026-11-06T16:37:23.463Z",
+  "verifiedAtUtc": "2026-11-09T08:46:31.544Z",
   "project": "assistummah",
   "existingReviewerPasswordSignIn": true,
   "ownDocuments": [
@@ -52,8 +52,10 @@
   "deletionMarkerReadAllowed": true,
   "deletionMarkerAbsent": true,
   "additionalDeletionCollectionsReadable": true,
+  "ownedCollectionsReadable": 8,
+  "legacyActivityReadDeniedBeforeDeletion": true,
   "signOut": true,
   "recordsModified": false,
   "credentialsPublished": false,
-  "scope": "Client SDK against deployed production rules; not a native APK login or Google OAuth test."
+  "scope": "Read-only client SDK server access using the existing dedicated review identity. No app records changed, no emails sent. This is separate from native APK/Google OAuth verification."
 }
