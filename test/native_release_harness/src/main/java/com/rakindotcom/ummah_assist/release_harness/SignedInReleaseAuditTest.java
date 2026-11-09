@@ -353,13 +353,18 @@ public final class SignedInReleaseAuditTest {
 
     private void setField(String label, String value) throws Exception {
         reveal(label);
-        UiObject2 field = device.findObject(By.clazz("android.widget.EditText").pkg(APP).hint(label));
-        if (field == null) {
-            UiObject2 node = find(label, true);
-            field = node == null ? null : node.getParent().findObject(By.clazz("android.widget.EditText"));
+        UiObject2 field=null;
+        for(int attempt=0;attempt<3;attempt++){
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            field=device.findObject(By.clazz("android.widget.EditText").pkg(APP).hintStartsWith(label));
+            assertNotNull("Missing native input field",field); field.click();
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            field=device.findObject(By.clazz("android.widget.EditText").pkg(APP).hintStartsWith(label));
+            if(field!=null&&field.isFocused())break;
         }
-        assertNotNull("Missing manual location field", field);
-        field.click(); field.setText(value); dismissKeyboardIfShown();
+        assertNotNull("Native input disappeared",field); assertTrue("Native input did not receive focus",field.isFocused());
+        field.setText(value); device.waitForIdle(1000); SystemClock.sleep(500);
+        dismissKeyboardIfShown(); device.waitForIdle(1000); SystemClock.sleep(700);
     }
 
     private void dismissKeyboardIfShown() throws Exception {
@@ -595,10 +600,9 @@ public final class SignedInReleaseAuditTest {
     private void signIn(String email, String password) throws Exception {
         assertTrue("Only disposable fixture identities are allowed", email.startsWith("teamframecipher+native-"));
         waitLabel("লগইন", 30000);
-        List<UiObject2> fields = editors(); assertEquals(2, fields.size());
-        fields.get(0).click(); fields.get(0).setText(email);
-        fields = editors(); fields.get(1).click(); fields.get(1).setText(password);
-        dismissKeyboardIfShown(); click("লগইন");
+        setField("ইমেইল ঠিকানা", email);
+        setField("পাসওয়ার্ড", password);
+        click("লগইন");
         waitLabel("আসসালামু আলাইকুম", 60000);
     }
 
@@ -638,7 +642,7 @@ public final class SignedInReleaseAuditTest {
         while (find(label, false) != null && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(200);
         assertNull("Pending editor did not finish during " + stage, find(label, false));
     }
-    private void click(String label) {waitLabel(label, 10000).click();}
+    private void click(String label) {waitLabel(label,10000);device.waitForIdle(1000);SystemClock.sleep(700);waitLabel(label,10000).click();}
     private void nav(String label) {waitContains(label, 10000).click();}
     private UiObject2 reveal(String label) {
         for (int i = 0; i < 7; i++) {
