@@ -32,6 +32,7 @@ public final class SignedInReleaseAuditTest {
     private Context context;
     private File output;
     private String stage = "initialization";
+    private boolean reminderNoticeDismissed;
 
     @Test
     public void signedInIsolationAndPermissions() throws Exception {
@@ -670,6 +671,22 @@ public final class SignedInReleaseAuditTest {
     }
     private void click(String label) {waitLabel(label,10000);device.waitForIdle(1000);SystemClock.sleep(700);waitLabel(label,10000).click();}
     private void nav(String label) {waitContains(label, 10000).click();}
+    private boolean dismissBlockingReminderNotice(UiObject2 action) {
+        if (action == null) return false;
+        UiObject2 notice = device.findObject(By.pkg(APP).descStartsWith("রিমাইন্ডার রিফ্রেশ"));
+        if (notice == null || !android.graphics.Rect.intersects(
+                action.getVisibleBounds(), notice.getVisibleBounds())) return false;
+        android.graphics.Rect bounds = notice.getVisibleBounds();
+        // A SnackBar with an action stays visible under accessibility. Use its
+        // standard downward dismissal before tapping the covered control.
+        device.swipe(bounds.centerX(), bounds.centerY(), bounds.centerX(),
+                Math.min(device.getDisplayHeight()-1, bounds.bottom+bounds.height()/2), 25);
+        device.waitForIdle(1000); SystemClock.sleep(300);
+        if (device.findObject(By.pkg(APP).descStartsWith("রিমাইন্ডার রিফ্রেশ")) == null) {
+            reminderNoticeDismissed = true;
+        }
+        return true;
+    }
     private boolean isUsableAction(UiObject2 node) {
         if (node == null) return false;
         android.graphics.Rect bounds = node.getVisibleBounds();
@@ -682,14 +699,18 @@ public final class SignedInReleaseAuditTest {
     private UiObject2 reveal(String label) {
         for (int i = 0; i < 7; i++) {
             device.waitForIdle(1000); SystemClock.sleep(700);
-            UiObject2 node = find(label, true); if (isUsableAction(node)) return node;
+            UiObject2 node = find(label, true);
+            if (dismissBlockingReminderNotice(node)) continue;
+            if (isUsableAction(node)) return node;
             int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
             device.swipe(x, h*3/4, x, h/3, 25);
         }
         // The destination may be above the current scroll position.
         for (int i = 0; i < 7; i++) {
             device.waitForIdle(1000); SystemClock.sleep(700);
-            UiObject2 node = find(label, true); if (isUsableAction(node)) return node;
+            UiObject2 node = find(label, true);
+            if (dismissBlockingReminderNotice(node)) continue;
+            if (isUsableAction(node)) return node;
             int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
             device.swipe(x, h/3, x, h*3/4, 25);
         }
@@ -702,6 +723,7 @@ public final class SignedInReleaseAuditTest {
         device.dumpWindowHierarchy(new File(output, name + ".xml"));
     }
     private void save() throws Exception {
+        if (reminderNoticeDismissed) report.put("nativeReminderNoticeDismissedForNavigation", true);
         try (FileOutputStream stream = new FileOutputStream(new File(output, "flows-receipt.json"))) {
             stream.write((report.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
         }
