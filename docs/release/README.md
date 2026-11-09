@@ -1,6 +1,6 @@
 # Release preparation — রবের পথে
 
-Updated 6 November 2026 (Asia/Dhaka).
+Updated 9 November 2026 (Asia/Dhaka).
 
 ## Current release scope and decision
 
@@ -10,7 +10,7 @@ The production entry is `lib/main.dart` → `AppBootstrap` → `AuthGate` →
 `HomeShell`. The new productivity root remains hidden and the separate preview
 package must not be uploaded as this app.
 
-The current candidate is **1.0.0+4**, package
+The current candidate is **1.0.0+5**, package
 `com.rakindotcom.ummah_assist`, target API 36 and minimum API 24. See the
 [release audit](current-release-audit.md) and the machine-readable
 [verification summary](verification-summary.json) for current results and
@@ -21,17 +21,14 @@ The signed production AAB is
 `build/app/outputs/bundle/productionRelease/app-production-release.aab`.
 Its signed universal APK is `.local/app-release-universal.apk`; a user-facing
 copy is exported under `output/apk/`. [Bundle verification](bundle-verification.json)
-binds static checks to the exact AAB hash. The current APK passed a signed-out
-ARM64 / 16 KB [Test Lab startup check](current-testlab-startup.json). Its login
-screen and Firebase logs were inspected. The separate-process [controlled
-startup test](current-controlled-startup.json) then verified the installed APK
-hash, measured 16 KB pages, opened bundled privacy and returned with Android
-Back. Scoped [signed-in native checks](current-native-flows.json) also passed.
-Native deletion/recovery, alarm registration/cancellation and diagnostics consent
-also passed. The original alarm reached Android System UI under a controlled
-clock change; location denial/manual setup and a received opt-in diagnostic
-report were verified. Natural-clock latency, reboot/Doze and manual Play gates remain open; the
-stronger startup evidence now permits a manual internal-test upload packet.
+binds static checks to the exact AAB hash. Build 5 fixes reproduced daily
+reminder timezone errors and passes 528 Flutter tests plus analysis and static
+Android checks. **Native verification is in progress.** Its first complete
+virtual-device attempt passed core cases but failed at an incorrect alarm-dump
+parser; that test is fixed and a physical-device rerun is pending. See the
+[current audit](current-release-audit.md) for authoritative results. Previous
+build 4 native receipts are historical and cannot authorize this candidate's
+upload packet. No build 5 public release approval is claimed.
 
 Current functionality includes the prayer-first home with offline prayer and
 fasting calculations, prayer and Qaza tracking, tasks and recurrence, Quran

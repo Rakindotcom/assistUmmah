@@ -46,10 +46,10 @@ The equivalent invocation with the official gcloud CLI is:
 
 ```sh
 gcloud firebase test android run --project assistummah --type instrumentation \
-  --app output/apk/rober-pothe-1.0.0-build4.apk \
+  --app output/apk/rober-pothe-1.0.0-build5.apk \
   --test test/native_release_harness/build/outputs/apk/debug/SignedReleaseAudit-debug.apk \
   --device model=MediumPhone_ps16k.arm,version=36,locale=bn_BD,orientation=portrait \
-  --environment-variables expectedApkSha256=61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b,expectedVersionCode=4,expectedPageSize=16384 \
+  --environment-variables expectedApkSha256=d42713c69a0fbd899f167a3aec62cd519ce55d912634cb28880733ff4f087cd3,expectedVersionCode=5,expectedPageSize=16384 \
   --directories-to-pull /sdcard/Android/data/com.rakindotcom.ummah_assist.release_harness/files/release-audit \
   --no-use-orchestrator --no-auto-google-login --timeout 3m
 ```

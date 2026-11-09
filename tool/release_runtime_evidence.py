@@ -59,6 +59,10 @@ SCOPED_CLAIMS = {
         'nativeSignOutAlarmCancellationVerified': ('nativeSignOutCancelsAlarms',),
         'nativeDiagnosticsConsentPersistenceVerified': ('diagnosticsEnabledByExplicitToggle', 'diagnosticsConsentSurvivesRestart', 'diagnosticsDisabledAgain'),
     },
+    'current-native-timezone.json': {
+        'nativeDailyTimezoneIsolationVerified': ('dailyZoneIsolatedFromPrayerDatabase',),
+        'nativeDailyTimezoneRefreshVerified': ('deviceTimezoneRefreshWithoutProcessRestart',),
+    },
     'current-native-delivery.json': {
         'controlledClockNativeNotificationDeliveryVerified': ('nativeNotificationShadeDelivery', 'wallClockAdvancedPastInexactWindow'),
         'nativeNotificationOsRevocationVerified': ('notificationPermissionRevokedThroughOs', 'optOutAfterOsRevocationCancelsAlarms'),

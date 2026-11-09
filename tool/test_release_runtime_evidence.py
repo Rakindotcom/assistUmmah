@@ -147,6 +147,25 @@ class ReleaseRuntimeEvidenceTest(unittest.TestCase):
                 self.assertFalse(summary['physicalNativeTaskPersistenceVerified'])
                 self.assertFalse(summary['physicalDeviceTested'])
 
+    def test_timezone_claims_require_current_successful_native_receipt(self):
+        record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
+                  'success': True, 'matrixOutcome': 'SUCCESS',
+                  'dailyZoneIsolatedFromPrayerDatabase': True,
+                  'deviceTimezoneRefreshWithoutProcessRestart': True}
+        path = self.docs / 'current-native-timezone.json'
+        write_json(path, record)
+        reconcile_runtime_evidence(self.docs, 'new')
+        summary = read_json(self.docs / 'verification-summary.json')
+        self.assertTrue(summary['nativeDailyTimezoneIsolationVerified'])
+        self.assertTrue(summary['nativeDailyTimezoneRefreshVerified'])
+        for key in ['sourceBundleSha256', 'installedApkSha256', 'matrixOutcome',
+                    'deviceTimezoneRefreshWithoutProcessRestart']:
+            with self.subTest(changed=key):
+                write_json(path, {**record, key: False})
+                reconcile_runtime_evidence(self.docs, 'new')
+                self.assertFalse(read_json(self.docs / 'verification-summary.json')[
+                    'nativeDailyTimezoneRefreshVerified'])
+
     def test_expected_crash_needs_passing_junit_and_received_report(self):
         record = {'sourceBundleSha256': 'new', 'installedApkSha256': 'apk',
                   'success': True, 'matrixOutcome': 'FAILURE',

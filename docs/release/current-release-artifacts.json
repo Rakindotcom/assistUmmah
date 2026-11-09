@@ -1,23 +1,23 @@
 {
-  "verifiedAtUtc": "2026-11-06T16:48:37.457025+00:00",
-  "sourceCommit": "fe768742b0b8fc4854e71f3d0138811f2a72af58",
+  "verifiedAtUtc": "2026-11-09T06:40:00.417813+00:00",
+  "sourceCommit": "5c88292f2eb91c1e899b0d811073125e782b0e00",
   "entrypoint": "lib/main.dart",
   "flavor": "production",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 4,
+  "versionCode": 5,
   "targetSdk": 36,
   "minSdk": 24,
   "artifacts": {
     "apk": {
-      "path": "output/apk/rober-pothe-1.0.0-build4.apk",
-      "bytes": 64633779,
-      "sha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b"
+      "path": "output/apk/rober-pothe-1.0.0-build5.apk",
+      "sha256": "d42713c69a0fbd899f167a3aec62cd519ce55d912634cb28880733ff4f087cd3",
+      "bytes": 64633779
     },
     "aab": {
-      "path": "output/aab/rober-pothe-1.0.0-build4.aab",
-      "bytes": 63643953,
-      "sha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05"
+      "path": "output/aab/rober-pothe-1.0.0-build5.aab",
+      "sha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
+      "bytes": 63643931
     }
   },
   "signatureMatchesExistingUploadCertificate": true,
@@ -26,11 +26,13 @@
   "anekBanglaAndFontLicensesBundled": true,
   "native64BitElfAlignmentAtLeast16KiB": true,
   "universalApkZipAlignment16KiB": true,
-  "nativeRuntimeVerified": true,
+  "nativeRuntimeVerified": false,
   "playInstalledBuildVerified": false,
-  "scope": "Signed production candidate; independent installed hash, 16 KB page-size syscall, startup and scoped signed-in flows passed. Remaining device/OS checks and manual Play gates remain open.",
-  "nativeRuntimeScope": "Independent on-device hash and page-size check, production login, bundled privacy, and Android Back on virtual ARM64 Android 16. The driver ran outside the minified app process. This startup run does not cover authenticated flows or physical/Play-installed builds.",
-  "nativeRuntimeEvidence": "current-controlled-startup.json",
-  "independentDeviceApkHashVerified": true,
-  "nativeFunctionalEvidence": "current-native-flows.json"
+  "scope": "Candidate 5 fixes reproduced device-timezone/global-timezone daily reminder scheduling errors. Source analysis and 528 Flutter tests pass; current candidate native verification remains pending.",
+  "nativeRuntimeScope": "Build 4 native receipts are historical and do not verify this changed binary.",
+  "nativeRuntimeEvidence": null,
+  "independentDeviceApkHashVerified": false,
+  "nativeFunctionalEvidence": null,
+  "exportedAtUtc": "2026-11-09T02:28:18.760454+00:00",
+  "uploadCertificateSha256Verified": "5a92af6320a67d80af9acaafdaa954715c7b601987fc6e770f5527790f5ff26e"
 }

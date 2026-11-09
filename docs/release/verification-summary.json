@@ -1,6 +1,6 @@
 {
   "verifiedAtUtc": "2026-11-07T06:34:17.736884+00:00",
-  "flutterTestsPassed": 525,
+  "flutterTestsPassed": 528,
   "flutterAnalyzer": "no issues",
   "firebaseEmulatorTestsPassed": 14,
   "releaseInputs": "pass",
@@ -32,34 +32,34 @@
     "current-native-location-diagnostics.json"
   ],
   "nativeProfileAuditPassed": false,
-  "nativeLoginFormSubmitted": true,
+  "nativeLoginFormSubmitted": false,
   "formTextInputSimulated": false,
-  "signedReleaseStartupSmokePassed": true,
+  "signedReleaseStartupSmokePassed": false,
   "fullSignedReleaseFunctionalTested": false,
-  "physicalDeviceTested": true,
+  "physicalDeviceTested": false,
   "playConsoleWork": "manual by owner preference",
   "reviewerCredentialsProvisioned": true,
   "reviewerCredentialsInPublicPacket": false,
-  "bundleSha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
-  "signedReleaseLoginVisible": true,
-  "firebaseRegistrarErrorsAbsent": true,
+  "bundleSha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
+  "signedReleaseLoginVisible": false,
+  "firebaseRegistrarErrorsAbsent": false,
   "priorRuntimeEvidenceAvailable": true,
   "priorProfileAuditAvailable": true,
-  "nativeEvidenceScope": "Matching startup/16 KB proof and scoped native functional receipts are available. See nativeFunctionalEvidence for per-run scope and limits: current-controlled-startup.json, current-native-flows.json, current-native-deletion.json, current-native-legacy.json, current-native-physical.json, current-native-physical-flows.json, current-native-reminders.json, current-native-delivery.json, current-native-location-diagnostics.json.",
-  "releaseToolTestsPassed": 8,
-  "universalApkSha256": "61a3109b27a344ee40167a2f705f38587dad50b11f812a597cc624ad7dfd279b",
+  "nativeEvidenceScope": "Scoped native functional receipts match this candidate; the stronger startup/16 KB gate remains open. See nativeFunctionalEvidence for per-run scope and limits: current-native-legacy.json.",
+  "releaseToolTestsPassed": 9,
+  "universalApkSha256": "d42713c69a0fbd899f167a3aec62cd519ce55d912634cb28880733ff4f087cd3",
   "signingIdentityMatchesPriorTestApk": true,
-  "sourceCommit": "fe768742b0b8fc4854e71f3d0138811f2a72af58",
+  "sourceCommit": "5c88292",
   "releaseScope": "Current production HomeShell app; full gap.md roadmap excluded by owner.",
   "versionName": "1.0.0",
-  "versionCode": 4,
+  "versionCode": 5,
   "flutterTestsSkipped": 2,
   "flutterSkippedScope": "Browser-only future productivity migration tests; outside this production release.",
   "productionReleaseApproved": false,
   "backendDeploymentVerified": true,
   "existingReviewerLiveAccessVerified": true,
   "githubCiStatus": "blocked: account billing lock prevented runner startup; no CI pass claimed",
-  "historicalVisualEvidenceScope": "Existing phone captures and layout checks retain their original provenance in ui-review.md; they are not captures of build 4.",
+  "historicalVisualEvidenceScope": "Existing widget/profile captures retain their original provenance; they do not verify build 5.",
   "historicalVisualEvidence": {
     "phoneCaptureCount": 6,
     "homeFontAndPreviewChecksPassed": 9,
@@ -69,78 +69,78 @@
   "testToolingVulnerabilities": 0,
   "firebaseTestLockSha256": "49b5a5ff7b79280a07d0693bf774bcbec1a1471e0ec9c447020de9001c706a2f",
   "uploadPacketGateVerified": true,
-  "cloudSignedApkStartupVerified": true,
-  "currentNativeStartupCaptureCount": 4,
+  "cloudSignedApkStartupVerified": false,
+  "currentNativeStartupCaptureCount": 0,
   "currentNativeStartupScope": "ARM64 Android 16 / 16 KB Test Lab startup and signed-out UI only. No credentials supplied; no full native signed-in flow or OS alert delivery claimed.",
-  "independentDeviceApkHashVerified": true,
-  "devicePageSizeSyscallVerified": true,
-  "bundledPrivacyNativeVerified": true,
-  "nativeSystemBackVerified": true,
-  "nativePasswordLoginVerified": true,
-  "nativeTaskPersistenceVerified": true,
-  "nativeAccountSwitchIsolationVerified": true,
-  "nativeNotificationDenialVerified": true,
-  "nativeDeletionRecoveryVerified": true,
-  "nativeDeletionRouteRevocationVerified": true,
-  "nativeDeletionServerCleanupVerified": true,
-  "disposableNativeFixturesCleaned": true,
+  "independentDeviceApkHashVerified": false,
+  "devicePageSizeSyscallVerified": false,
+  "bundledPrivacyNativeVerified": false,
+  "nativeSystemBackVerified": false,
+  "nativePasswordLoginVerified": false,
+  "nativeTaskPersistenceVerified": false,
+  "nativeAccountSwitchIsolationVerified": false,
+  "nativeNotificationDenialVerified": false,
+  "nativeDeletionRecoveryVerified": false,
+  "nativeDeletionRouteRevocationVerified": false,
+  "nativeDeletionServerCleanupVerified": false,
+  "disposableNativeFixturesCleaned": false,
   "android8StartupVerified": true,
-  "nativeNotificationPermissionGrantVerified": true,
-  "nativeDailyAlarmRegistrationVerified": true,
-  "nativeSignOutAlarmCancellationVerified": true,
-  "nativeDiagnosticsConsentPersistenceVerified": true,
+  "nativeNotificationPermissionGrantVerified": false,
+  "nativeDailyAlarmRegistrationVerified": false,
+  "nativeSignOutAlarmCancellationVerified": false,
+  "nativeDiagnosticsConsentPersistenceVerified": false,
   "timedNotificationDeliveryVerified": false,
-  "currentStorePhoneScreenshots": 5,
-  "physicalStartupVerified": true,
+  "currentStorePhoneScreenshots": 0,
+  "physicalStartupVerified": false,
   "fullPhysicalFlowsTested": false,
-  "controlledClockNativeNotificationDeliveryVerified": true,
-  "nativeNotificationOsRevocationVerified": true,
-  "physicalNativePasswordSignInVerified": true,
-  "physicalNativeTaskPersistenceVerified": true,
-  "physicalNativeAccountIsolationVerified": true,
-  "physicalCoreNavigationVerified": true,
-  "nativeLocationDenialVerified": true,
-  "nativeManualLocationFallbackVerified": true,
-  "controlledCrashlyticsServerReceiptVerified": true,
-  "nativePostCrashRestartVerified": true,
-  "timedNotificationDeliveryScope": "Natural-clock latency is not established; controlled-clock delivery through the Android alarm queue and System UI passed separately.",
-  "nativeStartupEvidenceScope": "Independent on-device hash and page-size check, production login, bundled privacy, and Android Back on virtual ARM64 Android 16. The driver ran outside the minified app process. This startup run does not cover authenticated flows or physical/Play-installed builds.",
+  "controlledClockNativeNotificationDeliveryVerified": false,
+  "nativeNotificationOsRevocationVerified": false,
+  "physicalNativePasswordSignInVerified": false,
+  "physicalNativeTaskPersistenceVerified": false,
+  "physicalNativeAccountIsolationVerified": false,
+  "physicalCoreNavigationVerified": false,
+  "nativeLocationDenialVerified": false,
+  "nativeManualLocationFallbackVerified": false,
+  "controlledCrashlyticsServerReceiptVerified": false,
+  "nativePostCrashRestartVerified": false,
+  "timedNotificationDeliveryScope": "Natural-clock latency remains unverified. The build 5 virtual suite passed the controlled-clock case, but the aggregate suite failed at a test parser; complete native verification is pending.",
+  "nativeStartupEvidenceScope": "Profile audit and captures belong to a prior app build; the current signed bundle runtime is unverified.",
   "nativeFunctionalEvidence": {
     "current-controlled-startup.json": {
-      "current": true,
-      "scope": "Independent on-device hash and page-size check, production login, bundled privacy, and Android Back on virtual ARM64 Android 16. The driver ran outside the minified app process. This startup run does not cover authenticated flows or physical/Play-installed builds."
+      "current": false,
+      "scope": null
     },
     "current-native-flows.json": {
-      "current": true,
-      "scope": "Email/password login, task read/save with server persistence, core page navigation, Android notification permission denial, logout and A-to-B account isolation. Other native edits, OS alert delivery, Google OAuth and Play-installed builds are not established by this run."
+      "current": false,
+      "scope": null
     },
     "current-native-deletion.json": {
-      "current": true,
-      "scope": "Remote owner deletion marker while a private task dialog is open; private route revocation; recovery/back behavior; native password-confirmed deletion; cold restart and other-account login. Read-only server checks confirm owned data and identity deletion. No real users or reviewer accounts changed."
+      "current": false,
+      "scope": null
     },
     "current-native-legacy.json": {
       "current": true,
-      "scope": "Signed-out startup, installed APK identity, bundled privacy and Android Back on virtual ARM64 Android 8/API26, 4 KB pages. No authenticated, notification or Play-installed coverage."
+      "scope": "Original signed build 5 installed-file hash, native page size, login, bundled privacy and Android Back. Signed-out startup only; no authenticated, OS scheduling or Play-installed claims."
     },
     "current-native-physical.json": {
-      "current": true,
-      "scope": "Independent installed APK hash, signed-out startup, bundled privacy and Android Back on a physical ARM64 Pixel 8 / Android14 API34 / 4 KB pages. No physical signed-in, timed alert, reboot/Doze or Play-installed coverage."
+      "current": false,
+      "scope": null
     },
     "current-native-physical-flows.json": {
-      "current": true,
-      "scope": "Physical Galaxy A15 Android16: original installed APK identity, native password sign-in, task read/save with independent server persistence, prayer/growth/Quran/tasbih page navigation, notification permission denial, logout and A-to-B data isolation. This short functional session does not prove every native mutation, long-session performance, reboot/Doze, Google OAuth or Play signing."
+      "current": false,
+      "scope": null
     },
     "current-native-reminders.json": {
-      "current": true,
-      "scope": "Android notification permission allowed, native pending alarm found in dumpsys, sign-out cancellation verified against pending alarms, and optional diagnostics default-off/on/restart/off. This run does not establish timed OS delivery, reboot/Doze behavior or receipt of a Crashlytics report."
+      "current": false,
+      "scope": null
     },
     "current-native-delivery.json": {
-      "current": true,
-      "scope": "Original APK alarm delivered into Android System UI after advancing the disposable device wall clock beyond the next inexact task-alarm window. No notification or app broadcast injected. Clock restored; Android notification permission revoked; explicit app opt-out cancelled pending alarms. This does not establish natural-clock latency, reboot/Doze or OEM-specific behavior."
+      "current": false,
+      "scope": null
     },
     "current-native-location-diagnostics.json": {
-      "current": true,
-      "scope": "Android location permission denied; advanced manual Dhaka coordinates and Asia/Dhaka timezone saved; calculated prayer views loaded. Optional diagnostics explicitly enabled, then only the disposable app session was intentionally crashed. Native restart and diagnostics opt-out passed. Crashlytics server receipt independently matched package/build/time/exception with no fixture identifiers or content. JUnit passed; Test Lab matrix FAILURE is expected because it records the deliberate crash, not an unexpected production crash."
+      "current": false,
+      "scope": null
     }
   }
 }

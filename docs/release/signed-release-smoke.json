@@ -16,6 +16,7 @@
   "firebaseInitialized": true,
   "firebaseCrashlyticsInitialized": true,
   "firebaseRegistrarErrorsAbsent": true,
-  "currentBundleVerified": true,
-  "evidence": "current-controlled-startup.json"
+  "currentBundleVerified": false,
+  "evidence": "current-controlled-startup.json",
+  "supersededByBundleSha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd"
 }

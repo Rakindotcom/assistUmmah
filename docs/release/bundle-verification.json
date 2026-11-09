@@ -1,9 +1,9 @@
 {
   "bundle": "build/app/outputs/bundle/productionRelease/app-production-release.aab",
-  "sha256": "8151b443044dddc4a23e44ea7a1b1a43d5d5ec653cff93f400109557fcb4bb05",
+  "sha256": "35c85836f6ead018e580aa752744c348217658bdee041199b98537b994a9dafd",
   "package": "com.rakindotcom.ummah_assist",
   "versionName": "1.0.0",
-  "versionCode": 4,
+  "versionCode": 5,
   "minSdk": 24,
   "targetSdk": 36,
   "signatureVerified": true,
@@ -119,9 +119,9 @@
     "com.google.android.providers.gsf.permission.READ_GSERVICES",
     "com.rakindotcom.ummah_assist.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
-  "runtime16KbVerified": true,
+  "runtime16KbVerified": false,
   "apkZipAlignmentVerified": true,
+  "cloudRuntime16KbStartupVerified": false,
   "universalApkSignatureVerified": true,
-  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify",
-  "cloudRuntime16KbStartupVerified": true
+  "apkVerificationMethod": "bundletool 1.18.3 universal; Android build-tools 36.0.0 zipalign -c -P 16 -v 4 and apksigner verify"
 }
