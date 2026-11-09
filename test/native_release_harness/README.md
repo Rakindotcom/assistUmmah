@@ -160,3 +160,7 @@ A reveal action must expose at least 12 dp in both visible dimensions before
 tapping. Flutter may retain a clipped one-pixel semantics node at a scroll
 boundary; its presence is not evidence that the control is tappable. The
 external driver scrolls farther before tapping, while production UI is unchanged.
+
+Home readiness matches the greeting within its semantics label. Flutter may merge
+the greeting, date and loading state into one native accessibility node on Pixel
+devices; exact equality incorrectly rejects a successfully authenticated home.

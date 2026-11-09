@@ -175,7 +175,7 @@ public final class SignedInReleaseAuditTest {
             assertFalse("Diagnostics must default off", diagnostics.isChecked()); diagnostics.click();
             waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsEnabledByExplicitToggle", true);
             device.executeShellCommand("am force-stop " + APP); context.startActivity(launch);
-            waitLabel("আসসালামু আলাইকুম", 60000); nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
+            waitContains("আসসালামু আলাইকুম", 60000); nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
             reveal("সমস্যার রিপোর্ট পাঠান");
             waitChecked("সমস্যার রিপোর্ট পাঠান", true); report.put("diagnosticsConsentSurvivesRestart", true);
             reveal("সমস্যার রিপোর্ট পাঠান").click(); waitChecked("সমস্যার রিপোর্ট পাঠান", false);
@@ -258,7 +258,7 @@ public final class SignedInReleaseAuditTest {
             device.executeShellCommand("pm revoke " + APP + " android.permission.POST_NOTIFICATIONS");
             assertEquals(PackageManager.PERMISSION_DENIED, context.getPackageManager().checkPermission("android.permission.POST_NOTIFICATIONS", APP));
             report.put("notificationPermissionRevokedThroughOs", true);
-            context.startActivity(launch); waitLabel("আসসালামু আলাইকুম", 60000);
+            context.startActivity(launch); waitContains("আসসালামু আলাইকুম", 60000);
             nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
             // The saved preference may remain on while OS permission is off. Disable it explicitly.
             reveal("দৈনিক রিমাইন্ডার").click();
@@ -327,14 +327,14 @@ public final class SignedInReleaseAuditTest {
             capture("prayer-exact-denied");
             stage="OS exact access grant and foreground refresh";
             device.pressHome();device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM allow");
-            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            context.startActivity(launch);waitContains("আসসালামু আলাইকুম",60000);
             nav("নামাজ");reveal("যথাসময়ে");waitPrayerAlarmMode(true,"granted");
             assertTrue(device.executeShellCommand("cmd appops get "+APP+" SCHEDULE_EXACT_ALARM").contains("allow"));
             report.put("nativeExactAccessGrantedThroughOs",true);report.put("nativePrayerExactSchedulingAfterGrant",true);
             capture("prayer-exact-granted");
             stage="OS exact access revocation and cold recovery";
             device.executeShellCommand("cmd appops set "+APP+" SCHEDULE_EXACT_ALARM deny");
-            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            context.startActivity(launch);waitContains("আসসালামু আলাইকুম",60000);
             nav("নামাজ");reveal("সময় আনুমানিক হতে পারে");waitPrayerAlarmMode(false,"revoked");
             report.put("nativeExactAccessRevokedThroughOs",true);report.put("nativePrayerInexactFallbackAfterRevocation",true);
             capture("prayer-exact-revoked");
@@ -425,7 +425,7 @@ public final class SignedInReleaseAuditTest {
             assertTrue("No suitable daily slot within the bounded cloud test", due-now < 30L*60*1000);
             device.pressHome(); device.executeShellCommand("settings put global auto_time_zone 0");
             device.executeShellCommand("cmd alarm set-timezone " + zone);
-            context.startActivity(launch); waitLabel("আসসালামু আলাইকুম",60000);
+            context.startActivity(launch); waitContains("আসসালামু আলাইকুম",60000);
             nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click();
             reveal("দৈনিক রিমাইন্ডার").click();
             long deadline = SystemClock.uptimeMillis()+15000;
@@ -475,7 +475,7 @@ public final class SignedInReleaseAuditTest {
             }
             else savePrivateText("natural-no-arrival-notification-dump.txt",device.executeShellCommand("dumpsys notification --noredact"));
             device.executeShellCommand("dumpsys deviceidle unforce");device.executeShellCommand("dumpsys battery reset");device.wakeUp();device.pressMenu();
-            context.startActivity(launch);waitLabel("আসসালামু আলাইকুম",60000);
+            context.startActivity(launch);waitContains("আসসালামু আলাইকুম",60000);
             nav("আরও");reveal("সেটিংস ও রিপোর্ট").click();
             signOut();report.put("success",true);save();
         } catch(Throwable failure) {
@@ -554,7 +554,7 @@ public final class SignedInReleaseAuditTest {
             String response = device.executeShellCommand("am crash --user current " + APP);
             assertFalse("Android rejected the controlled crash", response.contains("Error") || response.contains("Unknown"));
             SystemClock.sleep(1500); device.pressBack(); context.startActivity(launch);
-            waitLabel("আসসালামু আলাইকুম", 60000); report.put("postCrashRestartSucceeded", true);
+            waitContains("আসসালামু আলাইকুম", 60000); report.put("postCrashRestartSucceeded", true);
             // Give the SDK a bounded foreground interval to enqueue/upload the native report.
             SystemClock.sleep(45000);
             nav("আরও"); reveal("সেটিংস ও রিপোর্ট").click(); reveal("সমস্যার রিপোর্ট পাঠান"); waitChecked("সমস্যার রিপোর্ট পাঠান", true);
@@ -564,7 +564,7 @@ public final class SignedInReleaseAuditTest {
         } catch (Throwable failure) {
             report.put("success", false); report.put("failedStage", stage); report.put("failureType", failure.getClass().getSimpleName()); save();
             try {capture("failure-private");} catch (Throwable ignored) { }
-            throw new AssertionError("Native location/diagnostics audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.");
+            throw new AssertionError("Native location/diagnostics audit failed at " + stage + " (" + failure.getClass().getSimpleName() + "). Inspect private artifacts.", failure);
         } finally {device.executeShellCommand("wm size reset"); device.executeShellCommand("wm density reset");}
     }
 
@@ -841,7 +841,7 @@ public final class SignedInReleaseAuditTest {
         setField("ইমেইল ঠিকানা", email);
         setField("পাসওয়ার্ড", password);
         click("লগইন");
-        waitLabel("আসসালামু আলাইকুম", 60000);
+        waitContains("আসসালামু আলাইকুম", 60000);
     }
 
     private void signOut() {
