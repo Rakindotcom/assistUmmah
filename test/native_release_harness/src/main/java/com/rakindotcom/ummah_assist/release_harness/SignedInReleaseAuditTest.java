@@ -317,7 +317,10 @@ public final class SignedInReleaseAuditTest {
             stage = "manual location fallback";
             reveal("অন্য স্থান বা হিসাবের পদ্ধতি").click(); waitLabel("নামাজের সময় সেট করুন", 15000);
             setField("স্থানের নাম", "ঢাকা"); setField("অক্ষাংশ", "23.8103"); setField("দ্রাঘিমাংশ", "90.4125"); setField("টাইম জোন", "Asia/Dhaka");
-            reveal("সময় সংরক্ষণ করুন").click(); waitAbsent("নামাজের সময় সেট করুন", 20000);
+            UiObject2 saveLocation = reveal("সময় সংরক্ষণ করুন");
+            capture("location-save-before-private");
+            assertTrue("Save is obscured by Android navigation", isUsableAction(saveLocation));
+            saveLocation.click(); waitAbsent("নামাজের সময় সেট করুন", 20000);
             waitContains("ঢাকা", 15000); report.put("manualLocationSavedWithoutPermission", true);
             device.executeShellCommand("wm size 720x1280"); device.executeShellCommand("wm density 320");
             capture("store-01-home-configured");
@@ -647,15 +650,26 @@ public final class SignedInReleaseAuditTest {
     }
     private void click(String label) {waitLabel(label,10000);device.waitForIdle(1000);SystemClock.sleep(700);waitLabel(label,10000).click();}
     private void nav(String label) {waitContains(label, 10000).click();}
+    private boolean isUsableAction(UiObject2 node) {
+        if (node == null) return false;
+        android.graphics.Rect bounds = node.getVisibleBounds();
+        if (bounds.isEmpty()) return false;
+        UiObject2 navigation = device.findObject(By.res("com.android.systemui:id/navigation_bar_frame"));
+        // Flutter can expose an offscreen scroll child in accessibility before
+        // it is actually tappable. Never send that tap to Android Home/Back.
+        return navigation == null || bounds.bottom <= navigation.getVisibleBounds().top;
+    }
     private UiObject2 reveal(String label) {
         for (int i = 0; i < 7; i++) {
-            UiObject2 node = find(label, true); if (node != null) return node;
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            UiObject2 node = find(label, true); if (isUsableAction(node)) return node;
             int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
             device.swipe(x, h*3/4, x, h/3, 25);
         }
         // The destination may be above the current scroll position.
         for (int i = 0; i < 7; i++) {
-            UiObject2 node = find(label, true); if (node != null) return node;
+            device.waitForIdle(1000); SystemClock.sleep(700);
+            UiObject2 node = find(label, true); if (isUsableAction(node)) return node;
             int x = device.getDisplayWidth()/2, h = device.getDisplayHeight();
             device.swipe(x, h/3, x, h*3/4, 25);
         }
