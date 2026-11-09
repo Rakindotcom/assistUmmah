@@ -38,6 +38,16 @@
       "exportSha256": "d4782eb531fd508d0a39b7f52839b8379e73d6f2adb39c91d019685250315253",
       "rgbPixelsUnchanged": true,
       "visualReview": "loaded screen; Bangla rendering and no private credentials verified"
+    },
+    {
+      "file": "store-05-dhikr.png",
+      "width": 720,
+      "height": 1280,
+      "sourceSha256": "d6b22614e42b70c170601f026a583f3ef9d09105375d7a3ffb9d7f9e51185a81",
+      "exportSha256": "903ec743ec32950bebf95d097dec9868a8072bd36223e790e9f6b494c7dc6216",
+      "rgbPixelsUnchanged": true,
+      "sourceMatrixId": "matrix-3jj7wgff18pja",
+      "visualReview": "Loaded tasbih view with Arabic/Bangla phrase and target; no credentials."
     }
   ]
 }

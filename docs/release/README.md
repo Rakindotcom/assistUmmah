@@ -216,7 +216,7 @@ signing credentials are excluded from that packet.
    APK has matching ARM64 Android16/16 KB, Android8/4 KB and physical Pixel8
    Android14 startup receipts. Physical authenticated/OS flows and the
    Play-signed build still require verification.
-8. Review the four current `current-store-captures/` phone images. Recapture any screen that differs
+8. Review the five current `current-store-captures/` phone images. Recapture any screen that differs
    in the final Play-installed build. Browser previews are not store screenshots.
 9. Complete [Data safety preparation](data-safety.md), app-access credentials,
    content rating, target audience, ads declaration, developer verification and
